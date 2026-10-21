@@ -96,7 +96,8 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
   const activeSegmentRef = useRef<number>(0);
   const playbackRateRef = useRef<number>(1);
   const selectedVoiceRef = useRef<string>('');
-  const isManualActionRef = useRef<boolean>(false);
+  const speechSeqRef = useRef<number>(0);
+  const speakTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Detect Web Speech API & load OS/browser voices
   useEffect(() => {
@@ -134,8 +135,12 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
   }, []);
 
   const stopSpeech = useCallback(() => {
+    speechSeqRef.current += 1;
+    if (speakTimerRef.current) {
+      clearTimeout(speakTimerRef.current);
+      speakTimerRef.current = null;
+    }
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      isManualActionRef.current = true;
       window.speechSynthesis.cancel();
     }
     setPlaybackState('idle');
@@ -183,6 +188,13 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
     [article?.contentHtml, storyTitle]
   );
 
+  // Memoize the dangerouslySetInnerHTML object so React never resets DOM attributes
+  // (such as data-tts-active="true") on unrelated state re-renders like speed/voice changes.
+  const articleHtmlMarkup = useMemo(
+    () => ({ __html: annotatedHtml }),
+    [annotatedHtml]
+  );
+
   // Highlight and smoothly scroll the currently spoken paragraph into view
   useEffect(() => {
     const container = articleBodyRef.current;
@@ -190,31 +202,22 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
 
     container.querySelectorAll('[data-tts-active="true"]').forEach((el) => {
       el.removeAttribute('data-tts-active');
-      (el as HTMLElement).style.backgroundColor = '';
-      (el as HTMLElement).style.borderRadius = '';
-      (el as HTMLElement).style.padding = '';
-      (el as HTMLElement).style.margin = '';
-      (el as HTMLElement).style.transition = '';
     });
 
-    if (playbackState === 'idle' || activeSegmentIdx <= 0) return;
+    if (playbackState === 'idle') return;
 
+    // Segment 0 is the story title; if segment 0 is playing, highlight the first body paragraph (idx 1) so the tracker is always visible on the text
+    const highlightIdx = activeSegmentIdx === 0 && segments.length > 1 ? 1 : activeSegmentIdx;
     const target = container.querySelector<HTMLElement>(
-      `[data-tts-idx="${activeSegmentIdx}"]`
+      `[data-tts-idx="${highlightIdx}"]`
     );
     if (target) {
       target.setAttribute('data-tts-active', 'true');
-      target.style.backgroundColor =
-        'color-mix(in srgb, var(--accent) 14%, transparent)';
-      target.style.borderRadius = '10px';
-      target.style.padding = '4px 8px';
-      target.style.margin = '-4px -8px 0.6em -8px';
-      target.style.transition = 'background-color 220ms ease';
       if (typeof target.scrollIntoView === 'function') {
         target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
     }
-  }, [activeSegmentIdx, playbackState]);
+  }, [activeSegmentIdx, playbackState, playbackRate, selectedVoiceURI, segments.length]);
 
   const speakSegmentAt = useCallback(
     (index: number) => {
@@ -226,52 +229,58 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
         return;
       }
 
-      isManualActionRef.current = true;
-      window.speechSynthesis.cancel();
-
-      const seg = segments[index];
-      const utterance = new SpeechSynthesisUtterance(seg.text);
-      utterance.rate = playbackRateRef.current;
-
-      const availableVoices = window.speechSynthesis.getVoices() || [];
-      if (selectedVoiceRef.current) {
-        const matched = availableVoices.find(
-          (v) => v.voiceURI === selectedVoiceRef.current
-        );
-        if (matched) utterance.voice = matched;
+      const seq = ++speechSeqRef.current;
+      if (speakTimerRef.current) {
+        clearTimeout(speakTimerRef.current);
+        speakTimerRef.current = null;
       }
+      window.speechSynthesis.cancel();
 
       setActiveSegmentIdx(index);
       activeSegmentRef.current = index;
       setPlaybackState('playing');
       setTtsNotice(null);
 
-      // Reset manual guard after a tick so natural onend advances to the next paragraph
-      setTimeout(() => {
-        isManualActionRef.current = false;
-      }, 30);
+      // Delay speak() by 20ms after cancel() so Chromium/Linux speechSynthesis
+      // does not cancel or drop the newly queued utterance when changing speed/voice.
+      speakTimerRef.current = setTimeout(() => {
+        if (speechSeqRef.current !== seq) return;
 
-      utterance.onend = () => {
-        if (isManualActionRef.current) return;
-        const nextIdx = activeSegmentRef.current + 1;
-        if (nextIdx < segments.length) {
-          speakSegmentAt(nextIdx);
-        } else {
-          setPlaybackState('idle');
-          setActiveSegmentIdx(0);
-          activeSegmentRef.current = 0;
+        const seg = segments[index];
+        const utterance = new SpeechSynthesisUtterance(seg.text);
+        utterance.rate = playbackRateRef.current;
+
+        const availableVoices = window.speechSynthesis.getVoices() || [];
+        if (selectedVoiceRef.current) {
+          const matched = availableVoices.find(
+            (v) => v.voiceURI === selectedVoiceRef.current
+          );
+          if (matched) utterance.voice = matched;
         }
-      };
 
-      utterance.onerror = (event) => {
-        if (event.error === 'interrupted' || event.error === 'canceled') return;
-        setPlaybackState('idle');
-        setTtsNotice(
-          'No speech synthesis voice responded on this system. Check your OS speech-dispatcher or browser TTS settings.'
-        );
-      };
+        utterance.onend = () => {
+          if (speechSeqRef.current !== seq) return;
+          const nextIdx = activeSegmentRef.current + 1;
+          if (nextIdx < segments.length) {
+            speakSegmentAt(nextIdx);
+          } else {
+            setPlaybackState('idle');
+            setActiveSegmentIdx(0);
+            activeSegmentRef.current = 0;
+          }
+        };
 
-      window.speechSynthesis.speak(utterance);
+        utterance.onerror = (event) => {
+          if (speechSeqRef.current !== seq) return;
+          if (event.error === 'interrupted' || event.error === 'canceled') return;
+          setPlaybackState('idle');
+          setTtsNotice(
+            'No speech synthesis voice responded on this system. Check your OS speech-dispatcher or browser TTS settings.'
+          );
+        };
+
+        window.speechSynthesis.speak(utterance);
+      }, 20);
     },
     [segments]
   );
@@ -616,7 +625,7 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
           }
         }}
         className="hn-prose hn-article-body space-y-3.5"
-        dangerouslySetInnerHTML={{ __html: annotatedHtml }}
+        dangerouslySetInnerHTML={articleHtmlMarkup}
       />
     </article>
   );

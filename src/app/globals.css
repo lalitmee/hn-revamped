@@ -475,3 +475,17 @@ button.liquid-glass-primary:hover:not(:disabled) {
   color: var(--text-secondary);
   font-style: italic;
 }
+
+/* Active Paragraph Tracker for Audio Reader */
+.hn-article-body [data-tts-idx] {
+  border-radius: 10px;
+  transition: background-color 220ms ease, box-shadow 220ms ease;
+}
+
+.hn-article-body [data-tts-active="true"] {
+  background-color: color-mix(in srgb, var(--accent) 15%, transparent);
+  box-shadow: -8px 0 0 0 color-mix(in srgb, var(--accent) 15%, transparent),
+    8px 0 0 0 color-mix(in srgb, var(--accent) 15%, transparent),
+    0 -4px 0 0 color-mix(in srgb, var(--accent) 15%, transparent),
+    0 4px 0 0 color-mix(in srgb, var(--accent) 15%, transparent);
+}
