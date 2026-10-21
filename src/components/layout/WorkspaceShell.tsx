@@ -7,12 +7,12 @@ import {
   HNStory,
   HNStoryWithComments,
   ReadHistoryEntry,
-  ThemeMode,
   UserPreferences,
 } from '@/types/hn';
 import {
   DEFAULT_PREFERENCES,
   FONT_FAMILIES,
+  THEMES,
   getThemeCssVars,
   resolveActiveThemeId,
 } from '@/lib/themes';
@@ -74,16 +74,59 @@ export const WorkspaceShell: React.FC = () => {
     }
   }, []);
 
+  // Auto-hide custom scrollbars unless actively scrolling
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const timers = new WeakMap<EventTarget, ReturnType<typeof setTimeout>>();
+
+    const handleScroll = (e: Event) => {
+      const target =
+        e.target === document ? document.documentElement : (e.target as HTMLElement);
+      if (!target || typeof target.setAttribute !== 'function') return;
+
+      target.setAttribute('data-scrolling', 'true');
+      const existing = timers.get(target);
+      if (existing) clearTimeout(existing);
+
+      const timer = setTimeout(() => {
+        target.removeAttribute('data-scrolling');
+      }, 900);
+      timers.set(target, timer);
+    };
+
+    window.addEventListener('scroll', handleScroll, { capture: true, passive: true });
+    return () => window.removeEventListener('scroll', handleScroll, { capture: true });
+  }, []);
+
   const resolvedThemeId = useMemo(
     () => resolveActiveThemeId(preferences, systemPrefersDark),
     [preferences, systemPrefersDark]
   );
 
-  // Apply theme CSS variables and typography settings
+  const activeTheme = THEMES[resolvedThemeId] ?? THEMES['obsidian-slate'];
+  const themeVars = useMemo(() => getThemeCssVars(resolvedThemeId), [resolvedThemeId]);
+
+  // Apply theme CSS variables, color-scheme lock (for Brave ForceDark), and typography settings
   useEffect(() => {
-    const vars = getThemeCssVars(resolvedThemeId);
     const root = document.documentElement;
-    Object.entries(vars).forEach(([k, v]) => root.style.setProperty(k, v));
+    const body = document.body;
+    const schemeLock = activeTheme.mode === 'light' ? 'only light' : 'only dark';
+
+    root.setAttribute('data-theme', resolvedThemeId);
+    root.setAttribute('data-theme-mode', activeTheme.mode);
+    root.style.setProperty('color-scheme', schemeLock);
+
+    Object.entries(themeVars).forEach(([k, v]) => {
+      root.style.setProperty(k, v);
+      body?.style.setProperty(k, v);
+    });
+
+    if (body) {
+      body.style.backgroundColor = activeTheme.colors.bgCanvas;
+      body.style.color = activeTheme.colors.textPrimary;
+      body.style.setProperty('color-scheme', schemeLock);
+    }
+
     root.style.setProperty(
       '--reader-font-family',
       FONT_FAMILIES[preferences.fontFamily].cssValue
@@ -94,7 +137,7 @@ export const WorkspaceShell: React.FC = () => {
       '--reader-line-width',
       preferences.lineWidth === 'full' ? '100%' : preferences.lineWidth
     );
-  }, [preferences, resolvedThemeId]);
+  }, [preferences, resolvedThemeId, activeTheme, themeVars]);
 
   const handleUpdatePreferences = useCallback((next: UserPreferences) => {
     setPreferences(next);
@@ -255,13 +298,23 @@ export const WorkspaceShell: React.FC = () => {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [preferences, selectedStory, visibleStories, handleSelectStory, handleUpdatePreferences]);
 
+  const inlineRootStyle: React.CSSProperties = {
+    ...(themeVars as React.CSSProperties),
+    backgroundColor: activeTheme.colors.bgCanvas,
+    color: activeTheme.colors.textPrimary,
+    colorScheme: activeTheme.mode === 'light' ? 'only light' : 'only dark',
+  };
+
   return (
     <div
-      className={
+      data-theme={resolvedThemeId}
+      data-theme-mode={activeTheme.mode}
+      style={inlineRootStyle}
+      className={`${
         preferences.layoutMode === 'split'
           ? 'min-h-screen lg:h-screen lg:overflow-hidden flex flex-col'
           : 'min-h-screen flex flex-col'
-      }
+      } transition-colors duration-200`}
     >
       <AppHeader
         activeFeed={activeFeed}
@@ -273,24 +326,6 @@ export const WorkspaceShell: React.FC = () => {
             layoutMode: preferences.layoutMode === 'split' ? 'zen' : 'split',
           })
         }
-        themeMode={preferences.themeMode ?? 'system'}
-        onSelectThemeMode={(mode: ThemeMode) => {
-          const lightId = preferences.lightThemeId ?? 'warm-paper';
-          const darkId = preferences.darkThemeId ?? 'obsidian-slate';
-          const nextThemeId =
-            mode === 'light'
-              ? lightId
-              : mode === 'dark'
-              ? darkId
-              : systemPrefersDark
-              ? darkId
-              : lightId;
-          handleUpdatePreferences({
-            ...preferences,
-            themeMode: mode,
-            themeId: nextThemeId,
-          });
-        }}
         timeTravelPreset={timeTravel}
         onSelectTimeTravel={handleSelectTimeTravel}
         onOpenSearch={() => setIsSearchOpen(true)}
@@ -304,7 +339,7 @@ export const WorkspaceShell: React.FC = () => {
           {/* Sticky / Independently Contained Left Feed Pane */}
           <section
             style={{ borderColor: 'var(--border-subtle)' }}
-            className="lg:col-span-5 xl:col-span-5 border-r h-full overflow-y-auto overscroll-contain"
+            className="custom-scrollbar lg:col-span-5 xl:col-span-5 border-r h-full overflow-y-auto overscroll-contain"
           >
             <StoryFeedPane
               stories={visibleStories}
@@ -323,7 +358,7 @@ export const WorkspaceShell: React.FC = () => {
           </section>
 
           {/* Independently Scrollable Right Detail & Reader Pane */}
-          <section className="hidden lg:block lg:col-span-7 xl:col-span-7 h-full overflow-y-auto overscroll-contain">
+          <section className="custom-scrollbar hidden lg:block lg:col-span-7 xl:col-span-7 h-full overflow-y-auto overscroll-contain">
             <StoryDetailPane
               story={selectedStory}
               loading={loadingDetail}

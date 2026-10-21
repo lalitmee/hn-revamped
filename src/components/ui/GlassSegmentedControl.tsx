@@ -4,9 +4,10 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 
 export interface SegmentedItem<T extends string> {
   id: T;
-  label: string;
+  label?: string;
   icon?: string;
   badge?: number | string;
+  title?: string;
 }
 
 interface GlassSegmentedControlProps<T extends string> {
@@ -80,6 +81,7 @@ export function GlassSegmentedControl<T extends string>({
 
       {items.map((item) => {
         const isActive = item.id === value;
+        const isIconOnly = Boolean(item.icon && !item.label);
         return (
           <button
             key={item.id}
@@ -87,6 +89,8 @@ export function GlassSegmentedControl<T extends string>({
               buttonRefs.current[item.id] = el;
             }}
             type="button"
+            title={item.title ?? item.label}
+            aria-label={item.title ?? item.label ?? item.id}
             onClick={() => onChange(item.id)}
             style={{
               color: isActive ? '#ffffff' : 'var(--text-secondary)',
@@ -94,11 +98,15 @@ export function GlassSegmentedControl<T extends string>({
             className={`relative z-10 ${
               fullWidth ? 'flex-1 justify-center' : ''
             } ${
-              size === 'sm' ? 'px-3 py-1.5 text-xs' : 'px-4 py-1.5 text-xs'
+              isIconOnly
+                ? 'w-7 h-7 justify-center'
+                : size === 'sm'
+                ? 'px-3 py-1.5 text-xs'
+                : 'px-4 py-1.5 text-xs'
             } ${
               isActive
                 ? `${!hasMeasured ? 'liquid-glass-primary ' : ''}font-bold`
-                : 'hover:bg-white/5 font-semibold'
+                : 'hover:bg-black/5 font-semibold'
             } inline-flex items-center gap-1.5 rounded-xl cursor-pointer transition-colors duration-200 select-none`}
           >
             {item.icon && (
@@ -110,7 +118,7 @@ export function GlassSegmentedControl<T extends string>({
                 {item.icon}
               </span>
             )}
-            <span>{item.label}</span>
+            {item.label && <span>{item.label}</span>}
             {item.badge !== undefined && (
               <span
                 style={{

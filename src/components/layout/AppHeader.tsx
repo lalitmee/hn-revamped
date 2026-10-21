@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { FeedType, LayoutMode, ThemeMode } from '@/types/hn';
+import { FeedType, LayoutMode } from '@/types/hn';
 import { TimeTravelPopover, TimeTravelPreset } from '@/components/modals/TimeTravelPopover';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { GlassSegmentedControl } from '@/components/ui/GlassSegmentedControl';
@@ -11,8 +11,6 @@ interface AppHeaderProps {
   onSelectFeed: (feed: FeedType) => void;
   layoutMode: LayoutMode;
   onToggleLayoutMode: () => void;
-  themeMode: ThemeMode;
-  onSelectThemeMode: (mode: ThemeMode) => void;
   timeTravelPreset: TimeTravelPreset;
   onSelectTimeTravel: (preset: TimeTravelPreset) => void;
   onOpenSearch: () => void;
@@ -36,8 +34,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onSelectFeed,
   layoutMode,
   onToggleLayoutMode,
-  themeMode,
-  onSelectThemeMode,
   timeTravelPreset,
   onSelectTimeTravel,
   onOpenSearch,
@@ -48,7 +44,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   return (
     <header
       style={{
-        backgroundColor: 'color-mix(in srgb, var(--bg-surface-1) 82%, transparent)',
+        backgroundColor: 'color-mix(in srgb, var(--bg-surface-1) 86%, transparent)',
         borderColor: 'var(--border-subtle)',
       }}
       className="sticky top-0 z-30 backdrop-blur-xl border-b px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shrink-0"
@@ -95,50 +91,34 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           <span className="hidden md:inline">Search</span>
         </GlassButton>
 
-        {/* Quick System / Light / Dark Mode Gliding Pill */}
-        <div title="Color Mode: Light, System, or Dark" className="inline-flex">
-          <GlassSegmentedControl<ThemeMode>
-            size="sm"
-            value={themeMode}
-            onChange={onSelectThemeMode}
-            items={[
-              { id: 'light', label: 'Light', icon: 'light_mode' },
-              { id: 'system', label: 'Auto', icon: 'contrast' },
-              { id: 'dark', label: 'Dark', icon: 'dark_mode' },
-            ]}
-          />
-        </div>
-
         <GlassButton
           icon="palette"
           iconAccent
           onClick={onOpenAppearance}
           title="Theme, Typography & Filter Studio (t)"
         >
-          <span className="hidden xl:inline">Studio</span>
+          <span className="hidden sm:inline">Appearance</span>
         </GlassButton>
 
-        <div title="Toggle Split-Pane / Zen Mode (z)" className="hidden sm:inline-flex">
-          <GlassSegmentedControl
-            size="sm"
-            value={layoutMode}
-            onChange={(mode) => {
-              if (mode !== layoutMode) onToggleLayoutMode();
-            }}
-            items={[
-              { id: 'split', label: 'Split', icon: 'vertical_split' },
-              { id: 'zen', label: 'Zen', icon: 'width_normal' },
-            ]}
-          />
-        </div>
-
-        <GlassButton
-          variant="icon"
-          icon={layoutMode === 'split' ? 'vertical_split' : 'width_normal'}
-          iconAccent
-          onClick={onToggleLayoutMode}
-          title="Toggle Split-Pane / Zen Mode (z)"
-          className="sm:hidden"
+        {/* Icon-Only Gliding Split ⇄ Zen Switcher */}
+        <GlassSegmentedControl
+          size="sm"
+          value={layoutMode}
+          onChange={(mode) => {
+            if (mode !== layoutMode) onToggleLayoutMode();
+          }}
+          items={[
+            {
+              id: 'split',
+              icon: 'vertical_split',
+              title: 'Split-Pane Mode (z)',
+            },
+            {
+              id: 'zen',
+              icon: 'width_normal',
+              title: 'Centered Zen Mode (z)',
+            },
+          ]}
         />
 
         <GlassButton

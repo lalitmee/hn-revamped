@@ -43,6 +43,71 @@ button:disabled {
   cursor: not-allowed;
 }
 
+/* Auto-Hiding / Non-Disruptive Custom Scrollbar System */
+html,
+body,
+.custom-scrollbar {
+  --scrollbar-thumb-idle: transparent;
+  --scrollbar-thumb-active: color-mix(in srgb, var(--accent) 42%, var(--border-subtle));
+  --scrollbar-thumb-hover: var(--accent);
+  --scrollbar-track: transparent;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb-idle) var(--scrollbar-track);
+  transition: scrollbar-color 0.25s ease;
+}
+
+html[data-scrolling="true"],
+body[data-scrolling="true"],
+.custom-scrollbar[data-scrolling="true"],
+.custom-scrollbar:hover {
+  scrollbar-color: var(--scrollbar-thumb-active) var(--scrollbar-track);
+}
+
+/* WebKit/Blink Floating Pill Scrollbar (Invisible at rest, appears on scroll) */
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+  background: transparent;
+}
+
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track,
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 6px 0;
+}
+
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb,
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 9999px;
+  transition: background-color 0.25s ease;
+}
+
+html[data-scrolling="true"]::-webkit-scrollbar-thumb,
+body[data-scrolling="true"]::-webkit-scrollbar-thumb,
+.custom-scrollbar[data-scrolling="true"]::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb-active);
+}
+
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover,
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Liquid Glass Design System */
 .liquid-glass {
   background: linear-gradient(
@@ -84,8 +149,8 @@ button:disabled {
 .liquid-glass-modal {
   background: linear-gradient(
     145deg,
-    color-mix(in srgb, var(--bg-surface-1) 78%, rgba(255, 255, 255, 0.08)),
-    color-mix(in srgb, var(--bg-canvas) 82%, transparent)
+    color-mix(in srgb, var(--bg-surface-1) 92%, rgba(255, 255, 255, 0.08)),
+    color-mix(in srgb, var(--bg-canvas) 95%, transparent)
   );
   backdrop-filter: blur(32px) saturate(195%);
   -webkit-backdrop-filter: blur(32px) saturate(195%);
@@ -94,6 +159,50 @@ button:disabled {
     inset 0 1px 0 0 rgba(255, 255, 255, 0.24),
     inset 0 0 0 1px rgba(255, 255, 255, 0.05),
     0 24px 60px -12px rgba(0, 0, 0, 0.6);
+}
+
+/* Crisp Light & Paper Mode Overrides for Liquid Glass */
+[data-theme-mode="light"] .liquid-glass {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--bg-surface-1) 88%, #ffffff 12%),
+    color-mix(in srgb, var(--bg-surface-2) 78%, #ffffff 22%)
+  );
+  border: 1px solid color-mix(in srgb, var(--text-primary) 10%, var(--border-subtle));
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.85),
+    0 2px 10px -2px rgba(28, 25, 23, 0.06);
+}
+
+[data-theme-mode="light"] .liquid-glass:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border-subtle));
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.95),
+    0 6px 16px -3px rgba(28, 25, 23, 0.1);
+}
+
+[data-theme-mode="light"] .liquid-glass-elevated {
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--bg-surface-1) 94%, #ffffff 6%),
+    color-mix(in srgb, var(--bg-canvas) 94%, #ffffff 6%)
+  );
+  border: 1px solid color-mix(in srgb, var(--text-primary) 14%, var(--border-subtle));
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.9),
+    0 16px 36px -8px rgba(28, 25, 23, 0.14);
+}
+
+[data-theme-mode="light"] .liquid-glass-modal {
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--bg-surface-1) 95%, #ffffff 5%),
+    color-mix(in srgb, var(--bg-canvas) 97%, #ffffff 3%)
+  );
+  border: 1px solid color-mix(in srgb, var(--text-primary) 14%, var(--border-subtle));
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.95),
+    0 24px 60px -12px rgba(28, 25, 23, 0.22);
 }
 
 .liquid-glass-primary {
@@ -152,6 +261,41 @@ button:disabled {
 
 .animate-glass-backdrop {
   animation: glassBackdropFade 180ms ease-out forwards;
+}
+
+@keyframes storyCardIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes glassShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-story-in {
+  animation: storyCardIn 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.liquid-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--accent) 16%, rgba(255, 255, 255, 0.08)) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: glassShimmer 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 .material-symbols-rounded {

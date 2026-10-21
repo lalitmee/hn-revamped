@@ -37,7 +37,7 @@ export const GlassModal: React.FC<GlassModalProps> = ({
       onClick={onClose}
       className={`animate-glass-backdrop fixed inset-0 z-50 flex justify-center ${
         topAligned ? 'items-start pt-16 sm:pt-20' : 'items-center'
-      } bg-black/45 backdrop-blur-md p-4`}
+      } bg-black/30 backdrop-blur-md p-4`}
     >
       <div
         role="dialog"
@@ -72,7 +72,7 @@ export const GlassModal: React.FC<GlassModalProps> = ({
             </button>
           </div>
         )}
-        <div className="overflow-y-auto flex-1">{children}</div>
+        <div className="custom-scrollbar overflow-y-auto flex-1">{children}</div>
       </div>
     </div>
   );

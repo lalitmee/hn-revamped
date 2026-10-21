@@ -70,7 +70,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         />
       </div>
 
-      <div className="max-h-[58vh] overflow-y-auto p-3.5 space-y-2">
+      <div className="custom-scrollbar max-h-[58vh] overflow-y-auto p-3.5 space-y-2">
         {loading && (
           <div style={{ color: 'var(--text-muted)' }} className="py-10 text-center text-sm">
             Searching Hacker News archive...
