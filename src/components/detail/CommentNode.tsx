@@ -24,6 +24,7 @@ interface CommentNodeProps {
   comment: HNComment;
   depth: number;
   maxAllowedDepth?: number;
+  initialSiblingReplies?: number;
   storyAuthor: string;
   collapseMode: ThreadCollapseMode;
   modeVersion?: number;
@@ -34,6 +35,7 @@ export const CommentNode: React.FC<CommentNodeProps> = ({
   comment,
   depth,
   maxAllowedDepth = 2,
+  initialSiblingReplies = INITIAL_SIBLING_REPLIES,
   storyAuthor,
   collapseMode,
   modeVersion = 0,
@@ -42,7 +44,12 @@ export const CommentNode: React.FC<CommentNodeProps> = ({
   const [isCollapsed, setIsCollapsed] = useState(collapseMode === 'collapse-all');
   const [hideChildrenOnly, setHideChildrenOnly] = useState(collapseMode === 'root-only');
   const [unlockedDepthLimit, setUnlockedDepthLimit] = useState(maxAllowedDepth);
-  const [visibleDirectReplies, setVisibleDirectReplies] = useState(INITIAL_SIBLING_REPLIES);
+  const [visibleDirectReplies, setVisibleDirectReplies] = useState(initialSiblingReplies);
+
+  useEffect(() => {
+    setUnlockedDepthLimit(maxAllowedDepth);
+    setVisibleDirectReplies(initialSiblingReplies);
+  }, [maxAllowedDepth, initialSiblingReplies]);
 
   useEffect(() => {
     if (collapseMode === 'collapse-all') {
@@ -319,6 +326,7 @@ export const CommentNode: React.FC<CommentNodeProps> = ({
                             comment={child}
                             depth={depth + 1}
                             maxAllowedDepth={unlockedDepthLimit}
+                            initialSiblingReplies={initialSiblingReplies}
                             storyAuthor={storyAuthor}
                             collapseMode="expanded"
                             modeVersion={modeVersion}

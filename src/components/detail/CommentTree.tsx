@@ -13,7 +13,22 @@ import { GlassButton } from '@/components/ui/GlassButton';
 import { GlassSegmentedControl } from '@/components/ui/GlassSegmentedControl';
 import { SafeViewTransition } from '@/components/ui/ViewTransitionWrapper';
 
-const INITIAL_ROOT_BATCH = 15;
+export function getAdaptiveThreadBudget(totalComments: number): {
+  rootBatch: number;
+  maxDepth: number;
+  siblingReplies: number;
+} {
+  if (totalComments <= 35) {
+    return { rootBatch: 25, maxDepth: 2, siblingReplies: 10 };
+  }
+  if (totalComments <= 120) {
+    return { rootBatch: 12, maxDepth: 2, siblingReplies: 5 };
+  }
+  if (totalComments <= 300) {
+    return { rootBatch: 8, maxDepth: 2, siblingReplies: 3 };
+  }
+  return { rootBatch: 6, maxDepth: 1, siblingReplies: 2 };
+}
 
 interface CommentTreeProps {
   comments: HNComment[];
@@ -45,17 +60,26 @@ export const CommentTree: React.FC<CommentTreeProps> = ({
   storyAuthor,
   onInternalHnLinkClick,
 }) => {
+  const totalCommentsCount = useMemo(
+    () => comments.reduce((acc, c) => acc + 1 + c.totalDescendants, 0),
+    [comments]
+  );
+  const budget = useMemo(
+    () => getAdaptiveThreadBudget(totalCommentsCount),
+    [totalCommentsCount]
+  );
+
   const [collapseMode, setCollapseMode] = useState<ThreadCollapseMode>('expanded');
   const [modeVersion, setModeVersion] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const [isPending, startTransition] = useTransition();
-  const [visibleRootCount, setVisibleRootCount] = useState(INITIAL_ROOT_BATCH);
+  const [visibleRootCount, setVisibleRootCount] = useState(budget.rootBatch);
 
-  // Reset root batch count when switching stories
+  // Reset root batch count based on adaptive budget when switching stories
   useEffect(() => {
-    setVisibleRootCount(INITIAL_ROOT_BATCH);
-  }, [comments]);
+    setVisibleRootCount(budget.rootBatch);
+  }, [comments, budget.rootBatch]);
 
   const filteredComments = useMemo(
     () => filterCommentNodes(comments, deferredSearchQuery),
@@ -161,7 +185,8 @@ export const CommentTree: React.FC<CommentTreeProps> = ({
                   key={comment.id}
                   comment={comment}
                   depth={0}
-                  maxAllowedDepth={2}
+                  maxAllowedDepth={budget.maxDepth}
+                  initialSiblingReplies={budget.siblingReplies}
                   storyAuthor={storyAuthor}
                   collapseMode={collapseMode}
                   modeVersion={modeVersion}
@@ -178,7 +203,7 @@ export const CommentTree: React.FC<CommentTreeProps> = ({
                     iconAccent
                     onClick={() =>
                       startTransition(() =>
-                        setVisibleRootCount((prev) => prev + INITIAL_ROOT_BATCH)
+                        setVisibleRootCount((prev) => prev + budget.rootBatch)
                       )
                     }
                   >

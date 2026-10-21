@@ -137,7 +137,7 @@ export async function fetchStoryItem(id: number): Promise<HNStory | null> {
 export async function fetchFeedStories(
   feed: FeedType,
   page = 1,
-  pageSize = 15
+  pageSize = 10
 ): Promise<HNStory[]> {
   if (feed === 'saved') return [];
   const endpoint = FEED_ENDPOINTS[feed];

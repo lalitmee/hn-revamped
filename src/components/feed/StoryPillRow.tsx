@@ -176,10 +176,19 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
           type="button"
           aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark story'}
           onClick={(e) => onToggleBookmark(story, e)}
-          style={{ color: isBookmarked ? 'var(--accent)' : 'var(--text-muted)' }}
-          className="p-2 rounded-xl hover:bg-white/5 transition-colors"
+          style={{
+            color: isBookmarked ? 'var(--accent)' : 'var(--text-muted)',
+            backgroundColor: isBookmarked
+              ? 'color-mix(in srgb, var(--accent) 14%, transparent)'
+              : undefined,
+          }}
+          className="w-9 h-9 rounded-xl inline-flex items-center justify-center leading-none shrink-0 hover:bg-white/10 active:scale-95 transition-all focus:outline-none"
         >
-          <span className={`material-symbols-rounded ${isBookmarked ? 'filled' : ''}`}>
+          <span
+            className={`material-symbols-rounded text-[19px] leading-none ${
+              isBookmarked ? 'filled' : ''
+            }`}
+          >
             bookmark
           </span>
         </button>
@@ -189,11 +198,11 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
             backgroundColor: 'var(--bg-surface-2)',
             color: 'var(--text-primary)',
           }}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[13px] font-semibold"
+          className="h-9 px-3.5 rounded-xl inline-flex items-center justify-center gap-1.5 text-[13px] font-semibold leading-none"
         >
           <span
             style={{ color: 'var(--text-muted)' }}
-            className="material-symbols-rounded text-[17px]"
+            className="material-symbols-rounded text-[17px] leading-none"
           >
             forum
           </span>

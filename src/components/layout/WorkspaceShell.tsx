@@ -237,15 +237,13 @@ export const WorkspaceShell: React.FC = () => {
   const handleSelectFeed = useCallback(
     (nextFeed: FeedType) => {
       syncStoryQueryParam(null);
-      startTransition(() => {
-        setIsAppearanceOpen(false);
-        setActiveFeed(nextFeed);
-        setTimeTravel('live');
-        setSelectedStory(null);
-        setActiveTab('comments');
-        setStories([]);
-        setLoadingFeed(true);
-      });
+      setIsAppearanceOpen(false);
+      setActiveFeed(nextFeed);
+      setTimeTravel('live');
+      setSelectedStory(null);
+      setActiveTab('comments');
+      setStories([]);
+      setLoadingFeed(true);
     },
     [syncStoryQueryParam]
   );
@@ -254,14 +252,12 @@ export const WorkspaceShell: React.FC = () => {
   const handleSelectTimeTravel = useCallback(
     (preset: TimeTravelPreset) => {
       syncStoryQueryParam(null);
-      startTransition(() => {
-        setIsAppearanceOpen(false);
-        setTimeTravel(preset);
-        setSelectedStory(null);
-        setActiveTab('comments');
-        setStories([]);
-        setLoadingFeed(true);
-      });
+      setIsAppearanceOpen(false);
+      setTimeTravel(preset);
+      setSelectedStory(null);
+      setActiveTab('comments');
+      setStories([]);
+      setLoadingFeed(true);
     },
     [syncStoryQueryParam]
   );
@@ -292,22 +288,20 @@ export const WorkspaceShell: React.FC = () => {
       const [start, end] = ranges[timeTravel];
       loader = fetchTimeTravelStories(start, end);
     } else {
-      loader = fetchFeedStories(activeFeed, 1, 15);
+      loader = fetchFeedStories(activeFeed, 1, 10);
     }
 
     loader
       .then((items) => {
         if (!active) return;
-        startTransition(() => {
-          setStories(items);
-          setPage(1);
-        });
+        setStories(items);
+        setPage(1);
+        setLoadingFeed(false);
       })
       .catch(() => {
-        if (active) setStories([]);
-      })
-      .finally(() => {
-        if (active) setLoadingFeed(false);
+        if (!active) return;
+        setStories([]);
+        setLoadingFeed(false);
       });
 
     return () => {
@@ -319,14 +313,15 @@ export const WorkspaceShell: React.FC = () => {
     if (activeFeed === 'saved' || timeTravel !== 'live') return;
     const nextPage = page + 1;
     setLoadingFeed(true);
-    fetchFeedStories(activeFeed, nextPage, 15)
+    fetchFeedStories(activeFeed, nextPage, 10)
       .then((more) => {
-        startTransition(() => {
-          setStories((prev) => [...prev, ...more]);
-          setPage(nextPage);
-        });
+        setStories((prev) => [...prev, ...more]);
+        setPage(nextPage);
+        setLoadingFeed(false);
       })
-      .finally(() => setLoadingFeed(false));
+      .catch(() => {
+        setLoadingFeed(false);
+      });
   }, [activeFeed, page, timeTravel]);
 
   const visibleStories = useMemo(() => {
@@ -474,7 +469,7 @@ export const WorkspaceShell: React.FC = () => {
           </section>
 
           {/* Independently Scrollable Right Detail & Reader Pane */}
-          <section className="custom-scrollbar hidden lg:block lg:col-span-7 xl:col-span-7 h-full overflow-y-auto overscroll-contain">
+          <section className="hidden lg:flex lg:flex-col lg:col-span-7 xl:col-span-7 h-full overflow-hidden">
             <StoryDetailPane
               story={selectedStory}
               loading={loadingDetail}

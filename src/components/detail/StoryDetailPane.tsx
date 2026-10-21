@@ -79,14 +79,14 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
   ];
 
   return (
-    <div className="flex flex-col min-h-full">
-      {/* Sticky Liquid Glass Action & Mode Bar */}
+    <div className="flex flex-col h-full min-h-0 overflow-hidden">
+      {/* Pinned / Sticky Liquid Glass Action & Mode Bar */}
       <div
         style={{
-          backgroundColor: 'color-mix(in srgb, var(--bg-canvas) 80%, transparent)',
+          backgroundColor: 'color-mix(in srgb, var(--bg-canvas) 92%, transparent)',
           borderColor: 'var(--border-subtle)',
         }}
-        className="sticky top-0 z-20 backdrop-blur-xl px-5 md:px-7 py-3.5 border-b flex flex-wrap items-center justify-between gap-3"
+        className="shrink-0 sticky top-0 z-30 backdrop-blur-xl px-5 md:px-7 py-3.5 border-b flex flex-wrap items-center justify-between gap-3"
       >
         <GlassSegmentedControl<DetailTab>
           items={tabItems}
@@ -119,8 +119,8 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
         </div>
       </div>
 
-      {/* Scrollable Story Content & Comments/Reader Body */}
-      <div className="p-5 md:p-7 flex-1">
+      {/* Independently Scrollable Story Content & Comments/Reader Body */}
+      <div className="custom-scrollbar p-5 md:p-7 flex-1 min-h-0 overflow-y-auto overscroll-contain">
         <header className="mb-6">
           <h1
             style={{ color: 'var(--text-primary)' }}

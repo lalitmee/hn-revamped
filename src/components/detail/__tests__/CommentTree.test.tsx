@@ -2,7 +2,7 @@ import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { CommentTree } from '../CommentTree';
+import { CommentTree, getAdaptiveThreadBudget } from '../CommentTree';
 import { HNComment } from '@/types/hn';
 
 const sampleComments: HNComment[] = [
@@ -79,5 +79,28 @@ describe('CommentTree & Progressive Depth-Gated Rendering', () => {
 
     // In Collapse All mode, the full paragraph is replaced by the single-line summary bar (+4)
     expect(screen.getByText('+4')).toBeInTheDocument();
+  });
+
+  it('calculates adaptive root, depth, and sibling budgets based on total comment count', () => {
+    expect(getAdaptiveThreadBudget(20)).toEqual({
+      rootBatch: 25,
+      maxDepth: 2,
+      siblingReplies: 10,
+    });
+    expect(getAdaptiveThreadBudget(90)).toEqual({
+      rootBatch: 12,
+      maxDepth: 2,
+      siblingReplies: 5,
+    });
+    expect(getAdaptiveThreadBudget(240)).toEqual({
+      rootBatch: 8,
+      maxDepth: 2,
+      siblingReplies: 3,
+    });
+    expect(getAdaptiveThreadBudget(650)).toEqual({
+      rootBatch: 6,
+      maxDepth: 1,
+      siblingReplies: 2,
+    });
   });
 });
