@@ -8,6 +8,8 @@ interface GlassModalProps {
   title?: string;
   icon?: string;
   maxWidthClass?: string;
+  heightClass?: string;
+  bodyScrollable?: boolean;
   topAligned?: boolean;
   children: React.ReactNode;
 }
@@ -18,6 +20,8 @@ export const GlassModal: React.FC<GlassModalProps> = ({
   title,
   icon,
   maxWidthClass = 'max-w-2xl',
+  heightClass = 'max-h-[88vh]',
+  bodyScrollable = true,
   topAligned = false,
   children,
 }) => {
@@ -44,7 +48,7 @@ export const GlassModal: React.FC<GlassModalProps> = ({
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
         style={{ color: 'var(--text-primary)' }}
-        className={`liquid-glass-modal animate-glass-modal w-full ${maxWidthClass} max-h-[88vh] flex flex-col rounded-3xl overflow-hidden`}
+        className={`liquid-glass-modal animate-glass-modal w-full ${maxWidthClass} ${heightClass} flex flex-col rounded-3xl overflow-hidden`}
       >
         {title && (
           <div
@@ -72,7 +76,15 @@ export const GlassModal: React.FC<GlassModalProps> = ({
             </button>
           </div>
         )}
-        <div className="custom-scrollbar overflow-y-auto flex-1">{children}</div>
+        <div
+          className={
+            bodyScrollable
+              ? 'custom-scrollbar overflow-y-auto flex-1 min-h-0'
+              : 'flex-1 min-h-0 flex flex-col overflow-hidden'
+          }
+        >
+          {children}
+        </div>
       </div>
     </div>
   );

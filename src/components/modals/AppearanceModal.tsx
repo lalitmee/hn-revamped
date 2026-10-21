@@ -75,9 +75,11 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
       title="Appearance, Typography & Filter Studio"
       icon="palette"
       maxWidthClass="max-w-2xl"
+      heightClass="h-[640px] max-h-[86vh]"
+      bodyScrollable={false}
     >
-      <div className="p-6 space-y-6">
-        {/* Top Segmented Studio Navigation */}
+      {/* Stationary Pinned Top Segmented Studio Navigation */}
+      <div className="px-6 pt-5 pb-3 shrink-0">
         <GlassSegmentedControl<StudioTab>
           fullWidth
           value={activeTab}
@@ -94,7 +96,10 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
             },
           ]}
         />
+      </div>
 
+      {/* Independently Scrollable Tab Panel */}
+      <div className="custom-scrollbar flex-1 min-h-0 overflow-y-auto px-6 pb-6 pt-2">
         {/* TAB 1: THEMES */}
         {activeTab === 'themes' && (
           <div className="space-y-5">
