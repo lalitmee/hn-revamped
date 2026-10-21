@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, startTransition } from 'react';
 import {
   DetailTab,
   FeedType,
@@ -9,6 +9,7 @@ import {
   ReadHistoryEntry,
   UserPreferences,
 } from '@/types/hn';
+import { SafeViewTransition } from '@/components/ui/ViewTransitionWrapper';
 import {
   DEFAULT_PREFERENCES,
   FONT_FAMILIES,
@@ -235,14 +236,16 @@ export const WorkspaceShell: React.FC = () => {
   // Switch Feed Category: Clear current stories & reset selection immediately
   const handleSelectFeed = useCallback(
     (nextFeed: FeedType) => {
-      setIsAppearanceOpen(false);
-      setActiveFeed(nextFeed);
-      setTimeTravel('live');
-      setSelectedStory(null);
       syncStoryQueryParam(null);
-      setActiveTab('comments');
-      setStories([]);
-      setLoadingFeed(true);
+      startTransition(() => {
+        setIsAppearanceOpen(false);
+        setActiveFeed(nextFeed);
+        setTimeTravel('live');
+        setSelectedStory(null);
+        setActiveTab('comments');
+        setStories([]);
+        setLoadingFeed(true);
+      });
     },
     [syncStoryQueryParam]
   );
@@ -250,13 +253,15 @@ export const WorkspaceShell: React.FC = () => {
   // Switch Time Travel Range: Clear current stories & reset selection immediately
   const handleSelectTimeTravel = useCallback(
     (preset: TimeTravelPreset) => {
-      setIsAppearanceOpen(false);
-      setTimeTravel(preset);
-      setSelectedStory(null);
       syncStoryQueryParam(null);
-      setActiveTab('comments');
-      setStories([]);
-      setLoadingFeed(true);
+      startTransition(() => {
+        setIsAppearanceOpen(false);
+        setTimeTravel(preset);
+        setSelectedStory(null);
+        setActiveTab('comments');
+        setStories([]);
+        setLoadingFeed(true);
+      });
     },
     [syncStoryQueryParam]
   );
@@ -417,28 +422,31 @@ export const WorkspaceShell: React.FC = () => {
         onSelectFeed={handleSelectFeed}
         layoutMode={preferences.layoutMode}
         onToggleLayoutMode={() =>
-          handleUpdatePreferences({
-            ...preferences,
-            layoutMode: preferences.layoutMode === 'split' ? 'zen' : 'split',
-          })
+          startTransition(() =>
+            handleUpdatePreferences({
+              ...preferences,
+              layoutMode: preferences.layoutMode === 'split' ? 'zen' : 'split',
+            })
+          )
         }
         timeTravelPreset={timeTravel}
         onSelectTimeTravel={handleSelectTimeTravel}
-        onOpenSearch={() => setIsSearchOpen(true)}
+        onOpenSearch={() => startTransition(() => setIsSearchOpen(true))}
         isAppearanceOpen={isAppearanceOpen}
-        onOpenAppearance={() => setIsAppearanceOpen((prev) => !prev)}
-        onOpenShortcuts={() => setIsShortcutsOpen(true)}
+        onOpenAppearance={() => startTransition(() => setIsAppearanceOpen((prev) => !prev))}
+        onOpenShortcuts={() => startTransition(() => setIsShortcutsOpen(true))}
         savedCount={bookmarks.length}
       />
 
-      {isAppearanceOpen ? (
-        <AppearanceModal
-          isOpen={isAppearanceOpen}
-          preferences={{ ...preferences, themeId: resolvedThemeId }}
-          onUpdate={handleUpdatePreferences}
-          onClose={() => setIsAppearanceOpen(false)}
-        />
-      ) : preferences.layoutMode === 'split' ? (
+      <SafeViewTransition>
+        {isAppearanceOpen ? (
+          <AppearanceModal
+            isOpen={isAppearanceOpen}
+            preferences={{ ...preferences, themeId: resolvedThemeId }}
+            onUpdate={handleUpdatePreferences}
+            onClose={() => startTransition(() => setIsAppearanceOpen(false))}
+          />
+        ) : preferences.layoutMode === 'split' ? (
         <main className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
           {/* Sticky / Independently Contained Left Feed Pane */}
           <section
@@ -550,6 +558,7 @@ export const WorkspaceShell: React.FC = () => {
           )}
         </main>
       )}
+      </SafeViewTransition>
 
       <CommandPaletteModal
         isOpen={isSearchOpen}

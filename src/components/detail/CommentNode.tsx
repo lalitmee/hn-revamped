@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, startTransition } from 'react';
 import { HNComment } from '@/types/hn';
 import { formatCommentHtml } from '@/lib/html-sanitizer';
 import { formatRelativeTime } from '@/components/feed/StoryPillRow';
+import { SafeViewTransition } from '@/components/ui/ViewTransitionWrapper';
 
 export type ThreadCollapseMode = 'expanded' | 'root-only' | 'collapse-all';
 
@@ -70,262 +71,274 @@ export const CommentNode: React.FC<CommentNodeProps> = ({
   const hiddenSiblingCount = comment.children.length - displayedChildren.length;
   const totalCount = 1 + comment.totalDescendants;
 
+  const toggleCollapsed = () => {
+    startTransition(() => {
+      setIsCollapsed((prev) => !prev);
+    });
+  };
+
   return (
-    <div
-      role={isCollapsed ? 'button' : undefined}
-      tabIndex={isCollapsed ? 0 : undefined}
-      onClick={
-        isCollapsed
-          ? (e) => {
-              e.stopPropagation();
-              setIsCollapsed(false);
-            }
-          : undefined
-      }
-      onKeyDown={
-        isCollapsed
-          ? (e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
+    <SafeViewTransition>
+      <div
+        role={isCollapsed ? 'button' : undefined}
+        tabIndex={isCollapsed ? 0 : undefined}
+        onClick={
+          isCollapsed
+            ? (e) => {
                 e.stopPropagation();
-                setIsCollapsed(false);
+                startTransition(() => setIsCollapsed(false));
               }
-            }
-          : undefined
-      }
-      style={{
-        backgroundColor: isCollapsed ? 'var(--bg-surface-2)' : 'transparent',
-        borderLeft: isCollapsed ? `3px solid ${guideColor}` : '0px solid transparent',
-        transition:
-          'background-color 280ms cubic-bezier(0.22, 1, 0.36, 1), padding 280ms cubic-bezier(0.22, 1, 0.36, 1), margin 280ms cubic-bezier(0.22, 1, 0.36, 1), border-color 280ms cubic-bezier(0.22, 1, 0.36, 1)',
-      }}
-      className={`relative rounded-2xl focus:outline-none ${
-        isCollapsed
-          ? 'my-2.5 py-2.5 px-3.5 cursor-pointer hover:brightness-105'
-          : depth > 0
-          ? 'mt-3.5'
-          : 'mt-5'
-      }`}
-    >
-      <div className="flex">
-        {/* Interactive Full-Height Color Guide Bar (Smoothly collapses width when card mode is active) */}
-        <button
-          type="button"
-          tabIndex={isCollapsed ? -1 : 0}
-          aria-label={`Collapse comment thread by ${comment.user}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsCollapsed((prev) => !prev);
-          }}
-          style={{
-            width: isCollapsed ? '0px' : '16px',
-            opacity: isCollapsed ? 0 : 1,
-            transition:
-              'width 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 200ms cubic-bezier(0.22, 1, 0.36, 1)',
-          }}
-          className="group/bar relative flex justify-center shrink-0 cursor-pointer overflow-hidden focus:outline-none"
-        >
-          <span
-            style={{ backgroundColor: guideColor }}
-            className="w-[3px] h-full rounded-full opacity-80 group-hover/bar:w-[5px] group-hover/bar:opacity-100 transition-all"
-          />
-        </button>
+            : undefined
+        }
+        onKeyDown={
+          isCollapsed
+            ? (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  startTransition(() => setIsCollapsed(false));
+                }
+              }
+            : undefined
+        }
+        style={{
+          backgroundColor: isCollapsed ? 'var(--bg-surface-2)' : 'transparent',
+          borderLeft: isCollapsed ? `3px solid ${guideColor}` : '0px solid transparent',
+          transition:
+            'background-color 280ms cubic-bezier(0.22, 1, 0.36, 1), padding 280ms cubic-bezier(0.22, 1, 0.36, 1), margin 280ms cubic-bezier(0.22, 1, 0.36, 1), border-color 280ms cubic-bezier(0.22, 1, 0.36, 1)',
+        }}
+        className={`relative rounded-2xl focus:outline-none ${
+          isCollapsed
+            ? 'my-2.5 py-2.5 px-3.5 cursor-pointer hover:brightness-105'
+            : depth > 0
+            ? 'mt-3.5'
+            : 'mt-5'
+        }`}
+      >
+        <div className="flex">
+          {/* Interactive Full-Height Color Guide Bar (Smoothly collapses width when card mode is active) */}
+          <button
+            type="button"
+            tabIndex={isCollapsed ? -1 : 0}
+            aria-label={`Collapse comment thread by ${comment.user}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleCollapsed();
+            }}
+            style={{
+              width: isCollapsed ? '0px' : '16px',
+              opacity: isCollapsed ? 0 : 1,
+              transition:
+                'width 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 200ms cubic-bezier(0.22, 1, 0.36, 1)',
+            }}
+            className="group/bar relative flex justify-center shrink-0 cursor-pointer overflow-hidden focus:outline-none"
+          >
+            <span
+              style={{ backgroundColor: guideColor }}
+              className="w-[3px] h-full rounded-full opacity-80 group-hover/bar:w-[5px] group-hover/bar:opacity-100 transition-all"
+            />
+          </button>
 
-        <div
-          style={{
-            paddingLeft: isCollapsed ? '0px' : '8px',
-            transition: 'padding-left 260ms cubic-bezier(0.22, 1, 0.36, 1)',
-          }}
-          className="flex-1 min-w-0"
-        >
-          {/* Persistent Header Row that Morphs Between Expanded Header & Collapsed Summary Card */}
-          <div className="flex items-center justify-between gap-3 text-[13px]">
-            <div className="flex items-center gap-1.5 min-w-0 truncate">
-              <span
-                style={{
-                  color: isOP
-                    ? 'var(--accent)'
-                    : isCollapsed
-                    ? 'var(--text-secondary)'
-                    : 'var(--text-primary)',
-                }}
-                className="font-semibold shrink-0 transition-colors duration-200"
-              >
-                {comment.user}
-              </span>
-
-              {isOP && (
+          <div
+            style={{
+              paddingLeft: isCollapsed ? '0px' : '8px',
+              transition: 'padding-left 260ms cubic-bezier(0.22, 1, 0.36, 1)',
+            }}
+            className="flex-1 min-w-0"
+          >
+            {/* Persistent Header Row that Morphs Between Expanded Header & Collapsed Summary Card */}
+            <div className="flex items-center justify-between gap-3 text-[13px]">
+              <div className="flex items-center gap-1.5 min-w-0 truncate">
                 <span
                   style={{
-                    backgroundColor: 'color-mix(in srgb, var(--accent) 20%, transparent)',
-                    color: 'var(--accent)',
+                    color: isOP
+                      ? 'var(--accent)'
+                      : isCollapsed
+                      ? 'var(--text-secondary)'
+                      : 'var(--text-primary)',
                   }}
-                  className="px-1.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider shrink-0"
+                  className="font-semibold shrink-0 transition-colors duration-200"
                 >
-                  OP
+                  {comment.user}
                 </span>
-              )}
 
-              <span style={{ color: 'var(--text-muted)' }} className="shrink-0">
-                • {formatRelativeTime(comment.time)}
-              </span>
+                {isOP && (
+                  <span
+                    style={{
+                      backgroundColor: 'color-mix(in srgb, var(--accent) 20%, transparent)',
+                      color: 'var(--accent)',
+                    }}
+                    className="px-1.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider shrink-0"
+                  >
+                    OP
+                  </span>
+                )}
 
-              {/* Inline Snippet that Smoothly Slides & Fades In When Collapsed */}
-              {isCollapsed && (
+                <span style={{ color: 'var(--text-muted)' }} className="shrink-0">
+                  • {formatRelativeTime(comment.time)}
+                </span>
+
+                {/* Inline Snippet that Smoothly Slides & Fades In When Collapsed */}
+                {isCollapsed && (
+                  <span
+                    style={{ color: 'var(--text-muted)' }}
+                    className="animate-comment-state ml-1.5 opacity-78 italic truncate"
+                  >
+                    &ldquo;{plainSnippet}...&rdquo;
+                  </span>
+                )}
+              </div>
+
+              {/* Persistent Right-Side Collapse / Expand Pill Button with Icon Rotation & Tonal Morph */}
+              <button
+                type="button"
+                title={isCollapsed ? 'Expand comment thread' : 'Collapse comment thread'}
+                aria-label={
+                  isCollapsed
+                    ? `Expand comment by ${comment.user}`
+                    : `Collapse comment by ${comment.user}`
+                }
+                aria-expanded={!isCollapsed}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleCollapsed();
+                }}
+                style={{
+                  backgroundColor: isCollapsed
+                    ? 'color-mix(in srgb, var(--accent) 16%, transparent)'
+                    : 'var(--bg-surface-2)',
+                  color: isCollapsed ? 'var(--accent)' : 'var(--text-secondary)',
+                  transition:
+                    'background-color 260ms cubic-bezier(0.22, 1, 0.36, 1), color 220ms cubic-bezier(0.22, 1, 0.36, 1), transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+                }}
+                className="h-7 px-2.5 rounded-full shrink-0 inline-flex items-center gap-1 text-xs font-bold cursor-pointer hover:brightness-110 active:scale-90 focus:outline-none"
+              >
                 <span
-                  style={{ color: 'var(--text-muted)' }}
-                  className="animate-comment-state ml-1.5 opacity-78 italic truncate"
+                  style={{
+                    color: 'var(--accent)',
+                    transform: isCollapsed ? 'rotate(180deg) scale(1.05)' : 'rotate(0deg) scale(1)',
+                    transition: 'transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+                  }}
+                  className="material-symbols-rounded text-[15px]"
                 >
-                  &ldquo;{plainSnippet}...&rdquo;
+                  {isCollapsed ? 'unfold_more' : 'unfold_less'}
                 </span>
-              )}
+                <span>
+                  {isCollapsed
+                    ? `+${totalCount}`
+                    : comment.totalDescendants > 0
+                    ? `${totalCount}`
+                    : 'Hide'}
+                </span>
+              </button>
             </div>
 
-            {/* Persistent Right-Side Collapse / Expand Pill Button with Icon Rotation & Tonal Morph */}
-            <button
-              type="button"
-              title={isCollapsed ? 'Expand comment thread' : 'Collapse comment thread'}
-              aria-label={
-                isCollapsed
-                  ? `Expand comment by ${comment.user}`
-                  : `Collapse comment by ${comment.user}`
-              }
-              aria-expanded={!isCollapsed}
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsCollapsed((prev) => !prev);
-              }}
+            {/* Smooth CSS Grid Accordion for Comment Prose Body & Nested Replies */}
+            <div
+              aria-hidden={isCollapsed}
               style={{
-                backgroundColor: isCollapsed
-                  ? 'color-mix(in srgb, var(--accent) 16%, transparent)'
-                  : 'var(--bg-surface-2)',
-                color: isCollapsed ? 'var(--accent)' : 'var(--text-secondary)',
+                display: 'grid',
+                gridTemplateRows: isCollapsed ? '0fr' : '1fr',
+                opacity: isCollapsed ? 0 : 1,
+                marginTop: isCollapsed ? '0px' : '6px',
                 transition:
-                  'background-color 260ms cubic-bezier(0.22, 1, 0.36, 1), color 220ms cubic-bezier(0.22, 1, 0.36, 1), transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+                  'grid-template-rows 300ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms cubic-bezier(0.22, 1, 0.36, 1), margin-top 280ms cubic-bezier(0.22, 1, 0.36, 1)',
               }}
-              className="h-7 px-2.5 rounded-full shrink-0 inline-flex items-center gap-1 text-xs font-bold cursor-pointer hover:brightness-110 active:scale-90 focus:outline-none"
+              className={isCollapsed ? 'pointer-events-none select-none' : ''}
             >
-              <span
-                style={{
-                  color: 'var(--accent)',
-                  transform: isCollapsed ? 'rotate(180deg) scale(1.05)' : 'rotate(0deg) scale(1)',
-                  transition: 'transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1)',
-                }}
-                className="material-symbols-rounded text-[15px]"
-              >
-                {isCollapsed ? 'unfold_more' : 'unfold_less'}
-              </span>
-              <span>
-                {isCollapsed
-                  ? `+${totalCount}`
-                  : comment.totalDescendants > 0
-                  ? `${totalCount}`
-                  : 'Hide'}
-              </span>
-            </button>
-          </div>
+              <div className="overflow-hidden min-h-0">
+                {/* Comment Prose Body */}
+                <div
+                  className="hn-prose"
+                  onClick={(e) => {
+                    const target = (e.target as HTMLElement).closest('a[data-hn-item-id]');
+                    if (target && onInternalHnLinkClick) {
+                      e.preventDefault();
+                      const id = Number(target.getAttribute('data-hn-item-id'));
+                      if (id) onInternalHnLinkClick(id);
+                    }
+                  }}
+                  dangerouslySetInnerHTML={{ __html: formatCommentHtml(comment.text) }}
+                />
 
-          {/* Smooth CSS Grid Accordion for Comment Prose Body & Nested Replies */}
-          <div
-            aria-hidden={isCollapsed}
-            style={{
-              display: 'grid',
-              gridTemplateRows: isCollapsed ? '0fr' : '1fr',
-              opacity: isCollapsed ? 0 : 1,
-              marginTop: isCollapsed ? '0px' : '6px',
-              transition:
-                'grid-template-rows 300ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms cubic-bezier(0.22, 1, 0.36, 1), margin-top 280ms cubic-bezier(0.22, 1, 0.36, 1)',
-            }}
-            className={isCollapsed ? 'pointer-events-none select-none' : ''}
-          >
-            <div className="overflow-hidden min-h-0">
-              {/* Comment Prose Body */}
-              <div
-                className="hn-prose"
-                onClick={(e) => {
-                  const target = (e.target as HTMLElement).closest('a[data-hn-item-id]');
-                  if (target && onInternalHnLinkClick) {
-                    e.preventDefault();
-                    const id = Number(target.getAttribute('data-hn-item-id'));
-                    if (id) onInternalHnLinkClick(id);
-                  }
-                }}
-                dangerouslySetInnerHTML={{ __html: formatCommentHtml(comment.text) }}
-              />
+                {/* Nested Replies: Collapsed / Depth-Gated / Progressive Sibling Batch */}
+                {comment.children.length > 0 && (
+                  <div className="animate-comment-state">
+                    {hideChildrenOnly ? (
+                      <button
+                        type="button"
+                        onClick={() => startTransition(() => setHideChildrenOnly(false))}
+                        style={{ color: 'var(--accent)' }}
+                        className="liquid-glass mt-2.5 h-7 px-3 rounded-full inline-flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer active:scale-95 transition-transform"
+                      >
+                        <span className="material-symbols-rounded text-[15px]">unfold_more</span>
+                        Show {comment.totalDescendants}{' '}
+                        {comment.totalDescendants === 1 ? 'reply' : 'replies'}
+                      </button>
+                    ) : isDepthGated ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          startTransition(() =>
+                            setUnlockedDepthLimit((prev) => prev + DEPTH_UNLOCK_STEP)
+                          )
+                        }
+                        style={{ color: 'var(--accent)' }}
+                        className="liquid-glass mt-2.5 h-7 px-3.5 rounded-full inline-flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer active:scale-95 transition-transform"
+                      >
+                        <span className="material-symbols-rounded text-[15px]">
+                          subdirectory_arrow_right
+                        </span>
+                        Load {comment.totalDescendants} deeper{' '}
+                        {comment.totalDescendants === 1 ? 'reply' : 'replies'}
+                      </button>
+                    ) : (
+                      <>
+                        {displayedChildren.map((child) => (
+                          <CommentNode
+                            key={child.id}
+                            comment={child}
+                            depth={depth + 1}
+                            maxAllowedDepth={unlockedDepthLimit}
+                            storyAuthor={storyAuthor}
+                            collapseMode="expanded"
+                            modeVersion={modeVersion}
+                            onInternalHnLinkClick={onInternalHnLinkClick}
+                          />
+                        ))}
 
-              {/* Nested Replies: Collapsed / Depth-Gated / Progressive Sibling Batch */}
-              {comment.children.length > 0 && (
-                <div className="animate-comment-state">
-                  {hideChildrenOnly ? (
-                    <button
-                      type="button"
-                      onClick={() => setHideChildrenOnly(false)}
-                      style={{ color: 'var(--accent)' }}
-                      className="liquid-glass mt-2.5 h-7 px-3 rounded-full inline-flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer active:scale-95 transition-transform"
-                    >
-                      <span className="material-symbols-rounded text-[15px]">unfold_more</span>
-                      Show {comment.totalDescendants}{' '}
-                      {comment.totalDescendants === 1 ? 'reply' : 'replies'}
-                    </button>
-                  ) : isDepthGated ? (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setUnlockedDepthLimit((prev) => prev + DEPTH_UNLOCK_STEP)
-                      }
-                      style={{ color: 'var(--accent)' }}
-                      className="liquid-glass mt-2.5 h-7 px-3.5 rounded-full inline-flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer active:scale-95 transition-transform"
-                    >
-                      <span className="material-symbols-rounded text-[15px]">
-                        subdirectory_arrow_right
-                      </span>
-                      Load {comment.totalDescendants} deeper{' '}
-                      {comment.totalDescendants === 1 ? 'reply' : 'replies'}
-                    </button>
-                  ) : (
-                    <>
-                      {displayedChildren.map((child) => (
-                        <CommentNode
-                          key={child.id}
-                          comment={child}
-                          depth={depth + 1}
-                          maxAllowedDepth={unlockedDepthLimit}
-                          storyAuthor={storyAuthor}
-                          collapseMode="expanded"
-                          modeVersion={modeVersion}
-                          onInternalHnLinkClick={onInternalHnLinkClick}
-                        />
-                      ))}
-
-                      {hiddenSiblingCount > 0 && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setVisibleDirectReplies(
-                              (prev) => prev + INITIAL_SIBLING_REPLIES * 2
-                            )
-                          }
-                          style={{ color: 'var(--text-secondary)' }}
-                          className="liquid-glass mt-3 h-7 px-3 rounded-full inline-flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer active:scale-95 transition-transform"
-                        >
-                          <span
-                            style={{ color: 'var(--accent)' }}
-                            className="material-symbols-rounded text-[15px]"
+                        {hiddenSiblingCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              startTransition(() =>
+                                setVisibleDirectReplies(
+                                  (prev) => prev + INITIAL_SIBLING_REPLIES * 2
+                                )
+                              )
+                            }
+                            style={{ color: 'var(--text-secondary)' }}
+                            className="liquid-glass mt-3 h-7 px-3 rounded-full inline-flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer active:scale-95 transition-transform"
                           >
-                            expand_more
-                          </span>
-                          Show {hiddenSiblingCount} more{' '}
-                          {hiddenSiblingCount === 1 ? 'reply' : 'replies'}
-                        </button>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
+                            <span
+                              style={{ color: 'var(--accent)' }}
+                              className="material-symbols-rounded text-[15px]"
+                            >
+                              expand_more
+                            </span>
+                            Show {hiddenSiblingCount} more{' '}
+                            {hiddenSiblingCount === 1 ? 'reply' : 'replies'}
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </SafeViewTransition>
   );
 };

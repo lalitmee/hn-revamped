@@ -11,7 +11,19 @@ export function formatRelativeTime(unixSeconds: number): string {
   const diffHr = Math.floor(diffMin / 60);
   if (diffHr < 24) return `${diffHr}h ago`;
   const diffDays = Math.floor(diffHr / 24);
-  return `${diffDays}d ago`;
+  if (diffDays < 30) return `${diffDays}d ago`;
+
+  const years = Math.floor(diffDays / 365);
+  const remAfterYears = diffDays % 365;
+  const months = Math.floor(remAfterYears / 30);
+  const days = remAfterYears % 30;
+
+  const parts: string[] = [];
+  if (years > 0) parts.push(`${years}y`);
+  if (months > 0) parts.push(`${months}m`);
+  if (days > 0) parts.push(`${days}d`);
+
+  return `${parts.join(' ')} ago`;
 }
 
 interface StoryPillRowProps {

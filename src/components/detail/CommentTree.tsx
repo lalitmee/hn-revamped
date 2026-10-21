@@ -1,10 +1,17 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, {
+  useState,
+  useMemo,
+  useEffect,
+  useDeferredValue,
+  useTransition,
+} from 'react';
 import { HNComment } from '@/types/hn';
 import { CommentNode, ThreadCollapseMode } from './CommentNode';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { GlassSegmentedControl } from '@/components/ui/GlassSegmentedControl';
+import { SafeViewTransition } from '@/components/ui/ViewTransitionWrapper';
 
 const INITIAL_ROOT_BATCH = 15;
 
@@ -41,6 +48,8 @@ export const CommentTree: React.FC<CommentTreeProps> = ({
   const [collapseMode, setCollapseMode] = useState<ThreadCollapseMode>('expanded');
   const [modeVersion, setModeVersion] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+  const [isPending, startTransition] = useTransition();
   const [visibleRootCount, setVisibleRootCount] = useState(INITIAL_ROOT_BATCH);
 
   // Reset root batch count when switching stories
@@ -49,19 +58,20 @@ export const CommentTree: React.FC<CommentTreeProps> = ({
   }, [comments]);
 
   const filteredComments = useMemo(
-    () => filterCommentNodes(comments, searchQuery),
-    [comments, searchQuery]
+    () => filterCommentNodes(comments, deferredSearchQuery),
+    [comments, deferredSearchQuery]
   );
 
   const displayedRootComments = useMemo(
     () =>
-      searchQuery.trim()
+      deferredSearchQuery.trim()
         ? filteredComments
         : filteredComments.slice(0, visibleRootCount),
-    [filteredComments, visibleRootCount, searchQuery]
+    [filteredComments, visibleRootCount, deferredSearchQuery]
   );
 
   const remainingRootCount = filteredComments.length - displayedRootComments.length;
+  const isFilteringStale = searchQuery !== deferredSearchQuery || isPending;
 
   return (
     <div>
@@ -69,10 +79,12 @@ export const CommentTree: React.FC<CommentTreeProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-2.5 mb-5">
         <div className="liquid-glass h-9 px-4 rounded-full flex items-center gap-2.5 flex-1 min-w-[220px]">
           <span
-            style={{ color: 'var(--text-muted)' }}
-            className="material-symbols-rounded text-[17px] shrink-0"
+            style={{ color: isFilteringStale ? 'var(--accent)' : 'var(--text-muted)' }}
+            className={`material-symbols-rounded text-[17px] shrink-0 transition-transform ${
+              isFilteringStale ? 'animate-spin' : ''
+            }`}
           >
-            search
+            {isFilteringStale ? 'progress_activity' : 'search'}
           </span>
           <input
             type="text"
@@ -99,8 +111,10 @@ export const CommentTree: React.FC<CommentTreeProps> = ({
           size="sm"
           value={collapseMode}
           onChange={(nextMode) => {
-            setCollapseMode(nextMode);
-            setModeVersion((v) => v + 1);
+            startTransition(() => {
+              setCollapseMode(nextMode);
+              setModeVersion((v) => v + 1);
+            });
           }}
           items={[
             {
@@ -126,45 +140,56 @@ export const CommentTree: React.FC<CommentTreeProps> = ({
       </div>
 
       {/* Root Comment Stream */}
-      {displayedRootComments.length === 0 ? (
+      <SafeViewTransition>
         <div
-          style={{ color: 'var(--text-muted)' }}
-          className="py-12 text-center text-sm"
+          style={{
+            opacity: isFilteringStale ? 0.72 : 1,
+            transition: 'opacity 180ms ease',
+          }}
         >
-          No comments match your filter.
-        </div>
-      ) : (
-        <>
-          {displayedRootComments.map((comment) => (
-            <CommentNode
-              key={comment.id}
-              comment={comment}
-              depth={0}
-              maxAllowedDepth={2}
-              storyAuthor={storyAuthor}
-              collapseMode={collapseMode}
-              modeVersion={modeVersion}
-              onInternalHnLinkClick={onInternalHnLinkClick}
-            />
-          ))}
-
-          {remainingRootCount > 0 && (
-            <div className="mt-6 flex justify-center">
-              <GlassButton
-                variant="glass"
-                size="lg"
-                icon="expand_more"
-                iconAccent
-                onClick={() =>
-                  setVisibleRootCount((prev) => prev + INITIAL_ROOT_BATCH)
-                }
-              >
-                Load More Top-Level Threads ({remainingRootCount} remaining)
-              </GlassButton>
+          {displayedRootComments.length === 0 ? (
+            <div
+              style={{ color: 'var(--text-muted)' }}
+              className="py-12 text-center text-sm"
+            >
+              No comments match your filter.
             </div>
+          ) : (
+            <>
+              {displayedRootComments.map((comment) => (
+                <CommentNode
+                  key={comment.id}
+                  comment={comment}
+                  depth={0}
+                  maxAllowedDepth={2}
+                  storyAuthor={storyAuthor}
+                  collapseMode={collapseMode}
+                  modeVersion={modeVersion}
+                  onInternalHnLinkClick={onInternalHnLinkClick}
+                />
+              ))}
+
+              {remainingRootCount > 0 && (
+                <div className="mt-6 flex justify-center">
+                  <GlassButton
+                    variant="glass"
+                    size="lg"
+                    icon="expand_more"
+                    iconAccent
+                    onClick={() =>
+                      startTransition(() =>
+                        setVisibleRootCount((prev) => prev + INITIAL_ROOT_BATCH)
+                      )
+                    }
+                  >
+                    Load More Top-Level Threads ({remainingRootCount} remaining)
+                  </GlassButton>
+                </div>
+              )}
+            </>
           )}
-        </>
-      )}
+        </div>
+      </SafeViewTransition>
     </div>
   );
 };

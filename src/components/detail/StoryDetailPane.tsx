@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { startTransition } from 'react';
 import { DetailTab, HNStoryWithComments } from '@/types/hn';
 import { formatCommentHtml } from '@/lib/html-sanitizer';
 import { formatRelativeTime } from '@/components/feed/StoryPillRow';
@@ -8,6 +8,7 @@ import { CommentTree } from './CommentTree';
 import { ArticleReaderView } from './ArticleReaderView';
 import { GlassSegmentedControl, SegmentedItem } from '@/components/ui/GlassSegmentedControl';
 import { GlassButton } from '@/components/ui/GlassButton';
+import { SafeViewTransition } from '@/components/ui/ViewTransitionWrapper';
 
 interface StoryDetailPaneProps {
   story: HNStoryWithComments | null;
@@ -90,7 +91,7 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
         <GlassSegmentedControl<DetailTab>
           items={tabItems}
           value={activeTab}
-          onChange={onTabChange}
+          onChange={(nextTab) => startTransition(() => onTabChange(nextTab))}
         />
 
         <div className="flex items-center gap-2">
@@ -165,15 +166,17 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
           )}
         </header>
 
-        {activeTab === 'reader' ? (
-          <ArticleReaderView url={story.url} storyTitle={story.cleanTitle} />
-        ) : (
-          <CommentTree
-            comments={story.comments}
-            storyAuthor={story.user}
-            onInternalHnLinkClick={onInternalHnLinkClick}
-          />
-        )}
+        <SafeViewTransition>
+          {activeTab === 'reader' ? (
+            <ArticleReaderView url={story.url} storyTitle={story.cleanTitle} />
+          ) : (
+            <CommentTree
+              comments={story.comments}
+              storyAuthor={story.user}
+              onInternalHnLinkClick={onInternalHnLinkClick}
+            />
+          )}
+        </SafeViewTransition>
       </div>
     </div>
   );

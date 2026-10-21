@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useDeferredValue, startTransition } from 'react';
 import { HNStory } from '@/types/hn';
 import { searchHN } from '@/lib/hn-api';
 import { GlassModal } from '@/components/ui/GlassModal';
 import { GlassSegmentedControl } from '@/components/ui/GlassSegmentedControl';
+import { SafeViewTransition } from '@/components/ui/ViewTransitionWrapper';
 
 interface CommandPaletteModalProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
   const [query, setQuery] = useState('');
   const [sortBy, setSortBy] = useState<'relevance' | 'date'>('relevance');
   const [results, setResults] = useState<HNStory[]>([]);
+  const deferredResults = useDeferredValue(results);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -37,12 +39,12 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
       searchHN({ query: trimmed, sortBy })
         .then((hits) => {
           if (!cancelled) {
-            setResults(hits);
+            startTransition(() => setResults(hits));
           }
         })
         .catch(() => {
           if (!cancelled) {
-            setResults([]);
+            startTransition(() => setResults([]));
           }
         })
         .finally(() => {
@@ -99,7 +101,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         <GlassSegmentedControl<'relevance' | 'date'>
           size="sm"
           value={sortBy}
-          onChange={setSortBy}
+          onChange={(nextSort) => startTransition(() => setSortBy(nextSort))}
           items={[
             { id: 'relevance', label: 'Top Relevance', icon: 'trending_up' },
             { id: 'date', label: 'Newest', icon: 'schedule' },
@@ -107,118 +109,120 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         />
       </div>
 
-      <div className="custom-scrollbar max-h-[58vh] min-h-[260px] overflow-y-auto p-3.5 space-y-2">
-        {loading && (
-          <div className="space-y-2.5 py-1" role="status" aria-live="polite">
+      <SafeViewTransition>
+        <div className="custom-scrollbar max-h-[58vh] min-h-[260px] overflow-y-auto p-3.5 space-y-2">
+          {loading && (
+            <div className="space-y-2.5 py-1" role="status" aria-live="polite">
+              <div
+                style={{ color: 'var(--text-muted)' }}
+                className="flex items-center gap-2 px-2 py-1 text-xs font-medium"
+              >
+                <span
+                  style={{ color: 'var(--accent)' }}
+                  className="material-symbols-rounded text-[15px] animate-spin"
+                >
+                  progress_activity
+                </span>
+                <span>Searching Hacker News archive...</span>
+              </div>
+
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={`search-skeleton-${i}`}
+                  style={{ animationDelay: `${i * 45}ms` }}
+                  className="liquid-glass liquid-shimmer animate-story-in w-full p-3.5 rounded-2xl flex items-center justify-between gap-4"
+                >
+                  <div className="flex-1 min-w-0 space-y-2.5">
+                    <div
+                      style={{
+                        backgroundColor: 'color-mix(in srgb, var(--text-primary) 12%, transparent)',
+                      }}
+                      className={`h-4 rounded-full ${i % 2 === 0 ? 'w-4/5' : 'w-3/5'}`}
+                    />
+                    <div className="flex items-center gap-2">
+                      <div
+                        style={{
+                          backgroundColor: 'color-mix(in srgb, var(--accent) 25%, transparent)',
+                        }}
+                        className="h-3 w-12 rounded-full"
+                      />
+                      <div
+                        style={{
+                          backgroundColor: 'color-mix(in srgb, var(--text-muted) 18%, transparent)',
+                        }}
+                        className="h-3 w-28 rounded-full"
+                      />
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      backgroundColor: 'color-mix(in srgb, var(--text-primary) 10%, transparent)',
+                    }}
+                    className="h-7 w-14 rounded-xl shrink-0"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!loading && !query.trim() && (
             <div
               style={{ color: 'var(--text-muted)' }}
-              className="flex items-center gap-2 px-2 py-1 text-xs font-medium"
+              className="h-[220px] flex flex-col items-center justify-center text-center px-6 gap-2"
             >
               <span
                 style={{ color: 'var(--accent)' }}
-                className="material-symbols-rounded text-[15px] animate-spin"
+                className="material-symbols-rounded text-[32px] opacity-80"
               >
-                progress_activity
+                manage_search
               </span>
-              <span>Searching Hacker News archive...</span>
+              <div className="text-xs max-w-sm leading-relaxed">
+                Type any topic, domain, or Show HN title to search across all Hacker News history.
+              </div>
             </div>
+          )}
 
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div
-                key={`search-skeleton-${i}`}
-                style={{ animationDelay: `${i * 45}ms` }}
-                className="liquid-glass liquid-shimmer animate-story-in w-full p-3.5 rounded-2xl flex items-center justify-between gap-4"
+          {!loading && query.trim() && deferredResults.length === 0 && (
+            <div
+              style={{ color: 'var(--text-muted)' }}
+              className="h-[220px] flex flex-col items-center justify-center text-center px-6 gap-2 animate-story-in"
+            >
+              <span className="material-symbols-rounded text-[32px] opacity-60">search_off</span>
+              <div className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                No stories found for &ldquo;{query.trim()}&rdquo;
+              </div>
+              <div className="text-xs">Try a broader keyword or switch between Top Relevance and Newest.</div>
+            </div>
+          )}
+
+          {!loading &&
+            Boolean(query.trim()) &&
+            deferredResults.map((story, idx) => (
+              <button
+                key={story.id}
+                type="button"
+                onClick={() => {
+                  onSelectStory(story);
+                  onClose();
+                }}
+                style={{ animationDelay: `${Math.min(idx * 35, 280)}ms` }}
+                className="liquid-glass animate-story-in w-full text-left p-3.5 rounded-2xl flex items-center justify-between gap-4 cursor-pointer"
               >
-                <div className="flex-1 min-w-0 space-y-2.5">
-                  <div
-                    style={{
-                      backgroundColor: 'color-mix(in srgb, var(--text-primary) 12%, transparent)',
-                    }}
-                    className={`h-4 rounded-full ${i % 2 === 0 ? 'w-4/5' : 'w-3/5'}`}
-                  />
-                  <div className="flex items-center gap-2">
-                    <div
-                      style={{
-                        backgroundColor: 'color-mix(in srgb, var(--accent) 25%, transparent)',
-                      }}
-                      className="h-3 w-12 rounded-full"
-                    />
-                    <div
-                      style={{
-                        backgroundColor: 'color-mix(in srgb, var(--text-muted) 18%, transparent)',
-                      }}
-                      className="h-3 w-28 rounded-full"
-                    />
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold truncate">{story.cleanTitle}</div>
+                  <div style={{ color: 'var(--text-muted)' }} className="text-xs mt-1">
+                    <strong style={{ color: 'var(--accent)' }}>▲ {story.points}</strong> • by{' '}
+                    {story.user} {story.domain ? `• ${story.domain}` : ''}
                   </div>
                 </div>
-                <div
-                  style={{
-                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 10%, transparent)',
-                  }}
-                  className="h-7 w-14 rounded-xl shrink-0"
-                />
-              </div>
+                <span className="liquid-glass px-2.5 py-1 rounded-xl text-xs font-semibold shrink-0 inline-flex items-center gap-1">
+                  <span className="material-symbols-rounded text-[15px]">forum</span>
+                  {story.commentsCount}
+                </span>
+              </button>
             ))}
-          </div>
-        )}
-
-        {!loading && !query.trim() && (
-          <div
-            style={{ color: 'var(--text-muted)' }}
-            className="h-[220px] flex flex-col items-center justify-center text-center px-6 gap-2"
-          >
-            <span
-              style={{ color: 'var(--accent)' }}
-              className="material-symbols-rounded text-[32px] opacity-80"
-            >
-              manage_search
-            </span>
-            <div className="text-xs max-w-sm leading-relaxed">
-              Type any topic, domain, or Show HN title to search across all Hacker News history.
-            </div>
-          </div>
-        )}
-
-        {!loading && query.trim() && results.length === 0 && (
-          <div
-            style={{ color: 'var(--text-muted)' }}
-            className="h-[220px] flex flex-col items-center justify-center text-center px-6 gap-2 animate-story-in"
-          >
-            <span className="material-symbols-rounded text-[32px] opacity-60">search_off</span>
-            <div className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
-              No stories found for &ldquo;{query.trim()}&rdquo;
-            </div>
-            <div className="text-xs">Try a broader keyword or switch between Top Relevance and Newest.</div>
-          </div>
-        )}
-
-        {!loading &&
-          Boolean(query.trim()) &&
-          results.map((story, idx) => (
-            <button
-              key={story.id}
-              type="button"
-              onClick={() => {
-                onSelectStory(story);
-                onClose();
-              }}
-              style={{ animationDelay: `${Math.min(idx * 35, 280)}ms` }}
-              className="liquid-glass animate-story-in w-full text-left p-3.5 rounded-2xl flex items-center justify-between gap-4 cursor-pointer"
-            >
-              <div className="min-w-0">
-                <div className="text-sm font-semibold truncate">{story.cleanTitle}</div>
-                <div style={{ color: 'var(--text-muted)' }} className="text-xs mt-1">
-                  <strong style={{ color: 'var(--accent)' }}>▲ {story.points}</strong> • by{' '}
-                  {story.user} {story.domain ? `• ${story.domain}` : ''}
-                </div>
-              </div>
-              <span className="liquid-glass px-2.5 py-1 rounded-xl text-xs font-semibold shrink-0 inline-flex items-center gap-1">
-                <span className="material-symbols-rounded text-[15px]">forum</span>
-                {story.commentsCount}
-              </span>
-            </button>
-          ))}
-      </div>
+        </div>
+      </SafeViewTransition>
     </GlassModal>
   );
 };

@@ -2,7 +2,7 @@ import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { StoryPillRow } from '../StoryPillRow';
+import { StoryPillRow, formatRelativeTime } from '../StoryPillRow';
 import { HNStory } from '@/types/hn';
 
 const mockStory: HNStory = {
@@ -50,5 +50,15 @@ describe('StoryPillRow Component', () => {
       screen.getByText('Zed 1.0 – High-performance multiplayer code editor in Rust')
     );
     expect(onSelect).toHaveBeenCalledWith(mockStory);
+  });
+
+  it('formats long durations into readable years, months, and days (e.g., 1y 10m 2d ago)', () => {
+    const nowSec = Math.floor(Date.now() / 1000);
+    // 1 year (365d) + 10 months (300d) + 2 days = 667 days
+    const targetSec = nowSec - 667 * 86400;
+    expect(formatRelativeTime(targetSec)).toBe('1y 10m 2d ago');
+
+    // 4625 days = 12y (4380d) + 8m (240d) + 5d
+    expect(formatRelativeTime(nowSec - 4625 * 86400)).toBe('12y 8m 5d ago');
   });
 });
