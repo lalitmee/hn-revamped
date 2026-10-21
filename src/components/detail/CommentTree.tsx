@@ -1,8 +1,11 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { HNComment } from '@/types/hn';
 import { CommentNode } from './CommentNode';
+import { GlassButton } from '@/components/ui/GlassButton';
+
+const INITIAL_ROOT_BATCH = 15;
 
 interface CommentTreeProps {
   comments: HNComment[];
@@ -36,25 +39,35 @@ export const CommentTree: React.FC<CommentTreeProps> = ({
 }) => {
   const [collapseAllReplies, setCollapseAllReplies] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [visibleRootCount, setVisibleRootCount] = useState(INITIAL_ROOT_BATCH);
 
-  const visibleComments = useMemo(
+  // Reset root batch count when switching stories
+  useEffect(() => {
+    setVisibleRootCount(INITIAL_ROOT_BATCH);
+  }, [comments]);
+
+  const filteredComments = useMemo(
     () => filterCommentNodes(comments, searchQuery),
     [comments, searchQuery]
   );
 
+  const displayedRootComments = useMemo(
+    () =>
+      searchQuery.trim()
+        ? filteredComments
+        : filteredComments.slice(0, visibleRootCount),
+    [filteredComments, visibleRootCount, searchQuery]
+  );
+
+  const remainingRootCount = filteredComments.length - displayedRootComments.length;
+
   return (
     <div>
       {/* Thread Power Toolbar */}
-      <div
-        style={{
-          backgroundColor: 'var(--bg-surface-1)',
-          borderColor: 'var(--border-subtle)',
-        }}
-        className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl border mb-4"
-      >
+      <div className="liquid-glass flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl mb-4">
         <div
           style={{
-            backgroundColor: 'var(--bg-surface-2)',
+            backgroundColor: 'color-mix(in srgb, var(--bg-canvas) 55%, transparent)',
             borderColor: 'var(--border-subtle)',
           }}
           className="flex items-center gap-2 px-3 py-1.5 rounded-xl border flex-1 min-w-[200px]"
@@ -78,33 +91,24 @@ export const CommentTree: React.FC<CommentTreeProps> = ({
               type="button"
               onClick={() => setSearchQuery('')}
               style={{ color: 'var(--text-muted)' }}
-              className="material-symbols-rounded text-[16px]"
+              className="material-symbols-rounded text-[16px] cursor-pointer"
             >
               close
             </button>
           )}
         </div>
 
-        <button
-          type="button"
+        <GlassButton
+          variant={collapseAllReplies ? 'primary' : 'glass'}
+          icon={collapseAllReplies ? 'unfold_more' : 'unfold_less'}
           onClick={() => setCollapseAllReplies((prev) => !prev)}
-          style={{
-            backgroundColor: collapseAllReplies
-              ? 'color-mix(in srgb, var(--accent) 18%, transparent)'
-              : 'var(--bg-surface-2)',
-            color: collapseAllReplies ? 'var(--accent)' : 'var(--text-secondary)',
-          }}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer transition"
         >
-          <span className="material-symbols-rounded text-[16px]">
-            {collapseAllReplies ? 'unfold_more' : 'unfold_less'}
-          </span>
           {collapseAllReplies ? 'Expand Replies' : 'Collapse Replies'}
-        </button>
+        </GlassButton>
       </div>
 
       {/* Root Comment Stream */}
-      {visibleComments.length === 0 ? (
+      {displayedRootComments.length === 0 ? (
         <div
           style={{ color: 'var(--text-muted)' }}
           className="py-12 text-center text-sm"
@@ -112,16 +116,35 @@ export const CommentTree: React.FC<CommentTreeProps> = ({
           No comments match your filter.
         </div>
       ) : (
-        visibleComments.map((comment) => (
-          <CommentNode
-            key={comment.id}
-            comment={comment}
-            depth={0}
-            storyAuthor={storyAuthor}
-            collapseAllReplies={collapseAllReplies}
-            onInternalHnLinkClick={onInternalHnLinkClick}
-          />
-        ))
+        <>
+          {displayedRootComments.map((comment) => (
+            <CommentNode
+              key={comment.id}
+              comment={comment}
+              depth={0}
+              maxAllowedDepth={2}
+              storyAuthor={storyAuthor}
+              collapseAllReplies={collapseAllReplies}
+              onInternalHnLinkClick={onInternalHnLinkClick}
+            />
+          ))}
+
+          {remainingRootCount > 0 && (
+            <div className="mt-6 flex justify-center">
+              <GlassButton
+                variant="glass"
+                size="lg"
+                icon="expand_more"
+                iconAccent
+                onClick={() =>
+                  setVisibleRootCount((prev) => prev + INITIAL_ROOT_BATCH)
+                }
+              >
+                Load More Top-Level Threads ({remainingRootCount} remaining)
+              </GlassButton>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

@@ -3,6 +3,7 @@
 import React from 'react';
 import { FeedType, LayoutMode } from '@/types/hn';
 import { TimeTravelPopover, TimeTravelPreset } from '@/components/modals/TimeTravelPopover';
+import { GlassButton } from '@/components/ui/GlassButton';
 
 interface AppHeaderProps {
   activeFeed: FeedType;
@@ -42,18 +43,15 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   return (
     <header
       style={{
-        backgroundColor: 'var(--bg-surface-1)',
+        backgroundColor: 'color-mix(in srgb, var(--bg-surface-1) 82%, transparent)',
         borderColor: 'var(--border-subtle)',
       }}
-      className="sticky top-0 z-30 border-b px-4 py-2.5 flex flex-wrap items-center justify-between gap-3"
+      className="sticky top-0 z-30 backdrop-blur-xl border-b px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shrink-0"
     >
-      {/* Brand + Feed Tabs */}
-      <div className="flex items-center gap-3 overflow-x-auto">
-        <div className="flex items-center gap-2 pr-2">
-          <div
-            style={{ backgroundColor: 'var(--accent)' }}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-black text-sm shadow"
-          >
+      {/* Left: Brand + Feed Category Pills */}
+      <div className="flex items-center gap-3 overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-2.5 pr-1 shrink-0">
+          <div className="liquid-glass-primary w-8 h-8 rounded-xl flex items-center justify-center text-white font-black text-sm">
             Y
           </div>
           <span className="font-bold text-base tracking-tight hidden sm:inline">
@@ -61,7 +59,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           </span>
         </div>
 
-        <nav className="flex items-center gap-1">
+        <nav className="liquid-glass p-1 rounded-2xl flex items-center gap-1">
           {FEED_TABS.map((tab) => {
             const isActive = activeFeed === tab.id;
             return (
@@ -70,17 +68,32 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 type="button"
                 onClick={() => onSelectFeed(tab.id)}
                 style={{
-                  backgroundColor: isActive ? 'var(--bg-surface-active)' : 'transparent',
-                  color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
+                  color: isActive ? '#ffffff' : 'var(--text-secondary)',
                 }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition hover:bg-white/5"
+                className={`h-7 px-3 rounded-xl text-xs inline-flex items-center gap-1.5 cursor-pointer transition-all select-none ${
+                  isActive
+                    ? 'liquid-glass-primary font-bold'
+                    : 'hover:bg-white/5 font-semibold'
+                }`}
               >
-                <span className={`material-symbols-rounded text-[16px] ${isActive ? 'filled' : ''}`}>
+                <span
+                  className={`material-symbols-rounded text-[15px] ${
+                    isActive ? 'filled' : ''
+                  }`}
+                >
                   {tab.icon}
                 </span>
                 <span>{tab.label}</span>
                 {tab.id === 'saved' && savedCount > 0 && (
-                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white/10">
+                  <span
+                    style={{
+                      backgroundColor: isActive
+                        ? 'rgba(255,255,255,0.25)'
+                        : 'color-mix(in srgb, var(--accent) 20%, transparent)',
+                      color: isActive ? '#ffffff' : 'var(--accent)',
+                    }}
+                    className="px-1.5 py-0.2 rounded-full text-[10px] font-bold leading-none"
+                  >
                     {savedCount}
                   </span>
                 )}
@@ -90,77 +103,49 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         </nav>
       </div>
 
-      {/* Right Studio Controls */}
-      <div className="flex items-center gap-2">
+      {/* Right: Uniform h-9 Liquid Glass Toolbar Controls */}
+      <div className="flex items-center gap-2 shrink-0">
         <TimeTravelPopover
           activePreset={timeTravelPreset}
           onSelectPreset={onSelectTimeTravel}
         />
 
-        <button
-          type="button"
+        <GlassButton
+          icon="search"
+          shortcut="⌘K"
           onClick={onOpenSearch}
-          style={{
-            backgroundColor: 'var(--bg-surface-2)',
-            borderColor: 'var(--border-subtle)',
-            color: 'var(--text-secondary)',
-          }}
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-medium cursor-pointer"
+          title="Search Hacker News (⌘K or /)"
         >
-          <span className="material-symbols-rounded text-[16px]">search</span>
           <span className="hidden md:inline">Search</span>
-          <kbd className="text-[10px] font-mono opacity-75">⌘K</kbd>
-        </button>
+        </GlassButton>
 
-        <button
-          type="button"
+        <GlassButton
+          icon="palette"
+          iconAccent
           onClick={onOpenAppearance}
-          title="Theme & Typography Studio (t)"
-          style={{
-            backgroundColor: 'var(--bg-surface-2)',
-            borderColor: 'var(--border-subtle)',
-            color: 'var(--text-primary)',
-          }}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold cursor-pointer"
+          title="Theme, Typography & Filter Studio (t)"
         >
-          <span style={{ color: 'var(--accent)' }} className="material-symbols-rounded text-[16px]">
-            palette
-          </span>
           <span className="hidden sm:inline">Appearance</span>
-        </button>
+        </GlassButton>
 
-        <button
-          type="button"
+        <GlassButton
+          icon={layoutMode === 'split' ? 'vertical_split' : 'width_normal'}
+          iconAccent
           onClick={onToggleLayoutMode}
           title="Toggle Split-Pane / Zen Mode (z)"
-          style={{
-            backgroundColor: 'var(--bg-surface-2)',
-            borderColor: 'var(--border-subtle)',
-            color: 'var(--accent)',
-          }}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold cursor-pointer"
         >
-          <span className="material-symbols-rounded text-[16px]">
-            {layoutMode === 'split' ? 'vertical_split' : 'width_normal'}
-          </span>
           <span className="hidden sm:inline">
             {layoutMode === 'split' ? 'Split' : 'Zen'}
           </span>
-        </button>
+        </GlassButton>
 
-        <button
-          type="button"
+        <GlassButton
+          variant="icon"
+          icon="keyboard"
           onClick={onOpenShortcuts}
           title="Keyboard Shortcuts (?)"
-          style={{
-            backgroundColor: 'var(--bg-surface-2)',
-            borderColor: 'var(--border-subtle)',
-            color: 'var(--text-muted)',
-          }}
-          className="p-1.5 rounded-xl border cursor-pointer"
-        >
-          <span className="material-symbols-rounded text-[16px]">keyboard</span>
-        </button>
+          aria-label="Keyboard Shortcuts"
+        />
       </div>
     </header>
   );

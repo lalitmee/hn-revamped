@@ -4,6 +4,7 @@ import React from 'react';
 import { HNStory, ReadHistoryEntry } from '@/types/hn';
 import { getNewCommentsDelta } from '@/lib/storage';
 import { StoryPillRow } from './StoryPillRow';
+import { GlassButton } from '@/components/ui/GlassButton';
 
 interface StoryFeedPaneProps {
   stories: HNStory[];
@@ -34,8 +35,7 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
         {Array.from({ length: 8 }).map((_, i) => (
           <div
             key={i}
-            style={{ backgroundColor: 'var(--bg-surface-1)', borderColor: 'var(--border-subtle)' }}
-            className="h-24 rounded-2xl border animate-pulse"
+            className="liquid-glass h-24 rounded-2xl animate-pulse"
           />
         ))}
       </div>
@@ -71,20 +71,18 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
       ))}
 
       {hasMore && onLoadMore && (
-        <button
-          type="button"
-          onClick={onLoadMore}
-          disabled={loading}
-          style={{
-            backgroundColor: 'var(--bg-surface-1)',
-            borderColor: 'var(--border-subtle)',
-            color: 'var(--text-primary)',
-          }}
-          className="mt-2 py-3 px-6 rounded-2xl border font-semibold text-sm flex items-center justify-center gap-2 hover:brightness-110 transition cursor-pointer"
-        >
-          <span className="material-symbols-rounded">expand_more</span>
-          {loading ? 'Loading more stories...' : 'Load More Stories'}
-        </button>
+        <div className="mt-2 flex justify-center">
+          <GlassButton
+            size="lg"
+            icon="expand_more"
+            iconAccent
+            disabled={loading}
+            onClick={onLoadMore}
+            className="w-full justify-center"
+          >
+            {loading ? 'Loading more stories...' : 'Load More Stories'}
+          </GlassButton>
+        </div>
       )}
     </div>
   );

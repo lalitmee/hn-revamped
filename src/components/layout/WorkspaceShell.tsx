@@ -31,6 +31,7 @@ import { AppearanceModal } from '@/components/modals/AppearanceModal';
 import { CommandPaletteModal } from '@/components/modals/CommandPaletteModal';
 import { ShortcutsModal } from '@/components/modals/ShortcutsModal';
 import { TimeTravelPreset } from '@/components/modals/TimeTravelPopover';
+import { GlassButton } from '@/components/ui/GlassButton';
 
 export const WorkspaceShell: React.FC = () => {
   const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
@@ -97,10 +98,30 @@ export const WorkspaceShell: React.FC = () => {
       });
   }, []);
 
+  // Switch Feed Category: Clear current stories & reset selection immediately
+  const handleSelectFeed = useCallback((nextFeed: FeedType) => {
+    setActiveFeed(nextFeed);
+    setTimeTravel('live');
+    setSelectedStory(null);
+    setActiveTab('comments');
+    setStories([]);
+    setLoadingFeed(true);
+  }, []);
+
+  // Switch Time Travel Range: Clear current stories & reset selection immediately
+  const handleSelectTimeTravel = useCallback((preset: TimeTravelPreset) => {
+    setTimeTravel(preset);
+    setSelectedStory(null);
+    setActiveTab('comments');
+    setStories([]);
+    setLoadingFeed(true);
+  }, []);
+
   // Load feed or time-travel stories
   useEffect(() => {
     let active = true;
     setLoadingFeed(true);
+    setStories([]);
 
     if (activeFeed === 'saved') {
       setStories(loadBookmarks());
@@ -130,9 +151,6 @@ export const WorkspaceShell: React.FC = () => {
         if (!active) return;
         setStories(items);
         setPage(1);
-        if (items.length > 0 && !selectedStory) {
-          handleSelectStory(items[0]);
-        }
       })
       .catch(() => {
         if (active) setStories([]);
@@ -144,7 +162,7 @@ export const WorkspaceShell: React.FC = () => {
     return () => {
       active = false;
     };
-  }, [activeFeed, timeTravel, handleSelectStory]);
+  }, [activeFeed, timeTravel]);
 
   const handleLoadMore = useCallback(() => {
     if (activeFeed === 'saved' || timeTravel !== 'live') return;
@@ -218,13 +236,16 @@ export const WorkspaceShell: React.FC = () => {
   }, [preferences, selectedStory, visibleStories, handleSelectStory, handleUpdatePreferences]);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div
+      className={
+        preferences.layoutMode === 'split'
+          ? 'min-h-screen lg:h-screen lg:overflow-hidden flex flex-col'
+          : 'min-h-screen flex flex-col'
+      }
+    >
       <AppHeader
         activeFeed={activeFeed}
-        onSelectFeed={(f) => {
-          setActiveFeed(f);
-          setTimeTravel('live');
-        }}
+        onSelectFeed={handleSelectFeed}
         layoutMode={preferences.layoutMode}
         onToggleLayoutMode={() =>
           handleUpdatePreferences({
@@ -233,7 +254,7 @@ export const WorkspaceShell: React.FC = () => {
           })
         }
         timeTravelPreset={timeTravel}
-        onSelectTimeTravel={setTimeTravel}
+        onSelectTimeTravel={handleSelectTimeTravel}
         onOpenSearch={() => setIsSearchOpen(true)}
         onOpenAppearance={() => setIsAppearanceOpen(true)}
         onOpenShortcuts={() => setIsShortcutsOpen(true)}
@@ -241,10 +262,11 @@ export const WorkspaceShell: React.FC = () => {
       />
 
       {preferences.layoutMode === 'split' ? (
-        <main className="flex-1 grid grid-cols-1 lg:grid-cols-12 h-[calc(100vh-57px)] overflow-hidden">
+        <main className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
+          {/* Sticky / Independently Contained Left Feed Pane */}
           <section
             style={{ borderColor: 'var(--border-subtle)' }}
-            className="lg:col-span-5 xl:col-span-5 border-r overflow-y-auto h-full"
+            className="lg:col-span-5 xl:col-span-5 border-r h-full overflow-y-auto overscroll-contain"
           >
             <StoryFeedPane
               stories={visibleStories}
@@ -262,7 +284,8 @@ export const WorkspaceShell: React.FC = () => {
             />
           </section>
 
-          <section className="hidden lg:block lg:col-span-7 xl:col-span-7 overflow-y-auto h-full">
+          {/* Independently Scrollable Right Detail & Reader Pane */}
+          <section className="hidden lg:block lg:col-span-7 xl:col-span-7 h-full overflow-y-auto overscroll-contain">
             <StoryDetailPane
               story={selectedStory}
               loading={loadingDetail}
@@ -293,19 +316,15 @@ export const WorkspaceShell: React.FC = () => {
         <main className="flex-1 max-w-4xl w-full mx-auto py-4 px-2 sm:px-6">
           {selectedStory ? (
             <div>
-              <button
-                type="button"
-                onClick={() => setSelectedStory(null)}
-                style={{
-                  backgroundColor: 'var(--bg-surface-1)',
-                  borderColor: 'var(--border-subtle)',
-                  color: 'var(--accent)',
-                }}
-                className="ml-5 mb-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border text-xs font-semibold cursor-pointer"
-              >
-                <span className="material-symbols-rounded text-[16px]">arrow_back</span>
-                Back to Story Feed
-              </button>
+              <div className="ml-5 mb-2">
+                <GlassButton
+                  icon="arrow_back"
+                  iconAccent
+                  onClick={() => setSelectedStory(null)}
+                >
+                  Back to Story Feed
+                </GlassButton>
+              </div>
               <StoryDetailPane
                 story={selectedStory}
                 loading={loadingDetail}
