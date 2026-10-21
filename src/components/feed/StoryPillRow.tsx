@@ -50,12 +50,14 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
       }}
       style={{
         backgroundColor: isSelected ? 'var(--bg-surface-active)' : 'var(--bg-surface-1)',
-        borderColor: isSelected ? 'var(--accent)' : 'var(--border-subtle)',
+        borderColor: isSelected
+          ? 'color-mix(in srgb, var(--accent) 55%, var(--border-subtle))'
+          : 'var(--border-subtle)',
         opacity: isRead && !isSelected ? 0.68 : 1,
         transition:
           'background-color 240ms cubic-bezier(0.22, 1, 0.36, 1), border-color 240ms cubic-bezier(0.22, 1, 0.36, 1), transform 200ms cubic-bezier(0.22, 1, 0.36, 1)',
       }}
-      className="group relative overflow-hidden flex items-center gap-4 rounded-2xl border p-4 cursor-pointer hover:brightness-105 active:scale-[0.995]"
+      className="group relative overflow-hidden flex items-center gap-4 rounded-2xl border p-4 cursor-pointer hover:brightness-105 active:scale-[0.995] focus:outline-none"
     >
       {/* Animated Left Selection Indicator Bar */}
       <span

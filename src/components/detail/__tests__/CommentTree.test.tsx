@@ -65,7 +65,7 @@ describe('CommentTree & Progressive Depth-Gated Rendering', () => {
     ).toBeInTheDocument();
   });
 
-  it('supports collapsing all replies to scan root comments only', () => {
+  it('supports collapsing all replies or collapsing all comments into single lines', () => {
     render(<CommentTree comments={sampleComments} storyAuthor="nathansobo" />);
 
     const collapseRepliesBtn = screen.getByRole('button', { name: /Collapse Replies/i });
@@ -73,5 +73,11 @@ describe('CommentTree & Progressive Depth-Gated Rendering', () => {
 
     expect(screen.queryByText(/We cache per-monitor DPI/)).not.toBeInTheDocument();
     expect(screen.getByText(/How does glyph caching work/)).toBeInTheDocument();
+
+    const collapseAllBtn = screen.getByRole('button', { name: /Collapse All/i });
+    fireEvent.click(collapseAllBtn);
+
+    // In Collapse All mode, the full paragraph is replaced by the single-line summary bar (+4)
+    expect(screen.getByText('+4')).toBeInTheDocument();
   });
 });

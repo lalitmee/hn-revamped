@@ -2,8 +2,9 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { HNComment } from '@/types/hn';
-import { CommentNode } from './CommentNode';
+import { CommentNode, ThreadCollapseMode } from './CommentNode';
 import { GlassButton } from '@/components/ui/GlassButton';
+import { GlassSegmentedControl } from '@/components/ui/GlassSegmentedControl';
 
 const INITIAL_ROOT_BATCH = 15;
 
@@ -37,7 +38,8 @@ export const CommentTree: React.FC<CommentTreeProps> = ({
   storyAuthor,
   onInternalHnLinkClick,
 }) => {
-  const [collapseAllReplies, setCollapseAllReplies] = useState(false);
+  const [collapseMode, setCollapseMode] = useState<ThreadCollapseMode>('expanded');
+  const [modeVersion, setModeVersion] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [visibleRootCount, setVisibleRootCount] = useState(INITIAL_ROOT_BATCH);
 
@@ -63,18 +65,12 @@ export const CommentTree: React.FC<CommentTreeProps> = ({
 
   return (
     <div>
-      {/* Thread Power Toolbar */}
-      <div className="liquid-glass flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl mb-4">
-        <div
-          style={{
-            backgroundColor: 'color-mix(in srgb, var(--bg-canvas) 55%, transparent)',
-            borderColor: 'var(--border-subtle)',
-          }}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-xl border flex-1 min-w-[200px]"
-        >
+      {/* Clean Material 3 Thread Toolbar (No Nested Box-Inside-Box) */}
+      <div className="flex flex-wrap items-center justify-between gap-2.5 mb-5">
+        <div className="liquid-glass h-9 px-4 rounded-full flex items-center gap-2.5 flex-1 min-w-[220px]">
           <span
             style={{ color: 'var(--text-muted)' }}
-            className="material-symbols-rounded text-[18px]"
+            className="material-symbols-rounded text-[17px] shrink-0"
           >
             search
           </span>
@@ -84,27 +80,49 @@ export const CommentTree: React.FC<CommentTreeProps> = ({
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Filter thread by keyword or @author..."
             style={{ color: 'var(--text-primary)' }}
-            className="bg-transparent text-sm focus:outline-none w-full"
+            className="bg-transparent text-xs sm:text-sm focus:outline-none w-full"
           />
           {searchQuery && (
             <button
               type="button"
+              aria-label="Clear thread search"
               onClick={() => setSearchQuery('')}
               style={{ color: 'var(--text-muted)' }}
-              className="material-symbols-rounded text-[16px] cursor-pointer"
+              className="material-symbols-rounded text-[16px] cursor-pointer hover:opacity-80"
             >
               close
             </button>
           )}
         </div>
 
-        <GlassButton
-          variant={collapseAllReplies ? 'primary' : 'glass'}
-          icon={collapseAllReplies ? 'unfold_more' : 'unfold_less'}
-          onClick={() => setCollapseAllReplies((prev) => !prev)}
-        >
-          {collapseAllReplies ? 'Expand Replies' : 'Collapse Replies'}
-        </GlassButton>
+        <GlassSegmentedControl<ThreadCollapseMode>
+          size="sm"
+          value={collapseMode}
+          onChange={(nextMode) => {
+            setCollapseMode(nextMode);
+            setModeVersion((v) => v + 1);
+          }}
+          items={[
+            {
+              id: 'expanded',
+              label: 'Expand All',
+              icon: 'unfold_more',
+              title: 'Expand all comments and nested replies',
+            },
+            {
+              id: 'root-only',
+              label: 'Collapse Replies',
+              icon: 'unfold_less',
+              title: 'Collapse nested replies and show root comments only',
+            },
+            {
+              id: 'collapse-all',
+              label: 'Collapse All',
+              icon: 'compress',
+              title: 'Collapse every comment into a single-line summary bar',
+            },
+          ]}
+        />
       </div>
 
       {/* Root Comment Stream */}
@@ -124,7 +142,8 @@ export const CommentTree: React.FC<CommentTreeProps> = ({
               depth={0}
               maxAllowedDepth={2}
               storyAuthor={storyAuthor}
-              collapseAllReplies={collapseAllReplies}
+              collapseMode={collapseMode}
+              modeVersion={modeVersion}
               onInternalHnLinkClick={onInternalHnLinkClick}
             />
           ))}

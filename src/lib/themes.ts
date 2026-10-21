@@ -291,15 +291,17 @@ export function getThemeCssVars(
   customAccent?: string | null
 ): Record<string, string> {
   const theme = THEMES[themeId] ?? THEMES['obsidian-slate'];
-  const effectiveAccent =
+  const hasCustomAccent = Boolean(
     customAccent && /^#[0-9A-Fa-f]{6}$/.test(customAccent)
-      ? customAccent
-      : theme.colors.accent;
+  );
+  const effectiveAccent = hasCustomAccent ? customAccent! : theme.colors.accent;
+  const effectiveActiveSurface = `color-mix(in srgb, ${effectiveAccent} 14%, ${theme.colors.bgSurface1})`;
+
   return {
     '--bg-canvas': theme.colors.bgCanvas,
     '--bg-surface-1': theme.colors.bgSurface1,
     '--bg-surface-2': theme.colors.bgSurface2,
-    '--bg-surface-active': theme.colors.bgSurfaceActive,
+    '--bg-surface-active': effectiveActiveSurface,
     '--text-primary': theme.colors.textPrimary,
     '--text-secondary': theme.colors.textSecondary,
     '--text-muted': theme.colors.textMuted,

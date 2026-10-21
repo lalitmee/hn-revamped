@@ -164,10 +164,10 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                       style={{
                         backgroundColor: preset.color,
                         boxShadow: isActive
-                          ? `0 0 0 2px var(--bg-surface-1), 0 0 0 4px ${preset.color}`
+                          ? `0 0 0 2px var(--bg-surface-2), 0 0 0 4px ${preset.color}`
                           : undefined,
                       }}
-                      className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-transform hover:scale-110 active:scale-95"
+                      className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-transform hover:scale-110 active:scale-95 focus:outline-none"
                     >
                       {isActive && (
                         <span className="material-symbols-rounded text-white text-[16px] font-bold">
@@ -188,7 +188,7 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                       ? 'var(--accent)'
                       : 'var(--border-subtle)',
                   }}
-                  className="relative inline-flex items-center gap-2 pl-2 pr-3 py-1 rounded-full border text-xs font-semibold cursor-pointer hover:brightness-105 ml-auto"
+                  className="relative inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold cursor-pointer hover:brightness-105 ml-auto"
                 >
                   <span
                     style={{
@@ -196,12 +196,16 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                         preferences.customAccent ??
                         THEMES[preferences.themeId]?.colors.accent,
                     }}
-                    className="w-5 h-5 rounded-full inline-flex items-center justify-center text-white"
-                  >
-                    <span className="material-symbols-rounded text-[13px]">colorize</span>
-                  </span>
-                  <span className="font-mono uppercase">
+                    className="w-4 h-4 rounded-full shrink-0 border border-black/15"
+                  />
+                  <span className="font-mono uppercase leading-none">
                     {preferences.customAccent ?? 'Custom'}
+                  </span>
+                  <span
+                    style={{ color: 'var(--text-secondary)' }}
+                    className="material-symbols-rounded text-[15px]"
+                  >
+                    edit
                   </span>
                   <input
                     type="color"

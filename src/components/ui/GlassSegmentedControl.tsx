@@ -90,7 +90,7 @@ export function GlassSegmentedControl<T extends string>({
             }}
             type="button"
             title={item.title ?? item.label}
-            aria-label={item.title ?? item.label ?? item.id}
+            aria-label={item.label ?? item.title ?? item.id}
             onClick={() => onChange(item.id)}
             style={{
               color: isActive ? '#ffffff' : 'var(--text-secondary)',
