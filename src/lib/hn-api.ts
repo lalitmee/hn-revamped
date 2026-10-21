@@ -143,11 +143,50 @@ export async function fetchStoryWithComments(storyId: number): Promise<HNStoryWi
   const res = await fetch(`${ALGOLIA_BASE}/items/${storyId}`);
   if (res.ok) {
     const data = await res.json();
-    const { cleanTitle, badges } = parseTitleAndBadges(data.title || '', data.url);
+
+    // If the linked HN item is a comment with a parent story_id, load the root story
+    // or present the comment thread cleanly if root story fetch is unavailable.
+    if (data.type === 'comment' && data.story_id && Number(data.story_id) !== storyId) {
+      try {
+        const rootRes = await fetch(`${ALGOLIA_BASE}/items/${data.story_id}`);
+        if (rootRes.ok) {
+          const rootData = await rootRes.json();
+          const { cleanTitle, badges } = parseTitleAndBadges(
+            rootData.title || `Story #${data.story_id}`,
+            rootData.url
+          );
+          const comments = normalizeAlgoliaCommentTree(rootData.children || []);
+          return {
+            id: rootData.id,
+            title: rootData.title || `Story #${data.story_id}`,
+            cleanTitle,
+            url: rootData.url || undefined,
+            domain: extractDomain(rootData.url),
+            text: rootData.text || undefined,
+            points: rootData.points ?? 0,
+            user: rootData.author || 'anonymous',
+            time: rootData.created_at_i || Math.floor(Date.now() / 1000),
+            commentsCount: comments.reduce((acc, c) => acc + 1 + c.totalDescendants, 0),
+            badges,
+            type: rootData.type === 'job' ? 'job' : 'story',
+            comments,
+          };
+        }
+      } catch {
+        // Fall through to rendering the comment node directly as a thread
+      }
+    }
+
+    const fallbackTitle =
+      data.title ||
+      (data.type === 'comment'
+        ? `Comment by ${data.author || 'anonymous'} (#${data.id})`
+        : `Story #${data.id}`);
+    const { cleanTitle, badges } = parseTitleAndBadges(fallbackTitle, data.url);
     const comments = normalizeAlgoliaCommentTree(data.children || []);
     return {
       id: data.id,
-      title: data.title || '',
+      title: fallbackTitle,
       cleanTitle,
       url: data.url || undefined,
       domain: extractDomain(data.url),

@@ -132,7 +132,7 @@ export const WorkspaceShell: React.FC = () => {
 
     root.style.setProperty(
       '--reader-font-family',
-      FONT_FAMILIES[preferences.fontFamily].cssValue
+      (FONT_FAMILIES[preferences.fontFamily] ?? FONT_FAMILIES.sans).cssValue
     );
     root.style.setProperty('--reader-font-size', `${preferences.fontSize}px`);
     root.style.setProperty('--reader-line-height', String(preferences.lineHeight));
@@ -147,43 +147,115 @@ export const WorkspaceShell: React.FC = () => {
     savePreferences(next);
   }, []);
 
-  const handleSelectStory = useCallback((story: HNStory) => {
-    setLoadingDetail(true);
-    const updatedHistory = markStoryAsRead(story.id, story.commentsCount);
-    setReadHistory(updatedHistory);
+  const syncStoryQueryParam = useCallback((storyId: number | null, replace = false) => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    const currentParam = url.searchParams.get('story');
+    const nextParam = storyId ? String(storyId) : null;
 
-    fetchStoryWithComments(story.id)
-      .then((fullStory) => {
-        setSelectedStory(fullStory);
-      })
-      .catch(() => {
-        setSelectedStory({ ...story, comments: [] });
-      })
-      .finally(() => {
-        setLoadingDetail(false);
-      });
+    if (currentParam === nextParam) return;
+
+    if (nextParam) {
+      url.searchParams.set('story', nextParam);
+    } else {
+      url.searchParams.delete('story');
+    }
+
+    if (replace) {
+      window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+    } else {
+      window.history.pushState({}, '', `${url.pathname}${url.search}${url.hash}`);
+    }
   }, []);
+
+  const handleSelectStory = useCallback(
+    (story: HNStory, options?: { skipUrlSync?: boolean }) => {
+      setLoadingDetail(true);
+      if (!options?.skipUrlSync) {
+        syncStoryQueryParam(story.id);
+      }
+      const updatedHistory = markStoryAsRead(story.id, story.commentsCount);
+      setReadHistory(updatedHistory);
+
+      fetchStoryWithComments(story.id)
+        .then((fullStory) => {
+          setSelectedStory(fullStory);
+          if (!options?.skipUrlSync && fullStory.id !== story.id) {
+            syncStoryQueryParam(fullStory.id, true);
+          }
+        })
+        .catch(() => {
+          setSelectedStory({ ...story, comments: [] });
+        })
+        .finally(() => {
+          setLoadingDetail(false);
+        });
+    },
+    [syncStoryQueryParam]
+  );
+
+  // Deep-link support for ?story=<id> on initial page load and browser Back/Forward
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const loadStoryFromUrl = () => {
+      const params = new URLSearchParams(window.location.search);
+      const rawId = params.get('story');
+      const parsedId = rawId ? Number(rawId) : NaN;
+
+      if (Number.isFinite(parsedId) && parsedId > 0) {
+        handleSelectStory(
+          {
+            id: parsedId,
+            title: `Story #${parsedId}`,
+            cleanTitle: `Story #${parsedId}`,
+            points: 0,
+            user: '',
+            time: Math.floor(Date.now() / 1000),
+            commentsCount: 0,
+            badges: [],
+            type: 'story',
+          },
+          { skipUrlSync: true }
+        );
+      } else {
+        setSelectedStory(null);
+      }
+    };
+
+    loadStoryFromUrl();
+    window.addEventListener('popstate', loadStoryFromUrl);
+    return () => window.removeEventListener('popstate', loadStoryFromUrl);
+  }, [handleSelectStory]);
 
   // Switch Feed Category: Clear current stories & reset selection immediately
-  const handleSelectFeed = useCallback((nextFeed: FeedType) => {
-    setIsAppearanceOpen(false);
-    setActiveFeed(nextFeed);
-    setTimeTravel('live');
-    setSelectedStory(null);
-    setActiveTab('comments');
-    setStories([]);
-    setLoadingFeed(true);
-  }, []);
+  const handleSelectFeed = useCallback(
+    (nextFeed: FeedType) => {
+      setIsAppearanceOpen(false);
+      setActiveFeed(nextFeed);
+      setTimeTravel('live');
+      setSelectedStory(null);
+      syncStoryQueryParam(null);
+      setActiveTab('comments');
+      setStories([]);
+      setLoadingFeed(true);
+    },
+    [syncStoryQueryParam]
+  );
 
   // Switch Time Travel Range: Clear current stories & reset selection immediately
-  const handleSelectTimeTravel = useCallback((preset: TimeTravelPreset) => {
-    setIsAppearanceOpen(false);
-    setTimeTravel(preset);
-    setSelectedStory(null);
-    setActiveTab('comments');
-    setStories([]);
-    setLoadingFeed(true);
-  }, []);
+  const handleSelectTimeTravel = useCallback(
+    (preset: TimeTravelPreset) => {
+      setIsAppearanceOpen(false);
+      setTimeTravel(preset);
+      setSelectedStory(null);
+      syncStoryQueryParam(null);
+      setActiveTab('comments');
+      setStories([]);
+      setLoadingFeed(true);
+    },
+    [syncStoryQueryParam]
+  );
 
   // Load feed or time-travel stories
   useEffect(() => {
@@ -244,10 +316,13 @@ export const WorkspaceShell: React.FC = () => {
       .finally(() => setLoadingFeed(false));
   }, [activeFeed, page, timeTravel]);
 
-  const visibleStories = useMemo(
-    () => filterStories(stories, preferences, readHistory),
-    [stories, preferences, readHistory]
-  );
+  const visibleStories = useMemo(() => {
+    const filtered = filterStories(stories, preferences, readHistory);
+    if (selectedStory && !filtered.some((s) => s.id === selectedStory.id)) {
+      return [selectedStory, ...filtered];
+    }
+    return filtered;
+  }, [stories, preferences, readHistory, selectedStory]);
 
   const bookmarkedIds = useMemo(() => new Set(bookmarks.map((b) => b.id)), [bookmarks]);
 
@@ -418,7 +493,10 @@ export const WorkspaceShell: React.FC = () => {
                 <GlassButton
                   icon="arrow_back"
                   iconAccent
-                  onClick={() => setSelectedStory(null)}
+                  onClick={() => {
+                    setSelectedStory(null);
+                    syncStoryQueryParam(null);
+                  }}
                 >
                   Back to Story Feed
                 </GlassButton>

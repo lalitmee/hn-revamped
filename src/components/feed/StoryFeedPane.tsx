@@ -28,6 +28,7 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
   onLoadMore,
   hasMore,
 }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
   const prevCountRef = useRef(0);
   const [newlyAddedStartIndex, setNewlyAddedStartIndex] = useState(0);
 
@@ -39,6 +40,17 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
     }
     prevCountRef.current = stories.length;
   }, [stories.length]);
+
+  // Automatically scroll the selected story into view in the feed list
+  useEffect(() => {
+    if (!selectedStoryId || !containerRef.current) return;
+    const activeEl = containerRef.current.querySelector<HTMLElement>(
+      `[data-story-id="${selectedStoryId}"]`
+    );
+    if (activeEl && typeof activeEl.scrollIntoView === 'function') {
+      activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [selectedStoryId, stories.length]);
 
   if (loading && stories.length === 0) {
     return (
@@ -69,13 +81,14 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
   const isAppendingMore = loading && stories.length > 0;
 
   return (
-    <div className="flex flex-col gap-3 p-4">
+    <div ref={containerRef} className="flex flex-col gap-3 p-4">
       {stories.map((story, idx) => {
         const staggerIdx = Math.max(0, idx - newlyAddedStartIndex);
         const delayMs = idx >= newlyAddedStartIndex ? Math.min(staggerIdx * 35, 350) : 0;
         return (
           <div
             key={story.id}
+            data-story-id={story.id}
             style={{ animationDelay: `${delayMs}ms` }}
             className="animate-story-in"
           >

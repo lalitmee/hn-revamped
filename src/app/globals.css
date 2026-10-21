@@ -1,5 +1,78 @@
 @import "tailwindcss";
 
+/* Bundled Bookerly & MonoLisa Webfonts */
+@font-face {
+  font-family: 'Bookerly';
+  src: local('Bookerly'), local('Bookerly Regular'), url('/fonts/bookerly/Bookerly-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Bookerly';
+  src: local('Bookerly Italic'), url('/fonts/bookerly/Bookerly-Italic.ttf') format('truetype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Bookerly';
+  src: local('Bookerly Bold'), url('/fonts/bookerly/Bookerly-Bold.ttf') format('truetype');
+  font-weight: 600 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Bookerly';
+  src: local('Bookerly Bold Italic'), url('/fonts/bookerly/Bookerly-BoldItalic.ttf') format('truetype');
+  font-weight: 600 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MonoLisa';
+  src: local('MonoLisa'), local('MonoLisa-Regular'), local('MonoLisa Regular Nerd Font'), url('/fonts/monolisa/MonoLisa-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MonoLisa';
+  src: local('MonoLisa Italic'), local('MonoLisa-RegularItalic'), local('MonoLisa Regular Italic Nerd Font'), url('/fonts/monolisa/MonoLisa-Italic.ttf') format('truetype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MonoLisa';
+  src: local('MonoLisa Medium'), local('MonoLisa-Medium'), local('MonoLisa Medium Nerd Font'), url('/fonts/monolisa/MonoLisa-Medium.ttf') format('truetype');
+  font-weight: 500 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MonoLisa';
+  src: local('MonoLisa Bold'), local('MonoLisa-Bold'), local('MonoLisa Bold Nerd Font'), url('/fonts/monolisa/MonoLisa-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MonoLisa';
+  src: local('MonoLisa Bold Italic'), local('MonoLisa-BoldItalic'), local('MonoLisa Bold Italic Nerd Font'), url('/fonts/monolisa/MonoLisa-BoldItalic.ttf') format('truetype');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
 :root {
   --bg-canvas: #0C0C0E;
   --bg-surface-1: #16171B;

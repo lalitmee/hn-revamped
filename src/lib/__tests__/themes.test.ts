@@ -1,7 +1,19 @@
 import { describe, it, expect } from 'vitest';
-import { THEMES, getThemeCssVars, DEFAULT_PREFERENCES, resolveActiveThemeId } from '../themes';
+import {
+  THEMES,
+  FONT_FAMILIES,
+  getThemeCssVars,
+  DEFAULT_PREFERENCES,
+  resolveActiveThemeId,
+} from '../themes';
 
 describe('Multi-Source Theme Engine', () => {
+  it('includes Bookerly and MonoLisa alongside standard font families', () => {
+    expect(FONT_FAMILIES.bookerly.label).toBe('Kindle Bookerly');
+    expect(FONT_FAMILIES.bookerly.cssValue).toContain('Bookerly');
+    expect(FONT_FAMILIES.monolisa.label).toBe('MonoLisa Code');
+    expect(FONT_FAMILIES.monolisa.cssValue).toContain('MonoLisa');
+  });
   it('defines all 11 reader and code themes with complete semantic tokens', () => {
     const themeIds = Object.keys(THEMES);
     expect(themeIds).toHaveLength(11);

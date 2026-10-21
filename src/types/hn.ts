@@ -4,7 +4,7 @@ export type LayoutMode = 'split' | 'zen';
 
 export type DetailTab = 'comments' | 'reader';
 
-export type FontFamilyId = 'sans' | 'serif' | 'hyperlegible' | 'mono';
+export type FontFamilyId = 'sans' | 'bookerly' | 'serif' | 'hyperlegible' | 'monolisa' | 'mono';
 
 export type LineWidthOption = '55ch' | '65ch' | '75ch' | 'full';
 

@@ -5,6 +5,11 @@ export const metadata: Metadata = {
   title: 'HN Revamped — Intelligent Hacker News Reader',
   description:
     'A fast, readable, Google Material-inspired Hacker News client with Split-Pane & Zen modes, E-Reader & Code themes, and built-in Article Reader View.',
+  icons: {
+    icon: [{ url: '/icon.svg', type: 'image/svg+xml' }],
+    shortcut: ['/icon.svg'],
+    apple: [{ url: '/icon.svg', type: 'image/svg+xml' }],
+  },
 };
 
 export default function RootLayout({

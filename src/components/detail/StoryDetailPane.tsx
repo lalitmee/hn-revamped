@@ -152,6 +152,14 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
           {story.text && (
             <div
               className="liquid-glass mt-4 p-4 rounded-2xl hn-prose"
+              onClick={(e) => {
+                const target = (e.target as HTMLElement).closest('a[data-hn-item-id]');
+                if (target) {
+                  e.preventDefault();
+                  const id = Number(target.getAttribute('data-hn-item-id'));
+                  if (id) onInternalHnLinkClick(id);
+                }
+              }}
               dangerouslySetInnerHTML={{ __html: formatCommentHtml(story.text) }}
             />
           )}

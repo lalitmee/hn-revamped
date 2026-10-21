@@ -228,6 +228,10 @@ export const FONT_FAMILIES: Record<FontFamilyId, { label: string; cssValue: stri
     label: 'Editorial Sans',
     cssValue: "'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif",
   },
+  bookerly: {
+    label: 'Kindle Bookerly',
+    cssValue: "'Bookerly', 'Newsreader', 'Charter', 'Georgia', serif",
+  },
   serif: {
     label: 'Literary Serif',
     cssValue: "'Newsreader', 'Charter', 'Georgia', serif",
@@ -235,6 +239,10 @@ export const FONT_FAMILIES: Record<FontFamilyId, { label: string; cssValue: stri
   hyperlegible: {
     label: 'Hyperlegible',
     cssValue: "'Atkinson Hyperlegible', system-ui, sans-serif",
+  },
+  monolisa: {
+    label: 'MonoLisa Code',
+    cssValue: "'MonoLisa', 'JetBrains Mono', 'Fira Code', monospace",
   },
   mono: {
     label: 'Developer Mono',
