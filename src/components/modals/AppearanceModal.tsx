@@ -133,7 +133,7 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
 
   return (
     <div className="custom-scrollbar flex-1 min-h-0 overflow-y-auto animate-story-in">
-      <div className="max-w-7xl w-full mx-auto px-4 sm:px-8 py-6 space-y-6">
+      <div className="max-w-[1600px] w-full mx-auto px-4 sm:px-8 xl:px-10 py-6 space-y-6">
         {/* Top Studio Header Bar */}
         <div
           style={{ borderColor: 'var(--border-subtle)' }}
@@ -357,7 +357,7 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                               <div className="text-sm font-bold truncate">{t.name}</div>
                               <div
                                 style={{ color: t.colors.textMuted }}
-                                className="text-[11px] mt-0.5"
+                                className="text-[11px] mt-0.5 truncate"
                               >
                                 {t.inspiration}
                               </div>
@@ -383,13 +383,13 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                             </div>
                           </div>
 
-                          <div className="flex items-center justify-between gap-2 pt-1">
+                          <div className="flex items-center justify-between gap-1.5 pt-1">
                             <span
                               style={{
                                 backgroundColor: t.colors.bgSurface2,
                                 color: t.colors.textSecondary,
                               }}
-                              className="px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase"
+                              className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase whitespace-nowrap shrink-0"
                             >
                               {t.mode === 'light' ? 'Light Surface' : 'Dark Surface'}
                             </span>
@@ -400,7 +400,7 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                                   backgroundColor: 'var(--accent)',
                                   color: '#fff',
                                 }}
-                                className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase"
+                                className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase whitespace-nowrap shrink-0"
                               >
                                 Active
                               </span>
@@ -410,7 +410,7 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                                   backgroundColor: t.colors.bgSurface2,
                                   color: t.colors.accent,
                                 }}
-                                className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase"
+                                className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase whitespace-nowrap shrink-0"
                               >
                                 {t.mode === 'light' ? 'Light Default' : 'Dark Default'}
                               </span>
@@ -464,7 +464,7 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                               <div className="text-sm font-bold truncate">{t.name}</div>
                               <div
                                 style={{ color: t.colors.textMuted }}
-                                className="text-[11px] mt-0.5"
+                                className="text-[11px] mt-0.5 truncate"
                               >
                                 {t.inspiration}
                               </div>
@@ -486,13 +486,13 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                             </div>
                           </div>
 
-                          <div className="flex items-center justify-between gap-2 pt-1">
+                          <div className="flex items-center justify-between gap-1.5 pt-1">
                             <span
                               style={{
                                 backgroundColor: t.colors.bgSurface2,
                                 color: t.colors.textSecondary,
                               }}
-                              className="px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase"
+                              className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase whitespace-nowrap shrink-0"
                             >
                               {t.mode === 'light' ? 'Light Surface' : 'Dark Surface'}
                             </span>
@@ -503,7 +503,7 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                                   backgroundColor: 'var(--accent)',
                                   color: '#fff',
                                 }}
-                                className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase"
+                                className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase whitespace-nowrap shrink-0"
                               >
                                 Active
                               </span>
@@ -513,7 +513,7 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                                   backgroundColor: t.colors.bgSurface2,
                                   color: t.colors.accent,
                                 }}
-                                className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase"
+                                className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase whitespace-nowrap shrink-0"
                               >
                                 {t.mode === 'light' ? 'Light Default' : 'Dark Default'}
                               </span>

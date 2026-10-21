@@ -96,7 +96,16 @@ const FEED_ENDPOINTS: Record<Exclude<FeedType, 'saved'>, string> = {
   jobs: 'jobstories',
 };
 
+const FEED_IDS_TTL_MS = 60_000;
+const feedIdsCache = new Map<string, { ids: number[]; fetchedAt: number }>();
+const storyItemCache = new Map<number, { story: HNStory; fetchedAt: number }>();
+
 export async function fetchStoryItem(id: number): Promise<HNStory | null> {
+  const cached = storyItemCache.get(id);
+  if (cached && Date.now() - cached.fetchedAt < FEED_IDS_TTL_MS) {
+    return cached.story;
+  }
+
   try {
     const res = await fetch(`${FIREBASE_BASE}/item/${id}.json`);
     if (!res.ok) return null;
@@ -104,7 +113,7 @@ export async function fetchStoryItem(id: number): Promise<HNStory | null> {
     if (!item || item.deleted || item.dead || !item.title) return null;
 
     const { cleanTitle, badges } = parseTitleAndBadges(item.title, item.url);
-    return {
+    const story: HNStory = {
       id: item.id,
       title: item.title,
       cleanTitle,
@@ -118,6 +127,8 @@ export async function fetchStoryItem(id: number): Promise<HNStory | null> {
       badges,
       type: item.type === 'job' ? 'job' : item.title.startsWith('Ask HN:') ? 'ask' : 'story',
     };
+    storyItemCache.set(id, { story, fetchedAt: Date.now() });
+    return story;
   } catch {
     return null;
   }
@@ -126,14 +137,22 @@ export async function fetchStoryItem(id: number): Promise<HNStory | null> {
 export async function fetchFeedStories(
   feed: FeedType,
   page = 1,
-  pageSize = 30
+  pageSize = 15
 ): Promise<HNStory[]> {
   if (feed === 'saved') return [];
   const endpoint = FEED_ENDPOINTS[feed];
-  const res = await fetch(`${FIREBASE_BASE}/${endpoint}.json`);
-  if (!res.ok) throw new Error(`Failed to fetch ${feed} feed`);
+  const cachedIds = feedIdsCache.get(endpoint);
+  let ids: number[];
 
-  const ids: number[] = await res.json();
+  if (cachedIds && Date.now() - cachedIds.fetchedAt < FEED_IDS_TTL_MS && page > 1) {
+    ids = cachedIds.ids;
+  } else {
+    const res = await fetch(`${FIREBASE_BASE}/${endpoint}.json`);
+    if (!res.ok) throw new Error(`Failed to fetch ${feed} feed`);
+    ids = await res.json();
+    feedIdsCache.set(endpoint, { ids, fetchedAt: Date.now() });
+  }
+
   const slice = ids.slice((page - 1) * pageSize, page * pageSize);
   const stories = await Promise.all(slice.map((id) => fetchStoryItem(id)));
   return stories.filter((s): s is HNStory => s !== null);

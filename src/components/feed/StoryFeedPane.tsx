@@ -168,7 +168,7 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
               {isAppendingMore ? 'progress_activity' : 'expand_circle_down'}
             </span>
             <span>
-              {isAppendingMore ? 'Fetching next 30 stories...' : 'Load More Stories'}
+              {isAppendingMore ? 'Fetching next 15 stories...' : 'Load More Stories'}
             </span>
           </button>
         </div>

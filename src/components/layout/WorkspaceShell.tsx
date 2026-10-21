@@ -292,14 +292,16 @@ export const WorkspaceShell: React.FC = () => {
       const [start, end] = ranges[timeTravel];
       loader = fetchTimeTravelStories(start, end);
     } else {
-      loader = fetchFeedStories(activeFeed, 1, 30);
+      loader = fetchFeedStories(activeFeed, 1, 15);
     }
 
     loader
       .then((items) => {
         if (!active) return;
-        setStories(items);
-        setPage(1);
+        startTransition(() => {
+          setStories(items);
+          setPage(1);
+        });
       })
       .catch(() => {
         if (active) setStories([]);
@@ -317,10 +319,12 @@ export const WorkspaceShell: React.FC = () => {
     if (activeFeed === 'saved' || timeTravel !== 'live') return;
     const nextPage = page + 1;
     setLoadingFeed(true);
-    fetchFeedStories(activeFeed, nextPage, 30)
+    fetchFeedStories(activeFeed, nextPage, 15)
       .then((more) => {
-        setStories((prev) => [...prev, ...more]);
-        setPage(nextPage);
+        startTransition(() => {
+          setStories((prev) => [...prev, ...more]);
+          setPage(nextPage);
+        });
       })
       .finally(() => setLoadingFeed(false));
   }, [activeFeed, page, timeTravel]);
