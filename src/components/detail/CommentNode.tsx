@@ -77,6 +77,8 @@ export const CommentNode: React.FC<CommentNodeProps> = ({
     });
   };
 
+  const isRoot = depth === 0;
+
   return (
     <SafeViewTransition>
       <div
@@ -102,17 +104,34 @@ export const CommentNode: React.FC<CommentNodeProps> = ({
             : undefined
         }
         style={{
-          backgroundColor: isCollapsed ? 'var(--bg-surface-2)' : 'transparent',
-          borderLeft: isCollapsed ? `3px solid ${guideColor}` : '0px solid transparent',
+          backgroundColor: isCollapsed
+            ? 'var(--bg-surface-2)'
+            : isRoot
+            ? 'var(--bg-surface-1)'
+            : 'transparent',
+          borderTop: isCollapsed
+            ? '0px solid transparent'
+            : isRoot
+            ? '1px solid var(--border-subtle)'
+            : '1px solid color-mix(in srgb, var(--border-subtle) 55%, transparent)',
+          borderRight:
+            isRoot && !isCollapsed ? '1px solid var(--border-subtle)' : '0px solid transparent',
+          borderBottom:
+            isRoot && !isCollapsed ? '1px solid var(--border-subtle)' : '0px solid transparent',
+          borderLeft: isCollapsed
+            ? `3px solid ${guideColor}`
+            : isRoot
+            ? '1px solid var(--border-subtle)'
+            : '0px solid transparent',
           transition:
             'background-color 280ms cubic-bezier(0.22, 1, 0.36, 1), padding 280ms cubic-bezier(0.22, 1, 0.36, 1), margin 280ms cubic-bezier(0.22, 1, 0.36, 1), border-color 280ms cubic-bezier(0.22, 1, 0.36, 1)',
         }}
-        className={`relative rounded-2xl focus:outline-none ${
+        className={`relative focus:outline-none ${
           isCollapsed
-            ? 'my-2.5 py-2.5 px-3.5 cursor-pointer hover:brightness-105'
-            : depth > 0
-            ? 'mt-3.5'
-            : 'mt-5'
+            ? 'my-2.5 py-2.5 px-3.5 rounded-2xl cursor-pointer hover:brightness-105'
+            : isRoot
+            ? 'mb-3.5 p-4 rounded-2xl'
+            : 'mt-3.5 pt-3'
         }`}
       >
         <div className="flex">

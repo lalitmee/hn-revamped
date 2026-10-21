@@ -416,7 +416,7 @@ export const WorkspaceShell: React.FC = () => {
       data-theme-mode={activeTheme.mode}
       style={inlineRootStyle}
       className={`${
-        preferences.layoutMode === 'split'
+        preferences.layoutMode === 'split' || isAppearanceOpen
           ? 'min-h-screen lg:h-screen lg:overflow-hidden flex flex-col'
           : 'min-h-screen flex flex-col'
       } transition-colors duration-200`}

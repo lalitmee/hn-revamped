@@ -132,13 +132,16 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
     preferences.mutedKeywords.length + preferences.mutedDomains.length;
 
   return (
-    <div className="custom-scrollbar flex-1 min-h-0 overflow-y-auto animate-story-in">
-      <div className="max-w-[1600px] w-full mx-auto px-4 sm:px-8 xl:px-10 py-6 space-y-6">
-        {/* Top Studio Header Bar */}
-        <div
-          style={{ borderColor: 'var(--border-subtle)' }}
-          className="flex flex-wrap items-center justify-between gap-4 pb-5 border-b"
-        >
+    <div className="flex-1 min-h-0 flex flex-col overflow-hidden animate-story-in">
+      {/* Pinned / Sticky Top Studio Header Bar */}
+      <div
+        style={{
+          backgroundColor: 'color-mix(in srgb, var(--bg-canvas) 88%, transparent)',
+          borderColor: 'var(--border-subtle)',
+        }}
+        className="shrink-0 z-20 backdrop-blur-xl border-b"
+      >
+        <div className="max-w-[1600px] w-full mx-auto px-4 sm:px-8 xl:px-10 py-4 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
             <GlassButton
               icon="arrow_back"
@@ -179,9 +182,13 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
             ]}
           />
         </div>
+      </div>
 
-        {/* Spacious 12-Column Split Studio: Controls (Left 7 cols) + Sticky Live Preview (Right 5 cols) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      {/* Independently Scrollable Studio Body */}
+      <div className="custom-scrollbar flex-1 min-h-0 overflow-y-auto overscroll-contain">
+        <div className="max-w-[1600px] w-full mx-auto px-4 sm:px-8 xl:px-10 py-6">
+          {/* Spacious 12-Column Split Studio: Controls (Left 7 cols) + Sticky Live Preview (Right 5 cols) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* LEFT 7 COLUMNS: Studio Controls */}
           <div className="lg:col-span-7 space-y-6">
             {/* TAB 1: THEMES & ACCENT COLORS */}
@@ -348,9 +355,12 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                             borderColor: isSelected ? 'var(--accent)' : t.colors.borderSubtle,
                             boxShadow: isSelected
                               ? '0 0 0 2px var(--accent), 0 10px 24px -6px rgba(0,0,0,0.22)'
-                              : undefined,
+                              : '0 2px 8px -2px rgba(0,0,0,0.08)',
+                            backfaceVisibility: 'hidden',
+                            transition:
+                              'transform 260ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1), border-color 220ms ease',
                           }}
-                          className="p-4 rounded-2xl border text-left cursor-pointer transition-all hover:scale-[1.01] flex flex-col justify-between gap-3 focus:outline-none"
+                          className="p-4 rounded-2xl border text-left cursor-pointer hover:-translate-y-0.5 active:translate-y-0 flex flex-col justify-between gap-3 focus:outline-none"
                         >
                           <div className="flex items-start justify-between gap-2 w-full">
                             <div className="min-w-0">
@@ -455,9 +465,12 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                             borderColor: isSelected ? 'var(--accent)' : t.colors.borderSubtle,
                             boxShadow: isSelected
                               ? '0 0 0 2px var(--accent), 0 10px 24px -6px rgba(0,0,0,0.22)'
-                              : undefined,
+                              : '0 2px 8px -2px rgba(0,0,0,0.08)',
+                            backfaceVisibility: 'hidden',
+                            transition:
+                              'transform 260ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1), border-color 220ms ease',
                           }}
-                          className="p-4 rounded-2xl border text-left cursor-pointer transition-all hover:scale-[1.01] flex flex-col justify-between gap-3 focus:outline-none"
+                          className="p-4 rounded-2xl border text-left cursor-pointer hover:-translate-y-0.5 active:translate-y-0 flex flex-col justify-between gap-3 focus:outline-none"
                         >
                           <div className="flex items-start justify-between gap-2 w-full">
                             <div className="min-w-0">
@@ -879,6 +892,7 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
               />
             </div>
           </aside>
+          </div>
         </div>
       </div>
     </div>
