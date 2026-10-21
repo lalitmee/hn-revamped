@@ -52,9 +52,23 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
         backgroundColor: isSelected ? 'var(--bg-surface-active)' : 'var(--bg-surface-1)',
         borderColor: isSelected ? 'var(--accent)' : 'var(--border-subtle)',
         opacity: isRead && !isSelected ? 0.68 : 1,
+        transition:
+          'background-color 240ms cubic-bezier(0.22, 1, 0.36, 1), border-color 240ms cubic-bezier(0.22, 1, 0.36, 1), transform 200ms cubic-bezier(0.22, 1, 0.36, 1)',
       }}
-      className="group relative flex items-center gap-4 rounded-2xl border p-4 transition-all duration-150 cursor-pointer hover:brightness-105"
+      className="group relative overflow-hidden flex items-center gap-4 rounded-2xl border p-4 cursor-pointer hover:brightness-105 active:scale-[0.995]"
     >
+      {/* Animated Left Selection Indicator Bar */}
+      <span
+        aria-hidden="true"
+        style={{
+          backgroundColor: 'var(--accent)',
+          transform: isSelected ? 'scaleY(1)' : 'scaleY(0)',
+          opacity: isSelected ? 1 : 0,
+          transition:
+            'transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 200ms ease',
+        }}
+        className=" absolute left-0 top-3 bottom-3 w-1 rounded-r-full"
+      />
       {/* Left Zone: Score & Heat Pill */}
       <div
         style={{

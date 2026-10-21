@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 
 export interface SegmentedItem<T extends string> {
   id: T;
@@ -24,34 +24,87 @@ export function GlassSegmentedControl<T extends string>({
   size = 'md',
   fullWidth = false,
 }: GlassSegmentedControlProps<T>) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const [indicator, setIndicator] = useState<{ left: number; width: number }>({
+    left: 0,
+    width: 0,
+  });
+
+  const updateIndicator = useCallback(() => {
+    const activeBtn = buttonRefs.current[value];
+    if (activeBtn) {
+      setIndicator({
+        left: activeBtn.offsetLeft,
+        width: activeBtn.offsetWidth,
+      });
+    }
+  }, [value]);
+
+  useEffect(() => {
+    updateIndicator();
+  }, [updateIndicator, items]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => {
+      updateIndicator();
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [updateIndicator]);
+
+  const hasMeasured = indicator.width > 0;
+
   return (
     <div
-      className={`liquid-glass p-1 rounded-2xl inline-flex items-center gap-1 ${
+      ref={containerRef}
+      className={`liquid-glass relative p-1 rounded-2xl inline-flex items-center gap-1 ${
         fullWidth ? 'w-full flex' : ''
       }`}
     >
+      {/* Gliding Liquid Glass Active Pill */}
+      {hasMeasured && (
+        <div
+          aria-hidden="true"
+          style={{
+            width: `${indicator.width}px`,
+            transform: `translate3d(${indicator.left}px, 0, 0)`,
+            transition:
+              'transform 300ms cubic-bezier(0.22, 1, 0.36, 1), width 300ms cubic-bezier(0.22, 1, 0.36, 1)',
+          }}
+          className="liquid-glass-primary pointer-events-none absolute top-1 bottom-1 left-0 rounded-xl z-0"
+        />
+      )}
+
       {items.map((item) => {
         const isActive = item.id === value;
         return (
           <button
             key={item.id}
+            ref={(el) => {
+              buttonRefs.current[item.id] = el;
+            }}
             type="button"
             onClick={() => onChange(item.id)}
             style={{
               color: isActive ? '#ffffff' : 'var(--text-secondary)',
             }}
-            className={`${
+            className={`relative z-10 ${
               fullWidth ? 'flex-1 justify-center' : ''
             } ${
               size === 'sm' ? 'px-3 py-1.5 text-xs' : 'px-4 py-1.5 text-xs'
             } ${
-              isActive ? 'liquid-glass-primary font-bold' : 'hover:bg-white/5 font-semibold'
-            } inline-flex items-center gap-1.5 rounded-xl cursor-pointer transition-all select-none`}
+              isActive
+                ? `${!hasMeasured ? 'liquid-glass-primary ' : ''}font-bold`
+                : 'hover:bg-white/5 font-semibold'
+            } inline-flex items-center gap-1.5 rounded-xl cursor-pointer transition-colors duration-200 select-none`}
           >
             {item.icon && (
               <span
-                className={`material-symbols-rounded text-[16px] ${
-                  isActive ? 'filled' : ''
+                className={`material-symbols-rounded text-[16px] transition-transform duration-200 ${
+                  isActive ? 'filled scale-105' : ''
                 }`}
               >
                 {item.icon}
@@ -66,7 +119,7 @@ export function GlassSegmentedControl<T extends string>({
                     : 'color-mix(in srgb, var(--text-muted) 20%, transparent)',
                   color: isActive ? '#ffffff' : 'var(--text-secondary)',
                 }}
-                className="px-1.5 py-0.2 rounded-full text-[10px] font-bold"
+                className="px-1.5 py-0.2 rounded-full text-[10px] font-bold transition-colors duration-200"
               >
                 {item.badge}
               </span>

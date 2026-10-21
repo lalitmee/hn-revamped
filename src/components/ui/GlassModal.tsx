@@ -35,16 +35,16 @@ export const GlassModal: React.FC<GlassModalProps> = ({
   return (
     <div
       onClick={onClose}
-      className={`fixed inset-0 z-50 flex justify-center ${
+      className={`animate-glass-backdrop fixed inset-0 z-50 flex justify-center ${
         topAligned ? 'items-start pt-16 sm:pt-20' : 'items-center'
-      } bg-black/45 backdrop-blur-md p-4 transition-opacity`}
+      } bg-black/45 backdrop-blur-md p-4`}
     >
       <div
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
         style={{ color: 'var(--text-primary)' }}
-        className={`liquid-glass-modal w-full ${maxWidthClass} max-h-[88vh] flex flex-col rounded-3xl overflow-hidden`}
+        className={`liquid-glass-modal animate-glass-modal w-full ${maxWidthClass} max-h-[88vh] flex flex-col rounded-3xl overflow-hidden`}
       >
         {title && (
           <div

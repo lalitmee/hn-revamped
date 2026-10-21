@@ -4,6 +4,7 @@ import React from 'react';
 import { FeedType, LayoutMode } from '@/types/hn';
 import { TimeTravelPopover, TimeTravelPreset } from '@/components/modals/TimeTravelPopover';
 import { GlassButton } from '@/components/ui/GlassButton';
+import { GlassSegmentedControl } from '@/components/ui/GlassSegmentedControl';
 
 interface AppHeaderProps {
   activeFeed: FeedType;
@@ -48,7 +49,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       }}
       className="sticky top-0 z-30 backdrop-blur-xl border-b px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shrink-0"
     >
-      {/* Left: Brand + Feed Category Pills */}
+      {/* Left: Brand + Gliding Feed Category Segmented Pill */}
       <div className="flex items-center gap-3 overflow-x-auto no-scrollbar">
         <div className="flex items-center gap-2.5 pr-1 shrink-0">
           <div className="liquid-glass-primary w-8 h-8 rounded-xl flex items-center justify-center text-white font-black text-sm">
@@ -59,47 +60,18 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           </span>
         </div>
 
-        <nav className="liquid-glass p-1 rounded-2xl flex items-center gap-1">
-          {FEED_TABS.map((tab) => {
-            const isActive = activeFeed === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => onSelectFeed(tab.id)}
-                style={{
-                  color: isActive ? '#ffffff' : 'var(--text-secondary)',
-                }}
-                className={`h-7 px-3 rounded-xl text-xs inline-flex items-center gap-1.5 cursor-pointer transition-all select-none ${
-                  isActive
-                    ? 'liquid-glass-primary font-bold'
-                    : 'hover:bg-white/5 font-semibold'
-                }`}
-              >
-                <span
-                  className={`material-symbols-rounded text-[15px] ${
-                    isActive ? 'filled' : ''
-                  }`}
-                >
-                  {tab.icon}
-                </span>
-                <span>{tab.label}</span>
-                {tab.id === 'saved' && savedCount > 0 && (
-                  <span
-                    style={{
-                      backgroundColor: isActive
-                        ? 'rgba(255,255,255,0.25)'
-                        : 'color-mix(in srgb, var(--accent) 20%, transparent)',
-                      color: isActive ? '#ffffff' : 'var(--accent)',
-                    }}
-                    className="px-1.5 py-0.2 rounded-full text-[10px] font-bold leading-none"
-                  >
-                    {savedCount}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+        <nav aria-label="Story Feeds">
+          <GlassSegmentedControl
+            size="sm"
+            value={activeFeed}
+            onChange={onSelectFeed}
+            items={FEED_TABS.map((tab) => ({
+              id: tab.id,
+              label: tab.label,
+              icon: tab.icon,
+              badge: tab.id === 'saved' && savedCount > 0 ? savedCount : undefined,
+            }))}
+          />
         </nav>
       </div>
 
@@ -128,16 +100,28 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           <span className="hidden sm:inline">Appearance</span>
         </GlassButton>
 
+        <div title="Toggle Split-Pane / Zen Mode (z)" className="hidden sm:inline-flex">
+          <GlassSegmentedControl
+            size="sm"
+            value={layoutMode}
+            onChange={(mode) => {
+              if (mode !== layoutMode) onToggleLayoutMode();
+            }}
+            items={[
+              { id: 'split', label: 'Split', icon: 'vertical_split' },
+              { id: 'zen', label: 'Zen', icon: 'width_normal' },
+            ]}
+          />
+        </div>
+
         <GlassButton
+          variant="icon"
           icon={layoutMode === 'split' ? 'vertical_split' : 'width_normal'}
           iconAccent
           onClick={onToggleLayoutMode}
           title="Toggle Split-Pane / Zen Mode (z)"
-        >
-          <span className="hidden sm:inline">
-            {layoutMode === 'split' ? 'Split' : 'Zen'}
-          </span>
-        </GlassButton>
+          className="sm:hidden"
+        />
 
         <GlassButton
           variant="icon"

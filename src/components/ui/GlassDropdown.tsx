@@ -77,7 +77,7 @@ export function GlassDropdown<T extends string>({
       {isOpen && (
         <div
           role="listbox"
-          className="liquid-glass-elevated absolute right-0 mt-2 w-52 rounded-2xl p-1.5 z-50 space-y-0.5"
+          className="liquid-glass-elevated animate-glass-pop absolute right-0 mt-2 w-52 rounded-2xl p-1.5 z-50 space-y-0.5"
         >
           {options.map((opt) => {
             const isSelected = opt.id === value;
