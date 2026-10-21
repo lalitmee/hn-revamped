@@ -8,6 +8,8 @@ export type FontFamilyId = 'sans' | 'serif' | 'hyperlegible' | 'mono';
 
 export type LineWidthOption = '55ch' | '65ch' | '75ch' | 'full';
 
+export type ThemeMode = 'system' | 'light' | 'dark';
+
 export type ThemeId =
   | 'warm-paper'
   | 'kindle-sepia'
@@ -105,6 +107,9 @@ export interface ReadHistoryEntry {
 
 export interface UserPreferences {
   themeId: ThemeId;
+  themeMode?: ThemeMode;
+  lightThemeId?: ThemeId;
+  darkThemeId?: ThemeId;
   fontFamily: FontFamilyId;
   fontSize: number;
   lineHeight: number;

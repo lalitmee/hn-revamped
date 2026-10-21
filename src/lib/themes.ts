@@ -244,6 +244,9 @@ export const FONT_FAMILIES: Record<FontFamilyId, { label: string; cssValue: stri
 
 export const DEFAULT_PREFERENCES: UserPreferences = {
   themeId: 'obsidian-slate',
+  themeMode: 'system',
+  lightThemeId: 'warm-paper',
+  darkThemeId: 'obsidian-slate',
   fontFamily: 'sans',
   fontSize: 16,
   lineHeight: 1.65,
@@ -253,6 +256,23 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   mutedKeywords: [],
   mutedDomains: [],
 };
+
+export function resolveActiveThemeId(
+  prefs: UserPreferences,
+  systemPrefersDark: boolean
+): ThemeId {
+  const mode = prefs.themeMode ?? 'dark';
+  const lightId = prefs.lightThemeId ?? 'warm-paper';
+  const darkId = prefs.darkThemeId ?? 'obsidian-slate';
+
+  if (mode === 'light') {
+    return THEMES[ prefs.themeId ]?.mode === 'light' ? prefs.themeId : lightId;
+  }
+  if (mode === 'dark') {
+    return THEMES[ prefs.themeId ]?.mode === 'dark' ? prefs.themeId : darkId;
+  }
+  return systemPrefersDark ? darkId : lightId;
+}
 
 export function getThemeCssVars(themeId: ThemeId): Record<string, string> {
   const theme = THEMES[themeId] ?? THEMES['obsidian-slate'];

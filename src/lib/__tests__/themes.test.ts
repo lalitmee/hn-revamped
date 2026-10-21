@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { THEMES, getThemeCssVars, DEFAULT_PREFERENCES } from '../themes';
+import { THEMES, getThemeCssVars, DEFAULT_PREFERENCES, resolveActiveThemeId } from '../themes';
 
 describe('Multi-Source Theme Engine', () => {
   it('defines all 11 reader and code themes with complete semantic tokens', () => {
@@ -33,5 +33,32 @@ describe('Multi-Source Theme Engine', () => {
     expect(DEFAULT_PREFERENCES.layoutMode).toBe('split');
     expect(DEFAULT_PREFERENCES.fontSize).toBe(16);
     expect(DEFAULT_PREFERENCES.lineWidth).toBe('65ch');
+    expect(DEFAULT_PREFERENCES.themeMode).toBe('system');
+  });
+
+  it('resolves Light, Dark, and System theme modes accurately', () => {
+    expect(
+      resolveActiveThemeId(
+        {
+          ...DEFAULT_PREFERENCES,
+          themeMode: 'system',
+          lightThemeId: 'kindle-sepia',
+          darkThemeId: 'catppuccin-mocha',
+        },
+        false
+      )
+    ).toBe('kindle-sepia');
+
+    expect(
+      resolveActiveThemeId(
+        {
+          ...DEFAULT_PREFERENCES,
+          themeMode: 'system',
+          lightThemeId: 'kindle-sepia',
+          darkThemeId: 'catppuccin-mocha',
+        },
+        true
+      )
+    ).toBe('catppuccin-mocha');
   });
 });

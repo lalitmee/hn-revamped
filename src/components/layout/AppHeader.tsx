@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { FeedType, LayoutMode } from '@/types/hn';
+import { FeedType, LayoutMode, ThemeMode } from '@/types/hn';
 import { TimeTravelPopover, TimeTravelPreset } from '@/components/modals/TimeTravelPopover';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { GlassSegmentedControl } from '@/components/ui/GlassSegmentedControl';
@@ -11,6 +11,8 @@ interface AppHeaderProps {
   onSelectFeed: (feed: FeedType) => void;
   layoutMode: LayoutMode;
   onToggleLayoutMode: () => void;
+  themeMode: ThemeMode;
+  onSelectThemeMode: (mode: ThemeMode) => void;
   timeTravelPreset: TimeTravelPreset;
   onSelectTimeTravel: (preset: TimeTravelPreset) => void;
   onOpenSearch: () => void;
@@ -34,6 +36,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onSelectFeed,
   layoutMode,
   onToggleLayoutMode,
+  themeMode,
+  onSelectThemeMode,
   timeTravelPreset,
   onSelectTimeTravel,
   onOpenSearch,
@@ -75,7 +79,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         </nav>
       </div>
 
-      {/* Right: Uniform h-9 Liquid Glass Toolbar Controls */}
+      {/* Right: Uniform Liquid Glass Toolbar Controls */}
       <div className="flex items-center gap-2 shrink-0">
         <TimeTravelPopover
           activePreset={timeTravelPreset}
@@ -91,13 +95,27 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           <span className="hidden md:inline">Search</span>
         </GlassButton>
 
+        {/* Quick System / Light / Dark Mode Gliding Pill */}
+        <div title="Color Mode: Light, System, or Dark" className="inline-flex">
+          <GlassSegmentedControl<ThemeMode>
+            size="sm"
+            value={themeMode}
+            onChange={onSelectThemeMode}
+            items={[
+              { id: 'light', label: 'Light', icon: 'light_mode' },
+              { id: 'system', label: 'Auto', icon: 'contrast' },
+              { id: 'dark', label: 'Dark', icon: 'dark_mode' },
+            ]}
+          />
+        </div>
+
         <GlassButton
           icon="palette"
           iconAccent
           onClick={onOpenAppearance}
           title="Theme, Typography & Filter Studio (t)"
         >
-          <span className="hidden sm:inline">Appearance</span>
+          <span className="hidden xl:inline">Studio</span>
         </GlassButton>
 
         <div title="Toggle Split-Pane / Zen Mode (z)" className="hidden sm:inline-flex">

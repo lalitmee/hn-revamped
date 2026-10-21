@@ -7,9 +7,15 @@ import {
   HNStory,
   HNStoryWithComments,
   ReadHistoryEntry,
+  ThemeMode,
   UserPreferences,
 } from '@/types/hn';
-import { DEFAULT_PREFERENCES, FONT_FAMILIES, getThemeCssVars } from '@/lib/themes';
+import {
+  DEFAULT_PREFERENCES,
+  FONT_FAMILIES,
+  getThemeCssVars,
+  resolveActiveThemeId,
+} from '@/lib/themes';
 import {
   fetchFeedStories,
   fetchStoryWithComments,
@@ -51,17 +57,31 @@ export const WorkspaceShell: React.FC = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isAppearanceOpen, setIsAppearanceOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const [systemPrefersDark, setSystemPrefersDark] = useState(true);
 
-  // Hydrate local preferences, read history, and bookmarks
+  // Hydrate local preferences, read history, bookmarks, and OS color scheme
   useEffect(() => {
     setPreferences(loadPreferences());
     setReadHistory(loadReadHistory());
     setBookmarks(loadBookmarks());
+
+    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+      const mql = window.matchMedia('(prefers-color-scheme: dark)');
+      setSystemPrefersDark(mql.matches);
+      const listener = (e: MediaQueryListEvent) => setSystemPrefersDark(e.matches);
+      mql.addEventListener?.('change', listener);
+      return () => mql.removeEventListener?.('change', listener);
+    }
   }, []);
+
+  const resolvedThemeId = useMemo(
+    () => resolveActiveThemeId(preferences, systemPrefersDark),
+    [preferences, systemPrefersDark]
+  );
 
   // Apply theme CSS variables and typography settings
   useEffect(() => {
-    const vars = getThemeCssVars(preferences.themeId);
+    const vars = getThemeCssVars(resolvedThemeId);
     const root = document.documentElement;
     Object.entries(vars).forEach(([k, v]) => root.style.setProperty(k, v));
     root.style.setProperty(
@@ -74,7 +94,7 @@ export const WorkspaceShell: React.FC = () => {
       '--reader-line-width',
       preferences.lineWidth === 'full' ? '100%' : preferences.lineWidth
     );
-  }, [preferences]);
+  }, [preferences, resolvedThemeId]);
 
   const handleUpdatePreferences = useCallback((next: UserPreferences) => {
     setPreferences(next);
@@ -253,6 +273,24 @@ export const WorkspaceShell: React.FC = () => {
             layoutMode: preferences.layoutMode === 'split' ? 'zen' : 'split',
           })
         }
+        themeMode={preferences.themeMode ?? 'system'}
+        onSelectThemeMode={(mode: ThemeMode) => {
+          const lightId = preferences.lightThemeId ?? 'warm-paper';
+          const darkId = preferences.darkThemeId ?? 'obsidian-slate';
+          const nextThemeId =
+            mode === 'light'
+              ? lightId
+              : mode === 'dark'
+              ? darkId
+              : systemPrefersDark
+              ? darkId
+              : lightId;
+          handleUpdatePreferences({
+            ...preferences,
+            themeMode: mode,
+            themeId: nextThemeId,
+          });
+        }}
         timeTravelPreset={timeTravel}
         onSelectTimeTravel={handleSelectTimeTravel}
         onOpenSearch={() => setIsSearchOpen(true)}
@@ -370,7 +408,7 @@ export const WorkspaceShell: React.FC = () => {
 
       <AppearanceModal
         isOpen={isAppearanceOpen}
-        preferences={preferences}
+        preferences={{ ...preferences, themeId: resolvedThemeId }}
         onUpdate={handleUpdatePreferences}
         onClose={() => setIsAppearanceOpen(false)}
       />

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { FontFamilyId, LineWidthOption, ThemeId, UserPreferences } from '@/types/hn';
+import { FontFamilyId, LineWidthOption, ThemeId, ThemeMode, UserPreferences } from '@/types/hn';
 import { FONT_FAMILIES, THEMES } from '@/lib/themes';
 import { GlassModal } from '@/components/ui/GlassModal';
 import { GlassSegmentedControl } from '@/components/ui/GlassSegmentedControl';
@@ -30,6 +30,43 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
 
   const readerThemes = Object.values(THEMES).filter((t) => t.category === 'reader');
   const codeThemes = Object.values(THEMES).filter((t) => t.category === 'code');
+
+  const currentMode: ThemeMode = preferences.themeMode ?? 'system';
+  const lightThemeId: ThemeId = preferences.lightThemeId ?? 'warm-paper';
+  const darkThemeId: ThemeId = preferences.darkThemeId ?? 'obsidian-slate';
+
+  const handleSelectPalette = (id: ThemeId) => {
+    const picked = THEMES[id];
+    if (picked.mode === 'light') {
+      onUpdate({
+        ...preferences,
+        themeId: id,
+        lightThemeId: id,
+        themeMode: 'light',
+      });
+    } else {
+      onUpdate({
+        ...preferences,
+        themeId: id,
+        darkThemeId: id,
+        themeMode: 'dark',
+      });
+    }
+  };
+
+  const handleSelectMode = (mode: ThemeMode) => {
+    const nextThemeId =
+      mode === 'light'
+        ? lightThemeId
+        : mode === 'dark'
+        ? darkThemeId
+        : preferences.themeId;
+    onUpdate({
+      ...preferences,
+      themeMode: mode,
+      themeId: nextThemeId,
+    });
+  };
 
   return (
     <GlassModal
@@ -61,6 +98,26 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
         {/* TAB 1: THEMES */}
         {activeTab === 'themes' && (
           <div className="space-y-5">
+            {/* Color Mode Switcher: Light / System / Dark */}
+            <div className="liquid-glass p-3.5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-semibold">Color Scheme Mode</div>
+                <div style={{ color: 'var(--text-muted)' }} className="text-xs mt-0.5">
+                  Auto-sync with OS or lock to your preferred Light ({THEMES[lightThemeId].name}) or Dark ({THEMES[darkThemeId].name}) palette
+                </div>
+              </div>
+              <GlassSegmentedControl<ThemeMode>
+                size="sm"
+                value={currentMode}
+                onChange={handleSelectMode}
+                items={[
+                  { id: 'light', label: 'Light', icon: 'light_mode' },
+                  { id: 'system', label: 'System', icon: 'contrast' },
+                  { id: 'dark', label: 'Dark', icon: 'dark_mode' },
+                ]}
+              />
+            </div>
+
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <span
@@ -79,11 +136,14 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {readerThemes.map((t) => {
                   const isSelected = preferences.themeId === t.id;
+                  const isPreferredPair =
+                    (t.mode === 'light' && lightThemeId === t.id) ||
+                    (t.mode === 'dark' && darkThemeId === t.id);
                   return (
                     <button
                       key={t.id}
                       type="button"
-                      onClick={() => onUpdate({ ...preferences, themeId: t.id as ThemeId })}
+                      onClick={() => handleSelectPalette(t.id as ThemeId)}
                       style={{
                         backgroundColor: t.colors.bgCanvas,
                         color: t.colors.textPrimary,
@@ -95,9 +155,9 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                       className="p-3.5 rounded-2xl border text-left cursor-pointer transition-all hover:scale-[1.01] flex items-center justify-between gap-3"
                     >
                       <div className="min-w-0">
-                        <div className="text-sm font-bold flex items-center gap-2">
+                        <div className="text-sm font-bold flex items-center gap-2 flex-wrap">
                           <span>{t.name}</span>
-                          {isSelected && (
+                          {isSelected ? (
                             <span
                               style={{
                                 backgroundColor: t.colors.accent,
@@ -107,10 +167,20 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                             >
                               Active
                             </span>
-                          )}
+                          ) : isPreferredPair ? (
+                            <span
+                              style={{
+                                backgroundColor: t.colors.bgSurface2,
+                                color: t.colors.textSecondary,
+                              }}
+                              className="px-1.5 py-0.5 rounded-md text-[10px] font-semibold uppercase"
+                            >
+                              {t.mode === 'light' ? 'Light Default' : 'Dark Default'}
+                            </span>
+                          ) : null}
                         </div>
                         <div style={{ color: t.colors.textMuted }} className="text-xs mt-0.5">
-                          {t.inspiration}
+                          {t.inspiration} · {t.mode === 'light' ? 'Light' : 'Dark'}
                         </div>
                       </div>
 
@@ -161,11 +231,14 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {codeThemes.map((t) => {
                   const isSelected = preferences.themeId === t.id;
+                  const isPreferredPair =
+                    (t.mode === 'light' && lightThemeId === t.id) ||
+                    (t.mode === 'dark' && darkThemeId === t.id);
                   return (
                     <button
                       key={t.id}
                       type="button"
-                      onClick={() => onUpdate({ ...preferences, themeId: t.id as ThemeId })}
+                      onClick={() => handleSelectPalette(t.id as ThemeId)}
                       style={{
                         backgroundColor: t.colors.bgCanvas,
                         color: t.colors.textPrimary,
@@ -177,9 +250,9 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                       className="p-3.5 rounded-2xl border text-left cursor-pointer transition-all hover:scale-[1.01] flex items-center justify-between gap-3"
                     >
                       <div className="min-w-0">
-                        <div className="text-sm font-bold flex items-center gap-2">
+                        <div className="text-sm font-bold flex items-center gap-2 flex-wrap">
                           <span>{t.name}</span>
-                          {isSelected && (
+                          {isSelected ? (
                             <span
                               style={{
                                 backgroundColor: t.colors.accent,
@@ -189,10 +262,20 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                             >
                               Active
                             </span>
-                          )}
+                          ) : isPreferredPair ? (
+                            <span
+                              style={{
+                                backgroundColor: t.colors.bgSurface2,
+                                color: t.colors.textSecondary,
+                              }}
+                              className="px-1.5 py-0.5 rounded-md text-[10px] font-semibold uppercase"
+                            >
+                              {t.mode === 'light' ? 'Light Default' : 'Dark Default'}
+                            </span>
+                          ) : null}
                         </div>
                         <div style={{ color: t.colors.textMuted }} className="text-xs mt-0.5">
-                          {t.inspiration}
+                          {t.inspiration} · {t.mode === 'light' ? 'Light' : 'Dark'}
                         </div>
                       </div>
 
