@@ -242,11 +242,23 @@ export const FONT_FAMILIES: Record<FontFamilyId, { label: string; cssValue: stri
   },
 };
 
+export const ACCENT_PRESETS: { id: string; label: string; color: string }[] = [
+  { id: 'tangerine', label: 'HN Tangerine', color: '#F97316' },
+  { id: 'blue', label: 'Google Blue', color: '#3B82F6' },
+  { id: 'emerald', label: 'Emerald Mint', color: '#10B981' },
+  { id: 'violet', label: 'Royal Violet', color: '#8B5CF6' },
+  { id: 'rose', label: 'Rose Coral', color: '#F43F5E' },
+  { id: 'amber', label: 'Amber Gold', color: '#F59E0B' },
+  { id: 'cyan', label: 'Cyan Teal', color: '#06B6D4' },
+  { id: 'indigo', label: 'Electric Indigo', color: '#6366F1' },
+];
+
 export const DEFAULT_PREFERENCES: UserPreferences = {
   themeId: 'obsidian-slate',
   themeMode: 'system',
   lightThemeId: 'warm-paper',
   darkThemeId: 'obsidian-slate',
+  customAccent: null,
   fontFamily: 'sans',
   fontSize: 16,
   lineHeight: 1.65,
@@ -274,8 +286,15 @@ export function resolveActiveThemeId(
   return systemPrefersDark ? darkId : lightId;
 }
 
-export function getThemeCssVars(themeId: ThemeId): Record<string, string> {
+export function getThemeCssVars(
+  themeId: ThemeId,
+  customAccent?: string | null
+): Record<string, string> {
   const theme = THEMES[themeId] ?? THEMES['obsidian-slate'];
+  const effectiveAccent =
+    customAccent && /^#[0-9A-Fa-f]{6}$/.test(customAccent)
+      ? customAccent
+      : theme.colors.accent;
   return {
     '--bg-canvas': theme.colors.bgCanvas,
     '--bg-surface-1': theme.colors.bgSurface1,
@@ -284,7 +303,7 @@ export function getThemeCssVars(themeId: ThemeId): Record<string, string> {
     '--text-primary': theme.colors.textPrimary,
     '--text-secondary': theme.colors.textSecondary,
     '--text-muted': theme.colors.textMuted,
-    '--accent': theme.colors.accent,
+    '--accent': effectiveAccent,
     '--link-unvisited': theme.colors.linkUnvisited,
     '--link-visited': theme.colors.linkVisited,
     '--border-subtle': theme.colors.borderSubtle,

@@ -22,11 +22,15 @@ describe('Multi-Source Theme Engine', () => {
     }
   });
 
-  it('generates CSS variable map for a given theme', () => {
+  it('generates CSS variable map for a given theme and supports custom accent override', () => {
     const vars = getThemeCssVars('kindle-sepia');
     expect(vars['--bg-canvas']).toBe('#F4ECD8');
+    expect(vars['--accent']).toBe('#B45309');
     expect(vars['--link-unvisited']).toBe('#0369A1');
     expect(vars['--link-visited']).toBe('#6D28D9');
+
+    const customVars = getThemeCssVars('kindle-sepia', '#3B82F6');
+    expect(customVars['--accent']).toBe('#3B82F6');
   });
 
   it('exports sensible default user preferences', () => {

@@ -110,6 +110,7 @@ export interface UserPreferences {
   themeMode?: ThemeMode;
   lightThemeId?: ThemeId;
   darkThemeId?: ThemeId;
+  customAccent?: string | null;
   fontFamily: FontFamilyId;
   fontSize: number;
   lineHeight: number;

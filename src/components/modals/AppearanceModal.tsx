@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { FontFamilyId, LineWidthOption, ThemeId, ThemeMode, UserPreferences } from '@/types/hn';
-import { FONT_FAMILIES, THEMES } from '@/lib/themes';
+import { ACCENT_PRESETS, FONT_FAMILIES, THEMES } from '@/lib/themes';
 import { GlassModal } from '@/components/ui/GlassModal';
 import { GlassSegmentedControl } from '@/components/ui/GlassSegmentedControl';
 import { GlassSlider } from '@/components/ui/GlassSlider';
@@ -104,7 +104,7 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
         {activeTab === 'themes' && (
           <div className="space-y-5">
             {/* Color Mode Switcher: Light / System / Dark */}
-            <div className="liquid-glass p-3.5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="liquid-glass p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <div className="text-sm font-semibold">Color Scheme Mode</div>
                 <div style={{ color: 'var(--text-muted)' }} className="text-xs mt-0.5">
@@ -121,6 +121,106 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                   { id: 'dark', label: 'Dark', icon: 'dark_mode' },
                 ]}
               />
+            </div>
+
+            {/* Accent Color Studio: Presets + Custom Color Picker + Theme Default */}
+            <div className="liquid-glass p-4 rounded-2xl space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <div className="text-sm font-semibold">Primary Accent Color</div>
+                  <div style={{ color: 'var(--text-muted)' }} className="text-xs mt-0.5">
+                    Pick a Material 3 preset swatch, choose any custom color, or use the theme default
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => onUpdate({ ...preferences, customAccent: null })}
+                  style={{
+                    backgroundColor: !preferences.customAccent
+                      ? 'var(--accent)'
+                      : 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
+                    color: !preferences.customAccent ? '#ffffff' : 'var(--text-secondary)',
+                  }}
+                  className="px-3 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-colors"
+                >
+                  Theme Default ({THEMES[preferences.themeId]?.colors.accent})
+                </button>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                {ACCENT_PRESETS.map((preset) => {
+                  const isActive =
+                    preferences.customAccent?.toLowerCase() === preset.color.toLowerCase();
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      title={`${preset.label} (${preset.color})`}
+                      aria-label={preset.label}
+                      onClick={() =>
+                        onUpdate({ ...preferences, customAccent: preset.color })
+                      }
+                      style={{
+                        backgroundColor: preset.color,
+                        boxShadow: isActive
+                          ? `0 0 0 2px var(--bg-surface-1), 0 0 0 4px ${preset.color}`
+                          : undefined,
+                      }}
+                      className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-transform hover:scale-110 active:scale-95"
+                    >
+                      {isActive && (
+                        <span className="material-symbols-rounded text-white text-[16px] font-bold">
+                          check
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+
+                {/* Custom Color Picker Pill */}
+                <label
+                  title="Pick any custom accent color"
+                  style={{
+                    backgroundColor:
+                      'color-mix(in srgb, var(--text-primary) 8%, transparent)',
+                    borderColor: preferences.customAccent
+                      ? 'var(--accent)'
+                      : 'var(--border-subtle)',
+                  }}
+                  className="relative inline-flex items-center gap-2 pl-2 pr-3 py-1 rounded-full border text-xs font-semibold cursor-pointer hover:brightness-105 ml-auto"
+                >
+                  <span
+                    style={{
+                      backgroundColor:
+                        preferences.customAccent ??
+                        THEMES[preferences.themeId]?.colors.accent,
+                    }}
+                    className="w-5 h-5 rounded-full inline-flex items-center justify-center text-white"
+                  >
+                    <span className="material-symbols-rounded text-[13px]">colorize</span>
+                  </span>
+                  <span className="font-mono uppercase">
+                    {preferences.customAccent ?? 'Custom'}
+                  </span>
+                  <input
+                    type="color"
+                    aria-label="Custom accent color picker"
+                    value={
+                      preferences.customAccent ??
+                      THEMES[preferences.themeId]?.colors.accent ??
+                      '#F97316'
+                    }
+                    onChange={(e) =>
+                      onUpdate({
+                        ...preferences,
+                        customAccent: e.target.value.toUpperCase(),
+                      })
+                    }
+                    className="sr-only"
+                  />
+                </label>
+              </div>
             </div>
 
             <div>

@@ -104,7 +104,10 @@ export const WorkspaceShell: React.FC = () => {
   );
 
   const activeTheme = THEMES[resolvedThemeId] ?? THEMES['obsidian-slate'];
-  const themeVars = useMemo(() => getThemeCssVars(resolvedThemeId), [resolvedThemeId]);
+  const themeVars = useMemo(
+    () => getThemeCssVars(resolvedThemeId, preferences.customAccent),
+    [resolvedThemeId, preferences.customAccent]
+  );
 
   // Apply theme CSS variables, color-scheme lock (for Brave ForceDark), and typography settings
   useEffect(() => {
