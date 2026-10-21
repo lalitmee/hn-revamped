@@ -169,17 +169,21 @@ export const WorkspaceShell: React.FC = () => {
   }, []);
 
   const handleSelectStory = useCallback(
-    (story: HNStory, options?: { skipUrlSync?: boolean }) => {
+    (story: HNStory, options?: { skipUrlSync?: boolean; isPlaceholder?: boolean }) => {
       setLoadingDetail(true);
       if (!options?.skipUrlSync) {
         syncStoryQueryParam(story.id);
       }
-      const updatedHistory = markStoryAsRead(story.id, story.commentsCount);
-      setReadHistory(updatedHistory);
+      if (!options?.isPlaceholder) {
+        const updatedHistory = markStoryAsRead(story.id, story.commentsCount);
+        setReadHistory(updatedHistory);
+      }
 
       fetchStoryWithComments(story.id)
         .then((fullStory) => {
           setSelectedStory(fullStory);
+          const updatedHistory = markStoryAsRead(fullStory.id, fullStory.commentsCount);
+          setReadHistory(updatedHistory);
           if (!options?.skipUrlSync && fullStory.id !== story.id) {
             syncStoryQueryParam(fullStory.id, true);
           }
@@ -216,7 +220,7 @@ export const WorkspaceShell: React.FC = () => {
             badges: [],
             type: 'story',
           },
-          { skipUrlSync: true }
+          { skipUrlSync: true, isPlaceholder: true }
         );
       } else {
         setSelectedStory(null);
@@ -470,17 +474,20 @@ export const WorkspaceShell: React.FC = () => {
                 setBookmarks(toggleBookmarkStory(selectedStory).bookmarks);
               }}
               onInternalHnLinkClick={(id) =>
-                handleSelectStory({
-                  id,
-                  title: `Story #${id}`,
-                  cleanTitle: `Story #${id}`,
-                  points: 0,
-                  user: '',
-                  time: Math.floor(Date.now() / 1000),
-                  commentsCount: 0,
-                  badges: [],
-                  type: 'story',
-                })
+                handleSelectStory(
+                  {
+                    id,
+                    title: `Story #${id}`,
+                    cleanTitle: `Story #${id}`,
+                    points: 0,
+                    user: '',
+                    time: Math.floor(Date.now() / 1000),
+                    commentsCount: 0,
+                    badges: [],
+                    type: 'story',
+                  },
+                  { isPlaceholder: true }
+                )
               }
             />
           </section>

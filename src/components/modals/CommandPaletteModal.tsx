@@ -23,18 +23,39 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!isOpen || !query.trim()) {
+    const trimmed = query.trim();
+    if (!isOpen || !trimmed) {
+      setLoading(false);
       setResults([]);
       return;
     }
+
+    let cancelled = false;
+    setLoading(true);
+
     const timer = setTimeout(() => {
-      setLoading(true);
-      searchHN({ query, sortBy })
-        .then(setResults)
-        .catch(() => setResults([]))
-        .finally(() => setLoading(false));
+      searchHN({ query: trimmed, sortBy })
+        .then((hits) => {
+          if (!cancelled) {
+            setResults(hits);
+          }
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setResults([]);
+          }
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setLoading(false);
+          }
+        });
     }, 240);
-    return () => clearTimeout(timer);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [query, sortBy, isOpen]);
 
   return (
@@ -172,6 +193,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         )}
 
         {!loading &&
+          Boolean(query.trim()) &&
           results.map((story, idx) => (
             <button
               key={story.id}

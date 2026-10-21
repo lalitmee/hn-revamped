@@ -41,15 +41,42 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
     prevCountRef.current = stories.length;
   }, [stories.length]);
 
-  // Automatically scroll the selected story into view in the feed list
+  // Automatically center the selected story in the middle of the feed viewport
   useEffect(() => {
     if (!selectedStoryId || !containerRef.current) return;
-    const activeEl = containerRef.current.querySelector<HTMLElement>(
-      `[data-story-id="${selectedStoryId}"]`
-    );
-    if (activeEl && typeof activeEl.scrollIntoView === 'function') {
-      activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
+
+    const scrollSelectedToCenter = () => {
+      const container = containerRef.current;
+      if (!container) return;
+      const activeEl = container.querySelector<HTMLElement>(
+        `[data-story-id="${selectedStoryId}"]`
+      );
+      if (!activeEl) return;
+
+      const scrollParent = container.parentElement;
+      if (
+        scrollParent &&
+        scrollParent.scrollHeight > scrollParent.clientHeight &&
+        typeof scrollParent.scrollTo === 'function'
+      ) {
+        const itemTop = activeEl.offsetTop;
+        const itemHeight = activeEl.offsetHeight;
+        const targetScrollTop = Math.max(
+          0,
+          itemTop - scrollParent.clientHeight / 2 + itemHeight / 2
+        );
+        scrollParent.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+      } else if (typeof activeEl.scrollIntoView === 'function') {
+        activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    };
+
+    const rafId = requestAnimationFrame(scrollSelectedToCenter);
+    const timer = setTimeout(scrollSelectedToCenter, 180);
+    return () => {
+      cancelAnimationFrame(rafId);
+      clearTimeout(timer);
+    };
   }, [selectedStoryId, stories.length]);
 
   if (loading && stories.length === 0) {
