@@ -1,0 +1,138 @@
+@import "tailwindcss";
+
+:root {
+  --bg-canvas: #0C0C0E;
+  --bg-surface-1: #16171B;
+  --bg-surface-2: #202228;
+  --bg-surface-active: #261C16;
+  --text-primary: #F3F4F6;
+  --text-secondary: #D1D5DB;
+  --text-muted: #9CA3AF;
+  --accent: #FB923C;
+  --link-unvisited: #60A5FA;
+  --link-visited: #A78BFA;
+  --border-subtle: #262932;
+  --reader-font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+  --reader-font-size: 16px;
+  --reader-line-height: 1.65;
+  --reader-line-width: 65ch;
+}
+
+body {
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--reader-font-family);
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+.material-symbols-rounded {
+  font-family: 'Material Symbols Rounded';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-variation-settings: 'FILL' 0, 'wght' 450, 'GRAD' 0, 'opsz' 20;
+  user-select: none;
+}
+
+.material-symbols-rounded.filled {
+  font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 20;
+}
+
+/* Thoughtful Semantic Link Rules for Comments & Article Reader */
+.hn-prose {
+  font-family: var(--reader-font-family);
+  font-size: var(--reader-font-size);
+  line-height: var(--reader-line-height);
+  max-width: var(--reader-line-width);
+  color: var(--text-primary);
+}
+
+.hn-prose p {
+  margin-bottom: 0.85em;
+}
+
+.hn-prose p:last-child {
+  margin-bottom: 0;
+}
+
+.hn-prose a.hn-external-link,
+.hn-article-body a {
+  color: var(--link-unvisited);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--link-unvisited) 40%, transparent);
+  text-underline-offset: 3px;
+  font-weight: 500;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease;
+  word-break: break-word;
+}
+
+.hn-prose a.hn-external-link:visited,
+.hn-article-body a:visited {
+  color: var(--link-visited);
+  text-decoration-color: color-mix(in srgb, var(--link-visited) 40%, transparent);
+}
+
+.hn-prose a.hn-external-link:hover,
+.hn-article-body a:hover {
+  text-decoration-color: currentColor;
+}
+
+.hn-prose a.hn-internal-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background-color: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  padding: 1px 7px;
+  border-radius: 6px;
+  font-size: 0.88em;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.hn-prose .hn-link-icon {
+  font-size: 13px;
+  margin-left: 2px;
+  vertical-align: middle;
+}
+
+.hn-prose pre,
+.hn-article-body pre {
+  background-color: var(--bg-surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 12px 16px;
+  overflow-x: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.88em;
+  margin: 0.9em 0;
+}
+
+.hn-prose code,
+.hn-article-body code {
+  font-family: 'JetBrains Mono', monospace;
+  background-color: var(--bg-surface-2);
+  padding: 2px 5px;
+  border-radius: 5px;
+  font-size: 0.88em;
+}
+
+.hn-prose blockquote,
+.hn-article-body blockquote {
+  border-left: 3px solid var(--accent);
+  padding-left: 14px;
+  margin: 0.8em 0;
+  color: var(--text-secondary);
+  font-style: italic;
+}
