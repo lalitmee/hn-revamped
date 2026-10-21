@@ -61,11 +61,11 @@ export function GlassSegmentedControl<T extends string>({
   return (
     <div
       ref={containerRef}
-      className={`liquid-glass relative p-1 rounded-2xl inline-flex items-center gap-1 ${
+      className={`liquid-glass relative p-1 rounded-full inline-flex items-center gap-0.5 ${
         fullWidth ? 'w-full flex' : ''
       }`}
     >
-      {/* Gliding Liquid Glass Active Pill */}
+      {/* Borderless Material 3 Gliding Active Pill */}
       {hasMeasured && (
         <div
           aria-hidden="true"
@@ -73,9 +73,9 @@ export function GlassSegmentedControl<T extends string>({
             width: `${indicator.width}px`,
             transform: `translate3d(${indicator.left}px, 0, 0)`,
             transition:
-              'transform 300ms cubic-bezier(0.22, 1, 0.36, 1), width 300ms cubic-bezier(0.22, 1, 0.36, 1)',
+              'transform 280ms cubic-bezier(0.2, 0, 0, 1), width 280ms cubic-bezier(0.2, 0, 0, 1)',
           }}
-          className="liquid-glass-primary pointer-events-none absolute top-1 bottom-1 left-0 rounded-xl z-0"
+          className="liquid-glass-primary pointer-events-none absolute top-1 bottom-1 left-0 rounded-full z-0"
         />
       )}
 
@@ -106,8 +106,8 @@ export function GlassSegmentedControl<T extends string>({
             } ${
               isActive
                 ? `${!hasMeasured ? 'liquid-glass-primary ' : ''}font-bold`
-                : 'hover:bg-black/5 font-semibold'
-            } inline-flex items-center gap-1.5 rounded-xl cursor-pointer transition-colors duration-200 select-none`}
+                : 'hover:bg-[color-mix(in_srgb,var(--text-primary)_6%,transparent)] font-semibold'
+            } inline-flex items-center gap-1.5 rounded-full cursor-pointer transition-colors duration-200 select-none`}
           >
             {item.icon && (
               <span
@@ -124,7 +124,7 @@ export function GlassSegmentedControl<T extends string>({
                 style={{
                   backgroundColor: isActive
                     ? 'rgba(255,255,255,0.22)'
-                    : 'color-mix(in srgb, var(--text-muted) 20%, transparent)',
+                    : 'color-mix(in srgb, var(--text-primary) 10%, transparent)',
                   color: isActive ? '#ffffff' : 'var(--text-secondary)',
                 }}
                 className="px-1.5 py-0.2 rounded-full text-[10px] font-bold transition-colors duration-200"

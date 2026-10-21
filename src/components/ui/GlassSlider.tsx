@@ -26,12 +26,15 @@ export const GlassSlider: React.FC<GlassSliderProps> = ({
   return (
     <div className="liquid-glass p-4 rounded-2xl space-y-3">
       <div className="flex items-center justify-between">
-        <span style={{ color: 'var(--text-secondary)' }} className="text-xs font-bold uppercase tracking-wider">
+        <span
+          style={{ color: 'var(--text-secondary)' }}
+          className="text-xs font-bold uppercase tracking-wider"
+        >
           {label}
         </span>
         <span
           style={{
-            backgroundColor: 'color-mix(in srgb, var(--accent) 18%, transparent)',
+            backgroundColor: 'color-mix(in srgb, var(--accent) 16%, transparent)',
             color: 'var(--accent)',
           }}
           className="px-2.5 py-0.5 rounded-full text-xs font-bold font-mono"
@@ -41,20 +44,17 @@ export const GlassSlider: React.FC<GlassSliderProps> = ({
       </div>
 
       <div className="relative h-6 flex items-center">
-        {/* Liquid Glass Progress Track */}
+        {/* Clean Material 3 Slider Track */}
         <div
           style={{
-            backgroundColor: 'color-mix(in srgb, var(--bg-canvas) 65%, transparent)',
-            borderColor: 'var(--border-subtle)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 12%, transparent)',
           }}
-          className="w-full h-2.5 rounded-full border overflow-hidden p-[1px]"
+          className="w-full h-2 rounded-full overflow-hidden"
         >
           <div
             style={{
               width: `${percentage}%`,
-              background:
-                'linear-gradient(90deg, color-mix(in srgb, var(--accent) 60%, transparent), var(--accent))',
-              boxShadow: '0 0 10px color-mix(in srgb, var(--accent) 50%, transparent)',
+              backgroundColor: 'var(--accent)',
             }}
             className="h-full rounded-full transition-all duration-100"
           />
@@ -71,15 +71,14 @@ export const GlassSlider: React.FC<GlassSliderProps> = ({
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
         />
 
-        {/* Visual Liquid Glass Thumb */}
+        {/* Material 3 Solid Pill/Circle Thumb */}
         <div
           style={{
             left: `calc(${percentage}% - 10px)`,
-            background: 'linear-gradient(135deg, #ffffff, #e4e4e7)',
-            borderColor: 'var(--accent)',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 #ffffff',
+            backgroundColor: 'var(--accent)',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.25)',
           }}
-          className="pointer-events-none absolute w-5 h-5 rounded-full border-2 transition-all duration-100"
+          className="pointer-events-none absolute w-5 h-5 rounded-full transition-all duration-100"
         />
       </div>
     </div>

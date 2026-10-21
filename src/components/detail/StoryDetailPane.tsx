@@ -109,7 +109,7 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
               target="_blank"
               rel="noopener noreferrer"
               style={{ color: 'var(--link-unvisited)' }}
-              className="liquid-glass h-9 px-3.5 rounded-xl inline-flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
+              className="liquid-glass h-9 px-4 rounded-full inline-flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
             >
               <span>Open Site</span>
               <span className="material-symbols-rounded text-[15px]">north_east</span>

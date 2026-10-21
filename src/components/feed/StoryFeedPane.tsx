@@ -113,8 +113,8 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
             disabled={loading}
             onClick={onLoadMore}
             style={{ color: 'var(--text-primary)' }}
-            className={`group relative overflow-hidden liquid-glass h-11 px-5 rounded-2xl w-full inline-flex items-center justify-center gap-2.5 text-sm font-semibold cursor-pointer select-none transition-all duration-300 active:scale-[0.99] ${
-              isAppendingMore ? 'liquid-shimmer' : 'hover:scale-[1.005]'
+            className={`group relative overflow-hidden liquid-glass h-11 px-5 rounded-full w-full inline-flex items-center justify-center gap-2.5 text-sm font-semibold cursor-pointer select-none transition-all duration-300 active:scale-[0.99] ${
+              isAppendingMore ? 'liquid-shimmer' : ''
             }`}
           >
             <span

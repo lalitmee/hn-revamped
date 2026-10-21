@@ -55,7 +55,7 @@ export function GlassDropdown<T extends string>({
         aria-expanded={isOpen}
         onClick={() => setIsOpen((prev) => !prev)}
         style={{ color: 'var(--text-primary)' }}
-        className="liquid-glass h-9 px-3.5 rounded-xl inline-flex items-center gap-2 text-xs font-semibold cursor-pointer select-none shrink-0"
+        className="liquid-glass h-9 px-3.5 rounded-full inline-flex items-center gap-2 text-xs font-semibold cursor-pointer select-none shrink-0"
       >
         <span
           style={{ color: 'var(--accent)' }}
@@ -77,7 +77,7 @@ export function GlassDropdown<T extends string>({
       {isOpen && (
         <div
           role="listbox"
-          className="liquid-glass-elevated animate-glass-pop absolute right-0 mt-2 w-52 rounded-2xl p-1.5 z-50 space-y-0.5"
+          className="liquid-glass-elevated animate-glass-pop absolute right-0 mt-2 w-56 rounded-2xl p-1.5 z-50 space-y-0.5"
         >
           {options.map((opt) => {
             const isSelected = opt.id === value;
@@ -93,13 +93,13 @@ export function GlassDropdown<T extends string>({
                 }}
                 style={{
                   backgroundColor: isSelected
-                    ? 'color-mix(in srgb, var(--accent) 18%, transparent)'
-                    : 'transparent',
+                    ? 'color-mix(in srgb, var(--accent) 16%, transparent)'
+                    : undefined,
                   color: isSelected ? 'var(--accent)' : 'var(--text-primary)',
                 }}
-                className="w-full px-3 py-2 rounded-xl flex items-center justify-between gap-2 text-xs font-semibold cursor-pointer transition hover:bg-white/10 text-left"
+                className="w-full px-3.5 py-2.5 rounded-xl flex items-center justify-between gap-2 text-xs font-semibold cursor-pointer transition-colors hover:bg-[color-mix(in_srgb,var(--text-primary)_6%,transparent)] text-left"
               >
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-2.5 min-w-0">
                   {opt.icon && (
                     <span className="material-symbols-rounded text-[16px]">{opt.icon}</span>
                   )}

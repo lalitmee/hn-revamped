@@ -66,7 +66,7 @@ export const GlassModal: React.FC<GlassModalProps> = ({
               type="button"
               aria-label="Close modal"
               onClick={onClose}
-              className="liquid-glass w-8 h-8 rounded-xl inline-flex items-center justify-center cursor-pointer hover:brightness-110"
+              className="liquid-glass w-8 h-8 rounded-full inline-flex items-center justify-center cursor-pointer"
             >
               <span className="material-symbols-rounded text-[18px]">close</span>
             </button>
