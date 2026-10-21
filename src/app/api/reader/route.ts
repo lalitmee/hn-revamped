@@ -1,6 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { detectSpecialUrlFallback, extractArticleFromHtml } from '@/lib/reader-extractor';
 
+export const maxDuration = 10;
+
+const CACHE_HEADERS = {
+  'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=604800',
+  'CDN-Cache-Control': 'public, s-maxage=86400',
+  'Vercel-CDN-Cache-Control': 'public, s-maxage=86400',
+};
+
+const ERROR_CACHE_HEADERS = {
+  'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+  'CDN-Cache-Control': 'public, s-maxage=3600',
+  'Vercel-CDN-Cache-Control': 'public, s-maxage=3600',
+};
+
 function isSafePublicUrl(rawUrl: string): boolean {
   try {
     const parsed = new URL(rawUrl);
@@ -30,7 +44,7 @@ export async function GET(request: NextRequest) {
 
   const special = detectSpecialUrlFallback(targetUrl);
   if (special) {
-    return NextResponse.json(special);
+    return NextResponse.json(special, { headers: CACHE_HEADERS });
   }
 
   const controller = new AbortController();
@@ -47,28 +61,34 @@ export async function GET(request: NextRequest) {
     clearTimeout(timeout);
 
     if (!res.ok) {
-      return NextResponse.json({
+      return NextResponse.json(
+        {
+          url: targetUrl,
+          title: targetUrl,
+          contentHtml: '',
+          textContent: '',
+          readingTimeMinutes: 1,
+          fallbackType: 'blocked',
+        },
+        { headers: ERROR_CACHE_HEADERS }
+      );
+    }
+
+    const html = await res.text();
+    const article = extractArticleFromHtml(html, targetUrl);
+    return NextResponse.json(article, { headers: CACHE_HEADERS });
+  } catch {
+    clearTimeout(timeout);
+    return NextResponse.json(
+      {
         url: targetUrl,
         title: targetUrl,
         contentHtml: '',
         textContent: '',
         readingTimeMinutes: 1,
         fallbackType: 'blocked',
-      });
-    }
-
-    const html = await res.text();
-    const article = extractArticleFromHtml(html, targetUrl);
-    return NextResponse.json(article);
-  } catch {
-    clearTimeout(timeout);
-    return NextResponse.json({
-      url: targetUrl,
-      title: targetUrl,
-      contentHtml: '',
-      textContent: '',
-      readingTimeMinutes: 1,
-      fallbackType: 'blocked',
-    });
+      },
+      { headers: ERROR_CACHE_HEADERS }
+    );
   }
 }

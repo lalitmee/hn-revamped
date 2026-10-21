@@ -152,6 +152,22 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
     stopSpeech();
     setTtsNotice(null);
     if (!url) return;
+
+    const cacheKey = `hn_reader_${url}`;
+    try {
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        const cached = window.sessionStorage.getItem(cacheKey);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          setArticle(parsed);
+          setLoading(false);
+          return;
+        }
+      }
+    } catch {
+      // Ignore sessionStorage read error (e.g., incognito restrictions)
+    }
+
     let active = true;
     setLoading(true);
     fetch(`/api/reader?url=${encodeURIComponent(url)}`)
@@ -160,6 +176,13 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
         if (active) {
           setArticle(data);
           setLoading(false);
+          try {
+            if (typeof window !== 'undefined' && window.sessionStorage) {
+              window.sessionStorage.setItem(cacheKey, JSON.stringify(data));
+            }
+          } catch {
+            // Ignore quota errors
+          }
         }
       })
       .catch(() => {
