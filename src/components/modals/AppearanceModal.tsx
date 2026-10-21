@@ -10,7 +10,12 @@ import {
   ThemeMode,
   UserPreferences,
 } from '@/types/hn';
-import { ACCENT_PRESETS, FONT_FAMILIES, THEMES } from '@/lib/themes';
+import {
+  ACCENT_PRESETS,
+  DEFAULT_PREFERENCES,
+  FONT_FAMILIES,
+  THEMES,
+} from '@/lib/themes';
 import { GlassSegmentedControl } from '@/components/ui/GlassSegmentedControl';
 import { GlassSlider } from '@/components/ui/GlassSlider';
 import { GlassSwitch } from '@/components/ui/GlassSwitch';
@@ -131,6 +136,64 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
   const filterBadgeCount =
     preferences.mutedKeywords.length + preferences.mutedDomains.length;
 
+  const isThemesModified =
+    preferences.themeMode !== DEFAULT_PREFERENCES.themeMode ||
+    preferences.themeId !== DEFAULT_PREFERENCES.themeId ||
+    preferences.lightThemeId !== DEFAULT_PREFERENCES.lightThemeId ||
+    preferences.darkThemeId !== DEFAULT_PREFERENCES.darkThemeId ||
+    preferences.customAccent !== DEFAULT_PREFERENCES.customAccent;
+
+  const isTypographyModified =
+    preferences.fontFamily !== DEFAULT_PREFERENCES.fontFamily ||
+    preferences.fontSize !== DEFAULT_PREFERENCES.fontSize ||
+    Math.abs(preferences.lineHeight - DEFAULT_PREFERENCES.lineHeight) > 0.001 ||
+    preferences.lineWidth !== DEFAULT_PREFERENCES.lineWidth;
+
+  const isFiltersModified =
+    preferences.hideReadStories !== DEFAULT_PREFERENCES.hideReadStories ||
+    preferences.mutedKeywords.length > 0 ||
+    preferences.mutedDomains.length > 0;
+
+  const isAnyModified =
+    isThemesModified || isTypographyModified || isFiltersModified;
+
+  const handleResetThemes = () => {
+    onUpdate({
+      ...preferences,
+      themeId: DEFAULT_PREFERENCES.themeId,
+      themeMode: DEFAULT_PREFERENCES.themeMode,
+      lightThemeId: DEFAULT_PREFERENCES.lightThemeId,
+      darkThemeId: DEFAULT_PREFERENCES.darkThemeId,
+      customAccent: DEFAULT_PREFERENCES.customAccent,
+    });
+  };
+
+  const handleResetTypography = () => {
+    onUpdate({
+      ...preferences,
+      fontFamily: DEFAULT_PREFERENCES.fontFamily,
+      fontSize: DEFAULT_PREFERENCES.fontSize,
+      lineHeight: DEFAULT_PREFERENCES.lineHeight,
+      lineWidth: DEFAULT_PREFERENCES.lineWidth,
+    });
+  };
+
+  const handleResetFilters = () => {
+    onUpdate({
+      ...preferences,
+      hideReadStories: DEFAULT_PREFERENCES.hideReadStories,
+      mutedKeywords: [],
+      mutedDomains: [],
+    });
+  };
+
+  const handleResetAll = () => {
+    onUpdate({
+      ...DEFAULT_PREFERENCES,
+      layoutMode: preferences.layoutMode,
+    });
+  };
+
   return (
     <div className="flex-1 min-h-0 flex flex-col overflow-hidden animate-story-in">
       {/* Pinned / Sticky Top Studio Header Bar */}
@@ -167,20 +230,47 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
             </div>
           </div>
 
-          <GlassSegmentedControl<StudioTab>
-            value={activeTab}
-            onChange={setActiveTab}
-            items={[
-              { id: 'themes', label: 'Themes & Colors', icon: 'palette' },
-              { id: 'typography', label: 'Typography & Layout', icon: 'text_fields' },
-              {
-                id: 'filters',
-                label: 'Feed Filters',
-                icon: 'tune',
-                badge: filterBadgeCount || undefined,
-              },
-            ]}
-          />
+          <div className="flex flex-wrap items-center gap-3">
+            <GlassSegmentedControl<StudioTab>
+              value={activeTab}
+              onChange={setActiveTab}
+              items={[
+                { id: 'themes', label: 'Themes & Colors', icon: 'palette' },
+                { id: 'typography', label: 'Typography & Layout', icon: 'text_fields' },
+                {
+                  id: 'filters',
+                  label: 'Feed Filters',
+                  icon: 'tune',
+                  badge: filterBadgeCount || undefined,
+                },
+              ]}
+            />
+
+            <button
+              type="button"
+              disabled={!isAnyModified}
+              onClick={handleResetAll}
+              title={
+                isAnyModified
+                  ? 'Reset all themes, typography, and feed filters to factory defaults'
+                  : 'All studio settings are already at factory defaults'
+              }
+              style={{
+                color: isAnyModified ? 'var(--accent)' : 'var(--text-muted)',
+                borderColor: isAnyModified
+                  ? 'color-mix(in srgb, var(--accent) 35%, var(--border-subtle))'
+                  : 'var(--border-subtle)',
+              }}
+              className={`liquid-glass h-9 px-3.5 rounded-full inline-flex items-center gap-1.5 text-xs font-semibold border transition-all ${
+                isAnyModified
+                  ? 'cursor-pointer hover:brightness-110 active:scale-95'
+                  : 'opacity-45 cursor-not-allowed'
+              }`}
+            >
+              <span className="material-symbols-rounded text-[16px]">restart_alt</span>
+              <span>Reset All</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -194,6 +284,32 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
             {/* TAB 1: THEMES & ACCENT COLORS */}
             {activeTab === 'themes' && (
               <div className="space-y-6 animate-story-in">
+                {/* Per-Section Header & Reset Bar */}
+                <div className="flex items-center justify-between gap-3 px-1">
+                  <div>
+                    <h2 className="text-sm font-bold">Themes &amp; Color Palette</h2>
+                    <p style={{ color: 'var(--text-muted)' }} className="text-xs">
+                      Default: System mode ({THEMES[DEFAULT_PREFERENCES.lightThemeId ?? 'warm-paper'].name} / {THEMES[DEFAULT_PREFERENCES.darkThemeId ?? 'obsidian-slate'].name}) with theme accent
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!isThemesModified}
+                    onClick={handleResetThemes}
+                    style={{
+                      color: isThemesModified ? 'var(--accent)' : 'var(--text-muted)',
+                    }}
+                    className={`liquid-glass h-8 px-3 rounded-full inline-flex items-center gap-1.5 text-xs font-semibold transition-all ${
+                      isThemesModified
+                        ? 'cursor-pointer hover:brightness-110 active:scale-95'
+                        : 'opacity-45 cursor-not-allowed'
+                    }`}
+                  >
+                    <span className="material-symbols-rounded text-[15px]">history</span>
+                    <span>Reset Themes</span>
+                  </button>
+                </div>
+
                 {/* Color Mode + Accent Color Row */}
                 <div className="grid grid-cols-1 gap-4">
                   {/* Color Scheme Mode */}
@@ -543,6 +659,32 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
             {/* TAB 2: TYPOGRAPHY & LAYOUT */}
             {activeTab === 'typography' && (
               <div className="space-y-6 animate-story-in">
+                {/* Per-Section Header & Reset Bar */}
+                <div className="flex items-center justify-between gap-3 px-1">
+                  <div>
+                    <h2 className="text-sm font-bold">Typography &amp; Reading Measure</h2>
+                    <p style={{ color: 'var(--text-muted)' }} className="text-xs">
+                      Default: {FONT_FAMILIES[DEFAULT_PREFERENCES.fontFamily].label} · {DEFAULT_PREFERENCES.fontSize}px · {DEFAULT_PREFERENCES.lineHeight}× · {DEFAULT_PREFERENCES.lineWidth}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!isTypographyModified}
+                    onClick={handleResetTypography}
+                    style={{
+                      color: isTypographyModified ? 'var(--accent)' : 'var(--text-muted)',
+                    }}
+                    className={`liquid-glass h-8 px-3 rounded-full inline-flex items-center gap-1.5 text-xs font-semibold transition-all ${
+                      isTypographyModified
+                        ? 'cursor-pointer hover:brightness-110 active:scale-95'
+                        : 'opacity-45 cursor-not-allowed'
+                    }`}
+                  >
+                    <span className="material-symbols-rounded text-[15px]">history</span>
+                    <span>Reset Typography</span>
+                  </button>
+                </div>
+
                 <div>
                   <label
                     style={{ color: 'var(--text-secondary)' }}
@@ -584,7 +726,7 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                     label="Font Size"
                     valueLabel={`${preferences.fontSize}px`}
                     value={preferences.fontSize}
-                    min={14}
+                    min={13}
                     max={22}
                     step={1}
                     onChange={(val) => onUpdate({ ...preferences, fontSize: val })}
@@ -594,7 +736,7 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                     label="Line Spacing"
                     valueLabel={`${preferences.lineHeight.toFixed(2)}×`}
                     value={preferences.lineHeight}
-                    min={1.4}
+                    min={1.35}
                     max={1.9}
                     step={0.05}
                     onChange={(val) => onUpdate({ ...preferences, lineHeight: val })}
@@ -627,6 +769,32 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
             {/* TAB 3: FEED FILTERS */}
             {activeTab === 'filters' && (
               <div className="space-y-5 animate-story-in">
+                {/* Per-Section Header & Reset Bar */}
+                <div className="flex items-center justify-between gap-3 px-1">
+                  <div>
+                    <h2 className="text-sm font-bold">Feed Visibility &amp; Muted Filters</h2>
+                    <p style={{ color: 'var(--text-muted)' }} className="text-xs">
+                      Control read-story visibility and keyword/domain mutes independently of your visual theme
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!isFiltersModified}
+                    onClick={handleResetFilters}
+                    style={{
+                      color: isFiltersModified ? 'var(--accent)' : 'var(--text-muted)',
+                    }}
+                    className={`liquid-glass h-8 px-3 rounded-full inline-flex items-center gap-1.5 text-xs font-semibold transition-all ${
+                      isFiltersModified
+                        ? 'cursor-pointer hover:brightness-110 active:scale-95'
+                        : 'opacity-45 cursor-not-allowed'
+                    }`}
+                  >
+                    <span className="material-symbols-rounded text-[15px]">history</span>
+                    <span>Reset Filters</span>
+                  </button>
+                </div>
+
                 <GlassSwitch
                   label="Auto-hide already read stories"
                   description="Automatically hide stories from the feed once you have opened them"
@@ -639,11 +807,23 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Muted Keywords */}
                   <div className="liquid-glass p-5 rounded-3xl space-y-3.5">
-                    <div>
-                      <div className="text-sm font-bold">Muted Keywords</div>
-                      <div style={{ color: 'var(--text-muted)' }} className="text-xs mt-0.5">
-                        Stories with titles containing these words will be hidden from your feed.
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="text-sm font-bold">Muted Keywords</div>
+                        <div style={{ color: 'var(--text-muted)' }} className="text-xs mt-0.5">
+                          Stories with titles containing these words will be hidden from your feed.
+                        </div>
                       </div>
+                      {preferences.mutedKeywords.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => onUpdate({ ...preferences, mutedKeywords: [] })}
+                          style={{ color: 'var(--accent)' }}
+                          className="text-xs font-semibold shrink-0 cursor-pointer hover:underline"
+                        >
+                          Clear all
+                        </button>
+                      )}
                     </div>
 
                     <div className="flex gap-2">
@@ -723,11 +903,23 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
 
                   {/* Muted Domains */}
                   <div className="liquid-glass p-5 rounded-3xl space-y-3.5">
-                    <div>
-                      <div className="text-sm font-bold">Muted Domains</div>
-                      <div style={{ color: 'var(--text-muted)' }} className="text-xs mt-0.5">
-                        Hide links originating from specific websites.
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="text-sm font-bold">Muted Domains</div>
+                        <div style={{ color: 'var(--text-muted)' }} className="text-xs mt-0.5">
+                          Hide links originating from specific websites.
+                        </div>
                       </div>
+                      {preferences.mutedDomains.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => onUpdate({ ...preferences, mutedDomains: [] })}
+                          style={{ color: 'var(--accent)' }}
+                          className="text-xs font-semibold shrink-0 cursor-pointer hover:underline"
+                        >
+                          Clear all
+                        </button>
+                      )}
                     </div>
 
                     <div className="flex gap-2">

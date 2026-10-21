@@ -44,10 +44,16 @@ const sampleComments: HNComment[] = [
 ];
 
 describe('CommentTree & Progressive Depth-Gated Rendering', () => {
-  it('renders up to depth 2 initially and loads deeper replies on demand', () => {
+  it('defaults to Collapse Replies (root-only) for fast initial load, and expands nested replies on demand', () => {
     render(<CommentTree comments={sampleComments} storyAuthor="nathansobo" />);
 
     expect(screen.getByText('tptacek')).toBeInTheDocument();
+    // Nested replies are collapsed initially behind "Show 3 replies"
+    expect(screen.queryByText(/We cache per-monitor DPI/)).not.toBeInTheDocument();
+
+    const expandAllBtn = screen.getByRole('button', { name: /Expand All/i });
+    fireEvent.click(expandAllBtn);
+
     expect(screen.getByText('nathansobo')).toBeInTheDocument();
     expect(screen.getByText('OP')).toBeInTheDocument();
     expect(screen.getByText(/Depth 2 reply visible initially/)).toBeInTheDocument();

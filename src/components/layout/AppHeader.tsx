@@ -49,7 +49,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         backgroundColor: 'color-mix(in srgb, var(--bg-surface-1) 86%, transparent)',
         borderColor: 'var(--border-subtle)',
       }}
-      className="sticky top-0 z-30 backdrop-blur-xl border-b px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shrink-0"
+      className="sticky top-0 z-40 backdrop-blur-xl border-b px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shrink-0"
     >
       {/* Left: Brand + Gliding Feed Category Segmented Pill */}
       <div className="flex items-center gap-3 overflow-x-auto no-scrollbar">

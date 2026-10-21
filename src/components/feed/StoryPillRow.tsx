@@ -30,6 +30,7 @@ interface StoryPillRowProps {
   story: HNStory;
   index: number;
   isSelected: boolean;
+  hasFloatingIndicator?: boolean;
   isRead: boolean;
   newCommentsDelta: number;
   isBookmarked: boolean;
@@ -41,6 +42,7 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
   story,
   index,
   isSelected,
+  hasFloatingIndicator = false,
   isRead,
   newCommentsDelta,
   isBookmarked,
@@ -48,6 +50,7 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
   onToggleBookmark,
 }) => {
   const isHot = story.points >= 250;
+  const showInlineSelection = isSelected && !hasFloatingIndicator;
 
   return (
     <article
@@ -61,27 +64,33 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
         }
       }}
       style={{
-        backgroundColor: isSelected ? 'var(--bg-surface-active)' : 'var(--bg-surface-1)',
-        borderColor: isSelected
+        backgroundColor: showInlineSelection
+          ? 'var(--bg-surface-active)'
+          : isSelected
+          ? 'transparent'
+          : 'var(--bg-surface-1)',
+        borderColor: showInlineSelection
           ? 'color-mix(in srgb, var(--accent) 55%, var(--border-subtle))'
+          : isSelected
+          ? 'transparent'
           : 'var(--border-subtle)',
         opacity: isRead && !isSelected ? 0.68 : 1,
         transition:
           'background-color 240ms cubic-bezier(0.22, 1, 0.36, 1), border-color 240ms cubic-bezier(0.22, 1, 0.36, 1), transform 200ms cubic-bezier(0.22, 1, 0.36, 1)',
       }}
-      className="group relative overflow-hidden flex items-center gap-4 rounded-2xl border p-4 cursor-pointer hover:brightness-105 active:scale-[0.995] focus:outline-none"
+      className="group relative z-10 overflow-hidden flex items-center gap-4 rounded-2xl border p-4 cursor-pointer hover:brightness-105 active:scale-[0.995] focus:outline-none"
     >
-      {/* Animated Left Selection Indicator Bar */}
+      {/* Fallback Left Selection Indicator Bar (when floating indicator is not yet measured) */}
       <span
         aria-hidden="true"
         style={{
           backgroundColor: 'var(--accent)',
-          transform: isSelected ? 'scaleY(1)' : 'scaleY(0)',
-          opacity: isSelected ? 1 : 0,
+          transform: showInlineSelection ? 'scaleY(1)' : 'scaleY(0)',
+          opacity: showInlineSelection ? 1 : 0,
           transition:
             'transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 200ms ease',
         }}
-        className=" absolute left-0 top-3 bottom-3 w-1 rounded-r-full"
+        className="absolute left-0 top-3 bottom-3 w-1 rounded-r-full"
       />
       {/* Left Zone: Score & Heat Pill */}
       <div

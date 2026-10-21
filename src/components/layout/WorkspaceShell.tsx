@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo, startTransition } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, startTransition } from 'react';
 import {
   DetailTab,
   FeedType,
@@ -21,6 +21,7 @@ import {
   fetchFeedStories,
   fetchStoryWithComments,
   fetchTimeTravelStories,
+  getCachedStoryWithComments,
 } from '@/lib/hn-api';
 import {
   filterStories,
@@ -51,6 +52,7 @@ export const WorkspaceShell: React.FC = () => {
   const [selectedStory, setSelectedStory] = useState<HNStoryWithComments | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [activeTab, setActiveTab] = useState<DetailTab>('comments');
+  const latestStoryReqRef = useRef(0);
 
   const [readHistory, setReadHistory] = useState<Record<number, ReadHistoryEntry>>({});
   const [bookmarks, setBookmarks] = useState<HNStory[]>([]);
@@ -171,10 +173,27 @@ export const WorkspaceShell: React.FC = () => {
 
   const handleSelectStory = useCallback(
     (story: HNStory, options?: { skipUrlSync?: boolean; isPlaceholder?: boolean }) => {
-      setLoadingDetail(true);
+      const reqId = ++latestStoryReqRef.current;
+
       if (!options?.skipUrlSync) {
         syncStoryQueryParam(story.id);
       }
+
+      // Immediately update selectedStory so the feed highlight and detail header switch in 0ms
+      const cached = getCachedStoryWithComments(story.id);
+      if (cached) {
+        setSelectedStory(cached);
+        setLoadingDetail(false);
+        const updatedHistory = markStoryAsRead(cached.id, cached.commentsCount);
+        setReadHistory(updatedHistory);
+        return;
+      }
+
+      setSelectedStory((prev) =>
+        prev?.id === story.id ? prev : { ...story, comments: [] }
+      );
+      setLoadingDetail(true);
+
       if (!options?.isPlaceholder) {
         const updatedHistory = markStoryAsRead(story.id, story.commentsCount);
         setReadHistory(updatedHistory);
@@ -182,7 +201,11 @@ export const WorkspaceShell: React.FC = () => {
 
       fetchStoryWithComments(story.id)
         .then((fullStory) => {
-          setSelectedStory(fullStory);
+          if (latestStoryReqRef.current !== reqId) return;
+          startTransition(() => {
+            setSelectedStory(fullStory);
+            setLoadingDetail(false);
+          });
           const updatedHistory = markStoryAsRead(fullStory.id, fullStory.commentsCount);
           setReadHistory(updatedHistory);
           if (!options?.skipUrlSync && fullStory.id !== story.id) {
@@ -190,9 +213,8 @@ export const WorkspaceShell: React.FC = () => {
           }
         })
         .catch(() => {
+          if (latestStoryReqRef.current !== reqId) return;
           setSelectedStory({ ...story, comments: [] });
-        })
-        .finally(() => {
           setLoadingDetail(false);
         });
     },
@@ -475,6 +497,10 @@ export const WorkspaceShell: React.FC = () => {
               loading={loadingDetail}
               activeTab={activeTab}
               onTabChange={setActiveTab}
+              collapseMode={preferences.defaultCollapseMode ?? 'root-only'}
+              onCollapseModeChange={(mode) =>
+                handleUpdatePreferences({ ...preferences, defaultCollapseMode: mode })
+              }
               isBookmarked={selectedStory ? bookmarkedIds.has(selectedStory.id) : false}
               onToggleBookmark={() => {
                 if (!selectedStory) return;
@@ -520,6 +546,10 @@ export const WorkspaceShell: React.FC = () => {
                 loading={loadingDetail}
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
+                collapseMode={preferences.defaultCollapseMode ?? 'root-only'}
+                onCollapseModeChange={(mode) =>
+                  handleUpdatePreferences({ ...preferences, defaultCollapseMode: mode })
+                }
                 isBookmarked={bookmarkedIds.has(selectedStory.id)}
                 onToggleBookmark={() =>
                   setBookmarks(toggleBookmarkStory(selectedStory).bookmarks)

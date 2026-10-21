@@ -1,18 +1,151 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { ReaderArticle } from '@/types/hn';
+import { GlassDropdown } from '@/components/ui/GlassDropdown';
 
 interface ArticleReaderViewProps {
   url?: string;
   storyTitle: string;
 }
 
-export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({ url, storyTitle }) => {
+const SPEED_OPTIONS = [1, 1.25, 1.5, 1.75, 2] as const;
+
+export interface SpokenSegment {
+  index: number;
+  text: string;
+}
+
+/**
+ * Annotates top-level readable blocks with `data-tts-idx` and extracts
+ * clean, code-aware spoken segments (skipping <pre> code blocks and raw URLs)
+ * so Chromium TTS never chokes on 15s limits or reads syntax aloud.
+ */
+export function prepareReaderSpeechSegments(
+  rawHtml: string,
+  title: string
+): { annotatedHtml: string; segments: SpokenSegment[] } {
+  if (!rawHtml) {
+    return { annotatedHtml: '', segments: [] };
+  }
+
+  const segments: SpokenSegment[] = [];
+  if (title.trim()) {
+    segments.push({ index: 0, text: title.trim() });
+  }
+
+  if (typeof DOMParser === 'undefined') {
+    return { annotatedHtml: rawHtml, segments };
+  }
+
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(rawHtml, 'text/html');
+    const blockElements = doc.body.querySelectorAll(
+      'h1, h2, h3, h4, p, li, blockquote'
+    );
+
+    blockElements.forEach((el) => {
+      // Skip elements nested inside <pre> or another already-selected block (e.g. <p> inside <blockquote>)
+      if (el.closest('pre')) return;
+      const parentBlock = el.parentElement?.closest('p, li, blockquote');
+      if (parentBlock) return;
+
+      const clone = el.cloneNode(true) as HTMLElement;
+      clone.querySelectorAll('pre, script, style').forEach((n) => n.remove());
+
+      // Clean out raw long URLs so TTS doesn't spell out https://...
+      const spokenText = (clone.textContent || '')
+        .replace(/https?:\/\/\S+/gi, 'link')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      if (spokenText.length < 3) return;
+
+      const segIdx = segments.length;
+      el.setAttribute('data-tts-idx', String(segIdx));
+      segments.push({ index: segIdx, text: spokenText });
+    });
+
+    return {
+      annotatedHtml: doc.body.innerHTML,
+      segments,
+    };
+  } catch {
+    return { annotatedHtml: rawHtml, segments };
+  }
+}
+
+export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
+  url,
+  storyTitle,
+}) => {
   const [article, setArticle] = useState<ReaderArticle | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Audio Reader State
+  const [ttsSupported, setTtsSupported] = useState(false);
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoiceURI, setSelectedVoiceURI] = useState<string>('');
+  const [playbackState, setPlaybackState] = useState<'idle' | 'playing' | 'paused'>('idle');
+  const [activeSegmentIdx, setActiveSegmentIdx] = useState<number>(0);
+  const [playbackRate, setPlaybackRate] = useState<number>(1);
+  const [ttsNotice, setTtsNotice] = useState<string | null>(null);
+
+  const articleBodyRef = useRef<HTMLDivElement>(null);
+  const activeSegmentRef = useRef<number>(0);
+  const playbackRateRef = useRef<number>(1);
+  const selectedVoiceRef = useRef<string>('');
+  const isManualActionRef = useRef<boolean>(false);
+
+  // Detect Web Speech API & load OS/browser voices
   useEffect(() => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      setTtsSupported(false);
+      return;
+    }
+    setTtsSupported(true);
+
+    const updateVoices = () => {
+      const available = window.speechSynthesis.getVoices() || [];
+      const englishOrAll =
+        available.filter((v) => v.lang.toLowerCase().startsWith('en')).length > 0
+          ? available.filter((v) => v.lang.toLowerCase().startsWith('en'))
+          : available;
+      setVoices(englishOrAll);
+      if (englishOrAll.length > 0 && !selectedVoiceRef.current) {
+        const preferred =
+          englishOrAll.find((v) => /natural|google|siri|premium/i.test(v.name)) ||
+          englishOrAll.find((v) => v.default) ||
+          englishOrAll[0];
+        if (preferred) {
+          setSelectedVoiceURI(preferred.voiceURI);
+          selectedVoiceRef.current = preferred.voiceURI;
+        }
+      }
+    };
+
+    updateVoices();
+    window.speechSynthesis.addEventListener?.('voiceschanged', updateVoices);
+    return () => {
+      window.speechSynthesis.removeEventListener?.('voiceschanged', updateVoices);
+      window.speechSynthesis.cancel();
+    };
+  }, []);
+
+  const stopSpeech = useCallback(() => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      isManualActionRef.current = true;
+      window.speechSynthesis.cancel();
+    }
+    setPlaybackState('idle');
+    setActiveSegmentIdx(0);
+    activeSegmentRef.current = 0;
+  }, []);
+
+  useEffect(() => {
+    stopSpeech();
+    setTtsNotice(null);
     if (!url) return;
     let active = true;
     setLoading(true);
@@ -39,8 +172,144 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({ url, story
       });
     return () => {
       active = false;
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
     };
-  }, [url, storyTitle]);
+  }, [url, storyTitle, stopSpeech]);
+
+  const { annotatedHtml, segments } = useMemo(
+    () => prepareReaderSpeechSegments(article?.contentHtml || '', storyTitle),
+    [article?.contentHtml, storyTitle]
+  );
+
+  // Highlight and smoothly scroll the currently spoken paragraph into view
+  useEffect(() => {
+    const container = articleBodyRef.current;
+    if (!container) return;
+
+    container.querySelectorAll('[data-tts-active="true"]').forEach((el) => {
+      el.removeAttribute('data-tts-active');
+      (el as HTMLElement).style.backgroundColor = '';
+      (el as HTMLElement).style.borderRadius = '';
+      (el as HTMLElement).style.padding = '';
+      (el as HTMLElement).style.margin = '';
+      (el as HTMLElement).style.transition = '';
+    });
+
+    if (playbackState === 'idle' || activeSegmentIdx <= 0) return;
+
+    const target = container.querySelector<HTMLElement>(
+      `[data-tts-idx="${activeSegmentIdx}"]`
+    );
+    if (target) {
+      target.setAttribute('data-tts-active', 'true');
+      target.style.backgroundColor =
+        'color-mix(in srgb, var(--accent) 14%, transparent)';
+      target.style.borderRadius = '10px';
+      target.style.padding = '4px 8px';
+      target.style.margin = '-4px -8px 0.6em -8px';
+      target.style.transition = 'background-color 220ms ease';
+      if (typeof target.scrollIntoView === 'function') {
+        target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  }, [activeSegmentIdx, playbackState]);
+
+  const speakSegmentAt = useCallback(
+    (index: number) => {
+      if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+      if (index < 0 || index >= segments.length) {
+        setPlaybackState('idle');
+        setActiveSegmentIdx(0);
+        activeSegmentRef.current = 0;
+        return;
+      }
+
+      isManualActionRef.current = true;
+      window.speechSynthesis.cancel();
+
+      const seg = segments[index];
+      const utterance = new SpeechSynthesisUtterance(seg.text);
+      utterance.rate = playbackRateRef.current;
+
+      const availableVoices = window.speechSynthesis.getVoices() || [];
+      if (selectedVoiceRef.current) {
+        const matched = availableVoices.find(
+          (v) => v.voiceURI === selectedVoiceRef.current
+        );
+        if (matched) utterance.voice = matched;
+      }
+
+      setActiveSegmentIdx(index);
+      activeSegmentRef.current = index;
+      setPlaybackState('playing');
+      setTtsNotice(null);
+
+      // Reset manual guard after a tick so natural onend advances to the next paragraph
+      setTimeout(() => {
+        isManualActionRef.current = false;
+      }, 30);
+
+      utterance.onend = () => {
+        if (isManualActionRef.current) return;
+        const nextIdx = activeSegmentRef.current + 1;
+        if (nextIdx < segments.length) {
+          speakSegmentAt(nextIdx);
+        } else {
+          setPlaybackState('idle');
+          setActiveSegmentIdx(0);
+          activeSegmentRef.current = 0;
+        }
+      };
+
+      utterance.onerror = (event) => {
+        if (event.error === 'interrupted' || event.error === 'canceled') return;
+        setPlaybackState('idle');
+        setTtsNotice(
+          'No speech synthesis voice responded on this system. Check your OS speech-dispatcher or browser TTS settings.'
+        );
+      };
+
+      window.speechSynthesis.speak(utterance);
+    },
+    [segments]
+  );
+
+  const handleTogglePlayPause = () => {
+    if (!ttsSupported || segments.length === 0) return;
+
+    if (playbackState === 'playing') {
+      window.speechSynthesis.pause();
+      setPlaybackState('paused');
+    } else if (playbackState === 'paused') {
+      window.speechSynthesis.resume();
+      setPlaybackState('playing');
+    } else {
+      speakSegmentAt(activeSegmentIdx || 0);
+    }
+  };
+
+  const handleStepSegment = (delta: number) => {
+    if (segments.length === 0) return;
+    const nextIdx = Math.min(
+      segments.length - 1,
+      Math.max(0, activeSegmentRef.current + delta)
+    );
+    speakSegmentAt(nextIdx);
+  };
+
+  const handleCycleSpeed = () => {
+    const currIdx = SPEED_OPTIONS.indexOf(
+      playbackRate as (typeof SPEED_OPTIONS)[number]
+    );
+    const nextSpeed = SPEED_OPTIONS[(currIdx + 1) % SPEED_OPTIONS.length];
+    setPlaybackRate(nextSpeed);
+    playbackRateRef.current = nextSpeed;
+    if (playbackState === 'playing') {
+      speakSegmentAt(activeSegmentRef.current);
+    }
+  };
 
   if (!url) {
     return (
@@ -120,38 +389,234 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({ url, story
     );
   }
 
+  const isAudioActive = playbackState !== 'idle';
+  const progressPct =
+    segments.length > 0
+      ? Math.round(((activeSegmentIdx + 1) / segments.length) * 100)
+      : 0;
+
   return (
     <article
       style={{
         backgroundColor: 'var(--bg-surface-1)',
         borderColor: 'var(--border-subtle)',
       }}
-      className="p-6 md:p-8 rounded-2xl border my-2"
+      className="p-5 md:p-6 rounded-2xl border my-1"
     >
+      {/* Reader Metadata & Integrated Liquid Glass Audio Reader Bar */}
       <div
         style={{ color: 'var(--text-muted)', borderColor: 'var(--border-subtle)' }}
-        className="flex flex-wrap items-center gap-4 text-xs pb-4 mb-6 border-b"
+        className="flex flex-col gap-3 pb-3.5 mb-5 border-b text-xs"
       >
-        <span className="inline-flex items-center gap-1">
-          <span className="material-symbols-rounded text-[16px]">schedule</span>
-          {article.readingTimeMinutes} min read
-        </span>
-        {article.byline && <span>By {article.byline}</span>}
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ color: 'var(--link-unvisited)' }}
-          className="ml-auto inline-flex items-center gap-1 font-semibold"
-        >
-          Original URL
-          <span className="material-symbols-rounded text-[15px]">north_east</span>
-        </a>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="inline-flex items-center gap-1">
+              <span className="material-symbols-rounded text-[15px]">schedule</span>
+              {article.readingTimeMinutes} min read
+            </span>
+            {article.byline && <span>• By {article.byline}</span>}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 ml-auto">
+            {ttsSupported && segments.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Play / Pause / Resume Button with Filled Media Icons */}
+                <button
+                  type="button"
+                  onClick={handleTogglePlayPause}
+                  style={{
+                    backgroundColor: isAudioActive
+                      ? 'var(--accent)'
+                      : 'var(--bg-surface-2)',
+                    color: isAudioActive ? '#ffffff' : 'var(--text-primary)',
+                    border: '1px solid transparent',
+                  }}
+                  className="h-8 px-3.5 rounded-full inline-flex items-center justify-center gap-1.5 text-xs font-semibold leading-none cursor-pointer hover:brightness-110 active:scale-95 transition-all"
+                >
+                  <span
+                    style={{
+                      color: isAudioActive ? '#ffffff' : 'var(--accent)',
+                    }}
+                    className={`material-symbols-rounded text-[16px] leading-none ${
+                      isAudioActive ? 'filled' : ''
+                    }`}
+                  >
+                    {playbackState === 'playing'
+                      ? 'pause'
+                      : playbackState === 'paused'
+                      ? 'play_arrow'
+                      : 'headphones'}
+                  </span>
+                  <span className="leading-none">
+                    {playbackState === 'playing'
+                      ? 'Pause'
+                      : playbackState === 'paused'
+                      ? 'Resume'
+                      : 'Listen'}
+                  </span>
+                </button>
+
+                {/* Active Playback Controls: Unified Stepper Pill, Speed Pill, Custom Voice Dropdown, Red Stop Button */}
+                {isAudioActive && (
+                  <>
+                    {/* Unified Paragraph Stepper Capsule [ |◄  2/8  ►| ] */}
+                    <div className="liquid-glass h-8 px-1 rounded-full inline-flex items-center gap-0.5 leading-none">
+                      <button
+                        type="button"
+                        title="Previous paragraph"
+                        aria-label="Previous paragraph"
+                        disabled={activeSegmentIdx <= 0}
+                        onClick={() => handleStepSegment(-1)}
+                        style={{ color: 'var(--text-primary)' }}
+                        className="w-6 h-6 rounded-full inline-flex items-center justify-center leading-none hover:bg-white/10 disabled:opacity-35 active:scale-90 transition-all"
+                      >
+                        <span className="material-symbols-rounded filled text-[16px] leading-none">
+                          skip_previous
+                        </span>
+                      </button>
+
+                      <span
+                        style={{ color: 'var(--text-secondary)' }}
+                        className="px-1.5 inline-flex items-center justify-center text-[11.5px] font-semibold tabular-nums leading-none select-none"
+                      >
+                        {activeSegmentIdx + 1}/{segments.length}
+                      </span>
+
+                      <button
+                        type="button"
+                        title="Next paragraph"
+                        aria-label="Next paragraph"
+                        disabled={activeSegmentIdx >= segments.length - 1}
+                        onClick={() => handleStepSegment(1)}
+                        style={{ color: 'var(--text-primary)' }}
+                        className="w-6 h-6 rounded-full inline-flex items-center justify-center leading-none hover:bg-white/10 disabled:opacity-35 active:scale-90 transition-all"
+                      >
+                        <span className="material-symbols-rounded filled text-[16px] leading-none">
+                          skip_next
+                        </span>
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      title="Cycle playback speed"
+                      onClick={handleCycleSpeed}
+                      style={{ color: 'var(--accent)' }}
+                      className="liquid-glass h-8 px-3 rounded-full inline-flex items-center justify-center gap-1.5 text-xs font-bold tabular-nums leading-none cursor-pointer active:scale-95"
+                    >
+                      <span className="material-symbols-rounded text-[16px] leading-none">
+                        speed
+                      </span>
+                      <span className="leading-none">{playbackRate}×</span>
+                    </button>
+
+                    {voices.length > 1 && (
+                      <GlassDropdown<string>
+                        size="sm"
+                        leadingIcon="record_voice_over"
+                        ariaLabel="Select speech synthesis voice"
+                        value={selectedVoiceURI}
+                        options={voices.map((v) => ({
+                          id: v.voiceURI,
+                          label: v.name.replace(/Microsoft |Google |Apple /g, ''),
+                          icon: 'graphic_eq',
+                        }))}
+                        onChange={(uri) => {
+                          setSelectedVoiceURI(uri);
+                          selectedVoiceRef.current = uri;
+                          if (playbackState === 'playing') {
+                            speakSegmentAt(activeSegmentRef.current);
+                          }
+                        }}
+                      />
+                    )}
+
+                    <button
+                      type="button"
+                      title="Stop audio reader"
+                      aria-label="Stop audio reader"
+                      onClick={stopSpeech}
+                      style={{
+                        backgroundColor: 'rgba(239, 68, 68, 0.14)',
+                        color: '#EF4444',
+                        border: '1px solid transparent',
+                      }}
+                      className="w-8 h-8 rounded-full inline-flex items-center justify-center leading-none cursor-pointer hover:bg-red-500/25 active:scale-90 transition-all"
+                    >
+                      <span className="material-symbols-rounded filled text-[16px] leading-none">
+                        stop
+                      </span>
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: 'var(--link-unvisited)' }}
+              className="inline-flex items-center gap-1 font-semibold ml-1"
+            >
+              Original URL
+              <span className="material-symbols-rounded text-[15px]">north_east</span>
+            </a>
+          </div>
+        </div>
+
+        {/* Live Progress Bar When Audio Reader Is Active */}
+        {isAudioActive && (
+          <div
+            style={{ backgroundColor: 'var(--bg-surface-2)' }}
+            className="w-full h-1 rounded-full overflow-hidden"
+          >
+            <div
+              style={{
+                width: `${progressPct}%`,
+                backgroundColor: 'var(--accent)',
+                transition: 'width 260ms cubic-bezier(0.22, 1, 0.36, 1)',
+              }}
+              className="h-full rounded-full"
+            />
+          </div>
+        )}
+
+        {ttsNotice && (
+          <div
+            style={{
+              backgroundColor: 'color-mix(in srgb, var(--accent) 12%, transparent)',
+              color: 'var(--text-secondary)',
+            }}
+            className="px-3 py-2 rounded-xl text-[11.5px] flex items-center justify-between gap-2"
+          >
+            <span>{ttsNotice}</span>
+            <button
+              type="button"
+              onClick={() => setTtsNotice(null)}
+              className="material-symbols-rounded text-[14px] cursor-pointer"
+            >
+              close
+            </button>
+          </div>
+        )}
       </div>
 
       <div
-        className="hn-prose hn-article-body space-y-4"
-        dangerouslySetInnerHTML={{ __html: article.contentHtml }}
+        ref={articleBodyRef}
+        onClick={(e) => {
+          // Allow clicking any paragraph while Audio Reader is active to jump speech directly to it
+          if (!isAudioActive) return;
+          const block = (e.target as HTMLElement).closest('[data-tts-idx]');
+          if (block) {
+            const idx = Number(block.getAttribute('data-tts-idx'));
+            if (Number.isFinite(idx)) {
+              speakSegmentAt(idx);
+            }
+          }
+        }}
+        className="hn-prose hn-article-body space-y-3.5"
+        dangerouslySetInnerHTML={{ __html: annotatedHtml }}
       />
     </article>
   );

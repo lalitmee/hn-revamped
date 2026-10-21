@@ -91,12 +91,33 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
       {shortcut && (
         <kbd
           style={{
-            backgroundColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
-            color: 'var(--text-muted)',
+            backgroundColor: 'color-mix(in srgb, var(--bg-canvas) 65%, transparent)',
+            borderColor: 'var(--border-subtle)',
+            color: 'var(--text-secondary)',
           }}
-          className="px-1.5 py-0.5 rounded-full text-[10px] font-mono leading-none"
+          className="h-5 px-1.5 rounded-md border inline-flex items-center justify-center gap-1 text-[11px] font-mono font-bold leading-none"
         >
-          {shortcut}
+          {shortcut.startsWith('⌘') ? (
+            <>
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className="shrink-0"
+              >
+                <path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z" />
+              </svg>
+              <span>{shortcut.slice(1).trim()}</span>
+            </>
+          ) : (
+            shortcut
+          )}
         </kbd>
       )}
     </button>

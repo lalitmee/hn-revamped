@@ -33,6 +33,8 @@ export function getAdaptiveThreadBudget(totalComments: number): {
 interface CommentTreeProps {
   comments: HNComment[];
   storyAuthor: string;
+  collapseMode?: ThreadCollapseMode;
+  onCollapseModeChange?: (mode: ThreadCollapseMode) => void;
   onInternalHnLinkClick?: (storyId: number) => void;
 }
 
@@ -58,6 +60,8 @@ function filterCommentNodes(nodes: HNComment[], query: string): HNComment[] {
 export const CommentTree: React.FC<CommentTreeProps> = ({
   comments,
   storyAuthor,
+  collapseMode: controlledCollapseMode,
+  onCollapseModeChange,
   onInternalHnLinkClick,
 }) => {
   const totalCommentsCount = useMemo(
@@ -69,7 +73,9 @@ export const CommentTree: React.FC<CommentTreeProps> = ({
     [totalCommentsCount]
   );
 
-  const [collapseMode, setCollapseMode] = useState<ThreadCollapseMode>('expanded');
+  const [internalCollapseMode, setInternalCollapseMode] =
+    useState<ThreadCollapseMode>(controlledCollapseMode ?? 'root-only');
+  const collapseMode = controlledCollapseMode ?? internalCollapseMode;
   const [modeVersion, setModeVersion] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const deferredSearchQuery = useDeferredValue(searchQuery);
@@ -100,7 +106,7 @@ export const CommentTree: React.FC<CommentTreeProps> = ({
   return (
     <div>
       {/* Clean Material 3 Thread Toolbar (No Nested Box-Inside-Box) */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5 mb-5">
+      <div className="flex flex-wrap items-center justify-between gap-2.5 mb-3.5">
         <div className="liquid-glass h-9 px-4 rounded-full flex items-center gap-2.5 flex-1 min-w-[220px]">
           <span
             style={{ color: isFilteringStale ? 'var(--accent)' : 'var(--text-muted)' }}
@@ -136,7 +142,8 @@ export const CommentTree: React.FC<CommentTreeProps> = ({
           value={collapseMode}
           onChange={(nextMode) => {
             startTransition(() => {
-              setCollapseMode(nextMode);
+              setInternalCollapseMode(nextMode);
+              onCollapseModeChange?.(nextMode);
               setModeVersion((v) => v + 1);
             });
           }}

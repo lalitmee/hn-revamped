@@ -2,6 +2,7 @@ import { HNStory, ReadHistoryEntry, UserPreferences } from '@/types/hn';
 import { DEFAULT_PREFERENCES } from './themes';
 
 const PREFS_KEY = 'hn_revamped_prefs_v1';
+const TYPOGRAPHY_MIGRATED_KEY = 'hn_revamped_typo_v2';
 const HISTORY_KEY = 'hn_revamped_history_v1';
 const BOOKMARKS_KEY = 'hn_revamped_bookmarks_v1';
 
@@ -10,7 +11,21 @@ export function loadPreferences(): UserPreferences {
   try {
     const raw = window.localStorage.getItem(PREFS_KEY);
     if (!raw) return DEFAULT_PREFERENCES;
-    return { ...DEFAULT_PREFERENCES, ...JSON.parse(raw) };
+    const parsed = JSON.parse(raw);
+    const merged: UserPreferences = { ...DEFAULT_PREFERENCES, ...parsed };
+
+    // One-time migration from legacy 16px / 1.65 default to compact 14px / 1.55 default
+    if (
+      !window.localStorage.getItem(TYPOGRAPHY_MIGRATED_KEY) &&
+      parsed.fontSize === 16 &&
+      parsed.lineHeight === 1.65
+    ) {
+      merged.fontSize = DEFAULT_PREFERENCES.fontSize;
+      merged.lineHeight = DEFAULT_PREFERENCES.lineHeight;
+      window.localStorage.setItem(TYPOGRAPHY_MIGRATED_KEY, '1');
+      window.localStorage.setItem(PREFS_KEY, JSON.stringify(merged));
+    }
+    return merged;
   } catch {
     return DEFAULT_PREFERENCES;
   }

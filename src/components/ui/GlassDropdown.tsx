@@ -15,6 +15,7 @@ interface GlassDropdownProps<T extends string> {
   onChange: (value: T) => void;
   leadingIcon?: string;
   ariaLabel?: string;
+  size?: 'sm' | 'md';
 }
 
 export function GlassDropdown<T extends string>({
@@ -23,6 +24,7 @@ export function GlassDropdown<T extends string>({
   onChange,
   leadingIcon = 'history',
   ariaLabel = 'Select option',
+  size = 'md',
 }: GlassDropdownProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -55,18 +57,22 @@ export function GlassDropdown<T extends string>({
         aria-expanded={isOpen}
         onClick={() => setIsOpen((prev) => !prev)}
         style={{ color: 'var(--text-primary)' }}
-        className="liquid-glass h-9 px-3.5 rounded-full inline-flex items-center gap-2 text-xs font-semibold cursor-pointer select-none shrink-0"
+        className={`liquid-glass ${
+          size === 'sm' ? 'h-8 px-3 gap-1.5' : 'h-9 px-3.5 gap-2'
+        } rounded-full inline-flex items-center text-xs font-semibold cursor-pointer select-none shrink-0`}
       >
         <span
           style={{ color: 'var(--accent)' }}
-          className="material-symbols-rounded text-[17px]"
+          className="material-symbols-rounded text-[16px]"
         >
           {leadingIcon}
         </span>
-        <span className="leading-none whitespace-nowrap">{selectedOption?.label}</span>
+        <span className="leading-none whitespace-nowrap max-w-[140px] truncate">
+          {selectedOption?.label}
+        </span>
         <span
           style={{ color: 'var(--text-muted)' }}
-          className={`material-symbols-rounded text-[16px] transition-transform duration-200 ${
+          className={`material-symbols-rounded text-[15px] transition-transform duration-200 ${
             isOpen ? 'rotate-180' : ''
           }`}
         >
@@ -77,7 +83,7 @@ export function GlassDropdown<T extends string>({
       {isOpen && (
         <div
           role="listbox"
-          className="liquid-glass-elevated animate-glass-pop absolute right-0 mt-2 w-56 rounded-2xl p-1.5 z-50 space-y-0.5"
+          className="liquid-glass-elevated animate-glass-pop custom-scrollbar absolute right-0 mt-2 w-56 max-h-64 overflow-y-auto rounded-2xl p-1.5 z-50 space-y-0.5"
         >
           {options.map((opt) => {
             const isSelected = opt.id === value;

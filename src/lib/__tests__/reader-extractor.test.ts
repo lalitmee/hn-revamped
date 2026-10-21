@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { detectSpecialUrlFallback, extractArticleFromHtml } from '../reader-extractor';
+import { prepareReaderSpeechSegments } from '@/components/detail/ArticleReaderView';
 
 describe('Article Reader View Extractor', () => {
   it('detects YouTube, GitHub repo, and PDF URLs cleanly', () => {
@@ -36,5 +37,27 @@ describe('Article Reader View Extractor', () => {
     expect(article.contentHtml).toContain('without network roundtrips');
     expect(article.contentHtml).not.toContain('<script>');
     expect(article.readingTimeMinutes).toBeGreaterThanOrEqual(1);
+  });
+
+  it('prepares code-aware TTS speech segments and skips <pre> code blocks', () => {
+    const html = `
+      <h2>Memory Layout</h2>
+      <p>We allocate arenas in 64KB chunks. Details at https://example.com/arena-spec</p>
+      <pre><code>const arena = new Uint8Array(65536);</code></pre>
+      <p>Benchmarks show 3x lower latency.</p>
+    `;
+    const { annotatedHtml, segments } = prepareReaderSpeechSegments(
+      html,
+      'Fast Arena Allocator'
+    );
+
+    expect(segments.map((s) => s.text)).toEqual([
+      'Fast Arena Allocator',
+      'Memory Layout',
+      'We allocate arenas in 64KB chunks. Details at link',
+      'Benchmarks show 3x lower latency.',
+    ]);
+    expect(annotatedHtml).toContain('data-tts-idx="1"');
+    expect(annotatedHtml).toContain('data-tts-idx="2"');
   });
 });

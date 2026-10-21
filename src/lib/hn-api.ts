@@ -99,6 +99,18 @@ const FEED_ENDPOINTS: Record<Exclude<FeedType, 'saved'>, string> = {
 const FEED_IDS_TTL_MS = 60_000;
 const feedIdsCache = new Map<string, { ids: number[]; fetchedAt: number }>();
 const storyItemCache = new Map<number, { story: HNStory; fetchedAt: number }>();
+const storyCommentsCache = new Map<
+  number,
+  { storyWithComments: HNStoryWithComments; fetchedAt: number }
+>();
+
+export function getCachedStoryWithComments(storyId: number): HNStoryWithComments | null {
+  const cached = storyCommentsCache.get(storyId);
+  if (cached && Date.now() - cached.fetchedAt < FEED_IDS_TTL_MS) {
+    return cached.storyWithComments;
+  }
+  return null;
+}
 
 export async function fetchStoryItem(id: number): Promise<HNStory | null> {
   const cached = storyItemCache.get(id);
@@ -159,6 +171,11 @@ export async function fetchFeedStories(
 }
 
 export async function fetchStoryWithComments(storyId: number): Promise<HNStoryWithComments> {
+  const cached = getCachedStoryWithComments(storyId);
+  if (cached) {
+    return cached;
+  }
+
   const res = await fetch(`${ALGOLIA_BASE}/items/${storyId}`);
   if (res.ok) {
     const data = await res.json();
@@ -175,7 +192,7 @@ export async function fetchStoryWithComments(storyId: number): Promise<HNStoryWi
             rootData.url
           );
           const comments = normalizeAlgoliaCommentTree(rootData.children || []);
-          return {
+          const resolvedRoot: HNStoryWithComments = {
             id: rootData.id,
             title: rootData.title || `Story #${data.story_id}`,
             cleanTitle,
@@ -190,6 +207,15 @@ export async function fetchStoryWithComments(storyId: number): Promise<HNStoryWi
             type: rootData.type === 'job' ? 'job' : 'story',
             comments,
           };
+          storyCommentsCache.set(storyId, {
+            storyWithComments: resolvedRoot,
+            fetchedAt: Date.now(),
+          });
+          storyCommentsCache.set(resolvedRoot.id, {
+            storyWithComments: resolvedRoot,
+            fetchedAt: Date.now(),
+          });
+          return resolvedRoot;
         }
       } catch {
         // Fall through to rendering the comment node directly as a thread
@@ -203,7 +229,7 @@ export async function fetchStoryWithComments(storyId: number): Promise<HNStoryWi
         : `Story #${data.id}`);
     const { cleanTitle, badges } = parseTitleAndBadges(fallbackTitle, data.url);
     const comments = normalizeAlgoliaCommentTree(data.children || []);
-    return {
+    const resolved: HNStoryWithComments = {
       id: data.id,
       title: fallbackTitle,
       cleanTitle,
@@ -218,6 +244,11 @@ export async function fetchStoryWithComments(storyId: number): Promise<HNStoryWi
       type: data.type === 'job' ? 'job' : 'story',
       comments,
     };
+    storyCommentsCache.set(storyId, {
+      storyWithComments: resolved,
+      fetchedAt: Date.now(),
+    });
+    return resolved;
   }
 
   const fallbackStory = await fetchStoryItem(storyId);

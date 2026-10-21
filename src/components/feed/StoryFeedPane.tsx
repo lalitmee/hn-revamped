@@ -31,6 +31,12 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const prevCountRef = useRef(0);
   const [newlyAddedStartIndex, setNewlyAddedStartIndex] = useState(0);
+  const [indicatorRect, setIndicatorRect] = useState<{
+    top: number;
+    left: number;
+    width: number;
+    height: number;
+  } | null>(null);
 
   useEffect(() => {
     if (stories.length > prevCountRef.current) {
@@ -40,6 +46,47 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
     }
     prevCountRef.current = stories.length;
   }, [stories.length]);
+
+  // Measure the active story card so the shared selection indicator can glide between posts
+  useEffect(() => {
+    const updateIndicator = () => {
+      const container = containerRef.current;
+      if (!container || !selectedStoryId) {
+        setIndicatorRect(null);
+        return;
+      }
+      const activeEl = container.querySelector<HTMLElement>(
+        `[data-story-id="${selectedStoryId}"]`
+      );
+      if (!activeEl) {
+        setIndicatorRect(null);
+        return;
+      }
+      setIndicatorRect({
+        top: activeEl.offsetTop,
+        left: activeEl.offsetLeft,
+        width: activeEl.offsetWidth,
+        height: activeEl.offsetHeight,
+      });
+    };
+
+    updateIndicator();
+    const rafId = requestAnimationFrame(updateIndicator);
+
+    const container = containerRef.current;
+    let resizeObserver: ResizeObserver | null = null;
+    if (container && typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => {
+        updateIndicator();
+      });
+      resizeObserver.observe(container);
+    }
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      resizeObserver?.disconnect();
+    };
+  }, [selectedStoryId, stories]);
 
   // Automatically center the selected story in the middle of the feed viewport
   useEffect(() => {
@@ -106,9 +153,32 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
   }
 
   const isAppendingMore = loading && stories.length > 0;
+  const hasFloatingIndicator = Boolean(indicatorRect && indicatorRect.height > 0);
 
   return (
-    <div ref={containerRef} className="flex flex-col gap-3 p-4">
+    <div ref={containerRef} className="relative flex flex-col gap-3 p-4">
+      {/* Shared Traveling Selection Backdrop & Left Accent Indicator */}
+      {hasFloatingIndicator && indicatorRect && (
+        <div
+          aria-hidden="true"
+          style={{
+            transform: `translate3d(${indicatorRect.left}px, ${indicatorRect.top}px, 0)`,
+            width: `${indicatorRect.width}px`,
+            height: `${indicatorRect.height}px`,
+            backgroundColor: 'var(--bg-surface-active)',
+            borderColor: 'color-mix(in srgb, var(--accent) 55%, var(--border-subtle))',
+            transition:
+              'transform 320ms cubic-bezier(0.22, 1, 0.36, 1), height 260ms cubic-bezier(0.22, 1, 0.36, 1), width 200ms ease, opacity 200ms ease',
+          }}
+          className="pointer-events-none absolute top-0 left-0 z-0 overflow-hidden rounded-2xl border will-change-transform"
+        >
+          <span
+            style={{ backgroundColor: 'var(--accent)' }}
+            className="absolute left-0 top-3 bottom-3 w-1 rounded-r-full"
+          />
+        </div>
+      )}
+
       {stories.map((story, idx) => {
         const staggerIdx = Math.max(0, idx - newlyAddedStartIndex);
         const delayMs = idx >= newlyAddedStartIndex ? Math.min(staggerIdx * 35, 350) : 0;
@@ -117,12 +187,13 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
             key={story.id}
             data-story-id={story.id}
             style={{ animationDelay: `${delayMs}ms` }}
-            className="animate-story-in"
+            className="relative z-10 animate-story-in"
           >
             <StoryPillRow
               story={story}
               index={idx + 1}
               isSelected={selectedStoryId === story.id}
+              hasFloatingIndicator={hasFloatingIndicator}
               isRead={Boolean(readHistory[story.id])}
               newCommentsDelta={getNewCommentsDelta(story.id, story.commentsCount, readHistory)}
               isBookmarked={bookmarkedIds.has(story.id)}

@@ -135,10 +135,10 @@ export const CommentNode: React.FC<CommentNodeProps> = ({
         }}
         className={`relative focus:outline-none ${
           isCollapsed
-            ? 'my-2.5 py-2.5 px-3.5 rounded-2xl cursor-pointer hover:brightness-105'
+            ? 'my-2 py-2 px-3 rounded-2xl cursor-pointer hover:brightness-105'
             : isRoot
-            ? 'mb-3.5 p-4 rounded-2xl'
-            : 'mt-3.5 pt-3'
+            ? 'mb-2.5 p-3.5 rounded-2xl'
+            : 'mt-2.5 pt-2.5'
         }`}
       >
         <div className="flex">
@@ -180,10 +180,13 @@ export const CommentNode: React.FC<CommentNodeProps> = ({
                     color: isOP
                       ? 'var(--accent)'
                       : isCollapsed
-                      ? 'var(--text-secondary)'
-                      : 'var(--text-primary)',
+                      ? `color-mix(in srgb, ${guideColor} 55%, var(--text-secondary))`
+                      : `color-mix(in srgb, ${guideColor} 82%, var(--text-primary))`,
+                    backgroundColor: isOP
+                      ? 'color-mix(in srgb, var(--accent) 14%, transparent)'
+                      : `color-mix(in srgb, ${guideColor} 12%, transparent)`,
                   }}
-                  className="font-semibold shrink-0 transition-colors duration-200"
+                  className="px-2 py-0.5 rounded-md font-semibold shrink-0 transition-colors duration-200"
                 >
                   {comment.user}
                 </span>

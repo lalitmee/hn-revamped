@@ -1,7 +1,7 @@
 'use client';
 
 import React, { startTransition } from 'react';
-import { DetailTab, HNStoryWithComments } from '@/types/hn';
+import { DetailTab, HNStoryWithComments, ThreadCollapseMode } from '@/types/hn';
 import { formatCommentHtml } from '@/lib/html-sanitizer';
 import { formatRelativeTime } from '@/components/feed/StoryPillRow';
 import { CommentTree } from './CommentTree';
@@ -15,6 +15,8 @@ interface StoryDetailPaneProps {
   loading: boolean;
   activeTab: DetailTab;
   onTabChange: (tab: DetailTab) => void;
+  collapseMode?: ThreadCollapseMode;
+  onCollapseModeChange?: (mode: ThreadCollapseMode) => void;
   isBookmarked: boolean;
   onToggleBookmark: () => void;
   onInternalHnLinkClick: (storyId: number) => void;
@@ -25,16 +27,22 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
   loading,
   activeTab,
   onTabChange,
+  collapseMode,
+  onCollapseModeChange,
   isBookmarked,
   onToggleBookmark,
   onInternalHnLinkClick,
 }) => {
-  if (loading) {
+  const isInitialPlaceholder = Boolean(
+    story && loading && story.points === 0 && !story.user
+  );
+
+  if (isInitialPlaceholder) {
     return (
       <div className="p-6 space-y-4">
-        <div className="liquid-glass h-10 w-3/4 rounded-xl animate-pulse" />
-        <div className="liquid-glass h-28 w-full rounded-2xl animate-pulse" />
-        <div className="liquid-glass h-64 w-full rounded-2xl animate-pulse" />
+        <div className="liquid-glass liquid-shimmer h-10 w-3/4 rounded-xl animate-story-in" />
+        <div className="liquid-glass liquid-shimmer h-28 w-full rounded-2xl animate-story-in" />
+        <div className="liquid-glass liquid-shimmer h-64 w-full rounded-2xl animate-story-in" />
       </div>
     );
   }
@@ -86,7 +94,7 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
           backgroundColor: 'color-mix(in srgb, var(--bg-canvas) 92%, transparent)',
           borderColor: 'var(--border-subtle)',
         }}
-        className="shrink-0 sticky top-0 z-30 backdrop-blur-xl px-5 md:px-7 py-3.5 border-b flex flex-wrap items-center justify-between gap-3"
+        className="shrink-0 sticky top-0 z-20 backdrop-blur-xl px-5 md:px-6 py-2.5 border-b flex flex-wrap items-center justify-between gap-3"
       >
         <GlassSegmentedControl<DetailTab>
           items={tabItems}
@@ -120,18 +128,18 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
       </div>
 
       {/* Independently Scrollable Story Content & Comments/Reader Body */}
-      <div className="custom-scrollbar p-5 md:p-7 flex-1 min-h-0 overflow-y-auto overscroll-contain">
-        <header className="mb-6">
+      <div className="custom-scrollbar px-5 md:px-6 pt-3.5 pb-6 flex-1 min-h-0 overflow-y-auto overscroll-contain">
+        <header className="mb-4">
           <h1
             style={{ color: 'var(--text-primary)' }}
-            className="text-xl md:text-2xl font-bold leading-snug tracking-tight"
+            className="text-lg md:text-xl font-bold leading-snug tracking-tight"
           >
             {story.cleanTitle}
           </h1>
 
           <div
             style={{ color: 'var(--text-muted)' }}
-            className="flex flex-wrap items-center gap-3 mt-2.5 text-xs"
+            className="flex flex-wrap items-center gap-2.5 mt-1.5 text-xs"
           >
             <span style={{ color: 'var(--accent)' }} className="font-bold">
               ▲ {story.points} points
@@ -152,7 +160,7 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
 
           {story.text && (
             <div
-              className="liquid-glass mt-4 p-4 rounded-2xl hn-prose"
+              className="liquid-glass mt-3 p-3.5 rounded-2xl hn-prose"
               onClick={(e) => {
                 const target = (e.target as HTMLElement).closest('a[data-hn-item-id]');
                 if (target) {
@@ -169,10 +177,79 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
         <SafeViewTransition>
           {activeTab === 'reader' ? (
             <ArticleReaderView url={story.url} storyTitle={story.cleanTitle} />
+          ) : loading && story.comments.length === 0 ? (
+            <div className="space-y-3.5" role="status" aria-live="polite">
+              <div
+                style={{ color: 'var(--text-muted)' }}
+                className="flex items-center gap-2 text-xs font-medium py-1"
+              >
+                <span
+                  style={{ color: 'var(--accent)' }}
+                  className="material-symbols-rounded text-[16px] animate-spin"
+                >
+                  progress_activity
+                </span>
+                <span>
+                  Loading {story.commentsCount > 0 ? `${story.commentsCount} ` : ''}comments...
+                </span>
+              </div>
+
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={`comment-skeleton-${i}`}
+                  style={{ animationDelay: `${i * 45}ms` }}
+                  className="liquid-glass liquid-shimmer animate-story-in p-4 rounded-2xl space-y-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div
+                        style={{
+                          backgroundColor:
+                            'color-mix(in srgb, var(--accent) 28%, transparent)',
+                        }}
+                        className="h-3.5 w-24 rounded-full"
+                      />
+                      <div
+                        style={{
+                          backgroundColor:
+                            'color-mix(in srgb, var(--text-muted) 18%, transparent)',
+                        }}
+                        className="h-3 w-14 rounded-full"
+                      />
+                    </div>
+                    <div
+                      style={{
+                        backgroundColor:
+                          'color-mix(in srgb, var(--text-primary) 10%, transparent)',
+                      }}
+                      className="h-6 w-12 rounded-full"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div
+                      style={{
+                        backgroundColor:
+                          'color-mix(in srgb, var(--text-primary) 12%, transparent)',
+                      }}
+                      className="h-3.5 w-full rounded-full"
+                    />
+                    <div
+                      style={{
+                        backgroundColor:
+                          'color-mix(in srgb, var(--text-primary) 10%, transparent)',
+                      }}
+                      className={`h-3.5 rounded-full ${i % 2 === 0 ? 'w-4/5' : 'w-2/3'}`}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : (
             <CommentTree
               comments={story.comments}
               storyAuthor={story.user}
+              collapseMode={collapseMode}
+              onCollapseModeChange={onCollapseModeChange}
               onInternalHnLinkClick={onInternalHnLinkClick}
             />
           )}

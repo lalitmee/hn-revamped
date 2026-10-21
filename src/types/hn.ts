@@ -4,6 +4,8 @@ export type LayoutMode = 'split' | 'zen';
 
 export type DetailTab = 'comments' | 'reader';
 
+export type ThreadCollapseMode = 'expanded' | 'root-only' | 'collapse-all';
+
 export type FontFamilyId = 'sans' | 'bookerly' | 'serif' | 'hyperlegible' | 'monolisa' | 'mono';
 
 export type LineWidthOption = '55ch' | '65ch' | '75ch' | 'full';
@@ -116,6 +118,7 @@ export interface UserPreferences {
   lineHeight: number;
   lineWidth: LineWidthOption;
   layoutMode: LayoutMode;
+  defaultCollapseMode?: ThreadCollapseMode;
   hideReadStories: boolean;
   mutedKeywords: string[];
   mutedDomains: string[];
