@@ -14,6 +14,7 @@ interface AppHeaderProps {
   timeTravelPreset: TimeTravelPreset;
   onSelectTimeTravel: (preset: TimeTravelPreset) => void;
   onOpenSearch: () => void;
+  isAppearanceOpen?: boolean;
   onOpenAppearance: () => void;
   onOpenShortcuts: () => void;
   savedCount: number;
@@ -37,6 +38,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   timeTravelPreset,
   onSelectTimeTravel,
   onOpenSearch,
+  isAppearanceOpen = false,
   onOpenAppearance,
   onOpenShortcuts,
   savedCount,
@@ -92,8 +94,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         </GlassButton>
 
         <GlassButton
+          variant={isAppearanceOpen ? 'primary' : 'glass'}
           icon="palette"
-          iconAccent
+          iconAccent={!isAppearanceOpen}
           onClick={onOpenAppearance}
           title="Theme, Typography & Filter Studio (t)"
         >

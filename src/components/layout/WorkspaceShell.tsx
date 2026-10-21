@@ -166,6 +166,7 @@ export const WorkspaceShell: React.FC = () => {
 
   // Switch Feed Category: Clear current stories & reset selection immediately
   const handleSelectFeed = useCallback((nextFeed: FeedType) => {
+    setIsAppearanceOpen(false);
     setActiveFeed(nextFeed);
     setTimeTravel('live');
     setSelectedStory(null);
@@ -176,6 +177,7 @@ export const WorkspaceShell: React.FC = () => {
 
   // Switch Time Travel Range: Clear current stories & reset selection immediately
   const handleSelectTimeTravel = useCallback((preset: TimeTravelPreset) => {
+    setIsAppearanceOpen(false);
     setTimeTravel(preset);
     setSelectedStory(null);
     setActiveTab('comments');
@@ -255,6 +257,11 @@ export const WorkspaceShell: React.FC = () => {
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
+      if (e.key === 'Escape' && isAppearanceOpen) {
+        e.preventDefault();
+        setIsAppearanceOpen(false);
+        return;
+      }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setIsSearchOpen((prev) => !prev);
@@ -299,7 +306,14 @@ export const WorkspaceShell: React.FC = () => {
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [preferences, selectedStory, visibleStories, handleSelectStory, handleUpdatePreferences]);
+  }, [
+    preferences,
+    selectedStory,
+    visibleStories,
+    isAppearanceOpen,
+    handleSelectStory,
+    handleUpdatePreferences,
+  ]);
 
   const inlineRootStyle: React.CSSProperties = {
     ...(themeVars as React.CSSProperties),
@@ -332,12 +346,20 @@ export const WorkspaceShell: React.FC = () => {
         timeTravelPreset={timeTravel}
         onSelectTimeTravel={handleSelectTimeTravel}
         onOpenSearch={() => setIsSearchOpen(true)}
-        onOpenAppearance={() => setIsAppearanceOpen(true)}
+        isAppearanceOpen={isAppearanceOpen}
+        onOpenAppearance={() => setIsAppearanceOpen((prev) => !prev)}
         onOpenShortcuts={() => setIsShortcutsOpen(true)}
         savedCount={bookmarks.length}
       />
 
-      {preferences.layoutMode === 'split' ? (
+      {isAppearanceOpen ? (
+        <AppearanceModal
+          isOpen={isAppearanceOpen}
+          preferences={{ ...preferences, themeId: resolvedThemeId }}
+          onUpdate={handleUpdatePreferences}
+          onClose={() => setIsAppearanceOpen(false)}
+        />
+      ) : preferences.layoutMode === 'split' ? (
         <main className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
           {/* Sticky / Independently Contained Left Feed Pane */}
           <section
@@ -444,17 +466,13 @@ export const WorkspaceShell: React.FC = () => {
         </main>
       )}
 
-      <AppearanceModal
-        isOpen={isAppearanceOpen}
-        preferences={{ ...preferences, themeId: resolvedThemeId }}
-        onUpdate={handleUpdatePreferences}
-        onClose={() => setIsAppearanceOpen(false)}
-      />
-
       <CommandPaletteModal
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
-        onSelectStory={handleSelectStory}
+        onSelectStory={(story) => {
+          setIsAppearanceOpen(false);
+          handleSelectStory(story);
+        }}
       />
 
       <ShortcutsModal
