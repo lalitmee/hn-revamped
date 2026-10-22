@@ -1,28 +1,33 @@
-import DOMPurify from 'dompurify';
+import createDOMPurify from 'dompurify';
 
 const HN_ITEM_REGEX = /^https?:\/\/news\.ycombinator\.com\/item\?id=(\d+)/i;
 
 export function formatCommentHtml(rawHtml: string): string {
   if (!rawHtml) return '';
 
-  const clean = DOMPurify.sanitize(rawHtml, {
-    ALLOWED_TAGS: [
-      'p',
-      'a',
-      'i',
-      'em',
-      'b',
-      'strong',
-      'pre',
-      'code',
-      'ul',
-      'ol',
-      'li',
-      'blockquote',
-      'br',
-    ],
-    ALLOWED_ATTR: ['href', 'rel', 'target'],
-  });
+  const domPurify =
+    typeof window !== 'undefined' ? createDOMPurify(window) : null;
+
+  const clean = domPurify
+    ? domPurify.sanitize(rawHtml, {
+        ALLOWED_TAGS: [
+          'p',
+          'a',
+          'i',
+          'em',
+          'b',
+          'strong',
+          'pre',
+          'code',
+          'ul',
+          'ol',
+          'li',
+          'blockquote',
+          'br',
+        ],
+        ALLOWED_ATTR: ['href', 'rel', 'target'],
+      })
+    : rawHtml;
 
   return clean.replace(
     /<a\s+([^>]*?)href="([^"]+)"([^>]*)>(.*?)<\/a>/gi,

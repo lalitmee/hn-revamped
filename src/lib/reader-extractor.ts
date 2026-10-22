@@ -3,16 +3,15 @@ import { parseHTML } from 'linkedom';
 import createDOMPurify from 'dompurify';
 import { ReaderArticle } from '@/types/hn';
 
-// Polyfill window for DOMPurify if running under Node.js runtime without native DOM
-const { window: linkedomWindow } = parseHTML(
-  '<!DOCTYPE html><html><body></body></html>'
-);
-if (typeof globalThis.window === 'undefined') {
-  (globalThis as any).window = linkedomWindow;
+function getDOMPurify() {
+  if (typeof window !== 'undefined') {
+    return createDOMPurify(window);
+  }
+  const { window: domWindow } = parseHTML(
+    '<!DOCTYPE html><html><body></body></html>'
+  );
+  return createDOMPurify(domWindow as any);
 }
-const DOMPurify = createDOMPurify(
-  typeof window !== 'undefined' ? window : (linkedomWindow as any)
-);
 
 export function detectSpecialUrlFallback(
   url: string
@@ -115,7 +114,8 @@ export function extractArticleFromHtml(
     };
   }
 
-  const sanitizedHtml = DOMPurify.sanitize(parsed.content, {
+  const domPurify = getDOMPurify();
+  const sanitizedHtml = domPurify.sanitize(parsed.content, {
     ALLOWED_TAGS: [
       'h1',
       'h2',
