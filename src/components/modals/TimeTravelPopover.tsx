@@ -1,9 +1,13 @@
 'use client';
 
 import React from 'react';
-import { GlassDropdown, GlassDropdownOption } from '@/components/ui/GlassDropdown';
+import {
+  GlassDropdown,
+  GlassDropdownOption,
+} from '@/components/ui/GlassDropdown';
 
-export type TimeTravelPreset = 'live' | 'yesterday' | 'last-week' | 'last-month' | 'one-year-ago';
+export type TimeTravelPreset =
+  'live' | 'yesterday' | 'last-week' | 'last-month' | 'one-year-ago';
 
 interface TimeTravelPopoverProps {
   activePreset: TimeTravelPreset;

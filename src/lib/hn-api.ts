@@ -1,4 +1,10 @@
-import { FeedType, HNComment, HNStory, HNStoryWithComments, StoryBadge } from '@/types/hn';
+import {
+  FeedType,
+  HNComment,
+  HNStory,
+  HNStoryWithComments,
+  StoryBadge,
+} from '@/types/hn';
 
 const FIREBASE_BASE = 'https://hacker-news.firebaseio.com/v0';
 const ALGOLIA_BASE = 'https://hn.algolia.com/api/v1';
@@ -31,7 +37,10 @@ export function parseTitleAndBadges(
     title = title.replace(/^Launch HN:\s*/i, '');
   }
 
-  if (/\s*[\[\(]pdf[\]\)]\s*$/i.test(title) || (url && /\.pdf($|\?)/i.test(url))) {
+  if (
+    /\s*[\[\(]pdf[\]\)]\s*$/i.test(title) ||
+    (url && /\.pdf($|\?)/i.test(url))
+  ) {
     badges.push({ type: 'pdf', label: 'PDF', icon: 'picture_as_pdf' });
     title = title.replace(/\s*[\[\(]pdf[\]\)]\s*$/i, '');
   }
@@ -61,15 +70,23 @@ export interface AlgoliaRawNode {
   children?: AlgoliaRawNode[];
 }
 
-export function normalizeAlgoliaCommentTree(nodes: AlgoliaRawNode[] = []): HNComment[] {
+export function normalizeAlgoliaCommentTree(
+  nodes: AlgoliaRawNode[] = []
+): HNComment[] {
   const result: HNComment[] = [];
 
   for (const node of nodes) {
-    if (!node || (!node.text && (!node.children || node.children.length === 0))) {
+    if (
+      !node ||
+      (!node.text && (!node.children || node.children.length === 0))
+    ) {
       continue;
     }
     const children = normalizeAlgoliaCommentTree(node.children || []);
-    const totalDescendants = children.reduce((acc, child) => acc + 1 + child.totalDescendants, 0);
+    const totalDescendants = children.reduce(
+      (acc, child) => acc + 1 + child.totalDescendants,
+      0
+    );
 
     result.push({
       id: node.id,
@@ -104,7 +121,9 @@ const storyCommentsCache = new Map<
   { storyWithComments: HNStoryWithComments; fetchedAt: number }
 >();
 
-export function getCachedStoryWithComments(storyId: number): HNStoryWithComments | null {
+export function getCachedStoryWithComments(
+  storyId: number
+): HNStoryWithComments | null {
   const cached = storyCommentsCache.get(storyId);
   if (cached && Date.now() - cached.fetchedAt < FEED_IDS_TTL_MS) {
     return cached.storyWithComments;
@@ -137,7 +156,12 @@ export async function fetchStoryItem(id: number): Promise<HNStory | null> {
       time: item.time ?? Math.floor(Date.now() / 1000),
       commentsCount: item.descendants ?? 0,
       badges,
-      type: item.type === 'job' ? 'job' : item.title.startsWith('Ask HN:') ? 'ask' : 'story',
+      type:
+        item.type === 'job'
+          ? 'job'
+          : item.title.startsWith('Ask HN:')
+            ? 'ask'
+            : 'story',
     };
     storyItemCache.set(id, { story, fetchedAt: Date.now() });
     return story;
@@ -156,7 +180,11 @@ export async function fetchFeedStories(
   const cachedIds = feedIdsCache.get(endpoint);
   let ids: number[];
 
-  if (cachedIds && Date.now() - cachedIds.fetchedAt < FEED_IDS_TTL_MS && page > 1) {
+  if (
+    cachedIds &&
+    Date.now() - cachedIds.fetchedAt < FEED_IDS_TTL_MS &&
+    page > 1
+  ) {
     ids = cachedIds.ids;
   } else {
     const res = await fetch(`${FIREBASE_BASE}/${endpoint}.json`);
@@ -170,7 +198,9 @@ export async function fetchFeedStories(
   return stories.filter((s): s is HNStory => s !== null);
 }
 
-export async function fetchStoryWithComments(storyId: number): Promise<HNStoryWithComments> {
+export async function fetchStoryWithComments(
+  storyId: number
+): Promise<HNStoryWithComments> {
   const cached = getCachedStoryWithComments(storyId);
   if (cached) {
     return cached;
@@ -182,7 +212,11 @@ export async function fetchStoryWithComments(storyId: number): Promise<HNStoryWi
 
     // If the linked HN item is a comment with a parent story_id, load the root story
     // or present the comment thread cleanly if root story fetch is unavailable.
-    if (data.type === 'comment' && data.story_id && Number(data.story_id) !== storyId) {
+    if (
+      data.type === 'comment' &&
+      data.story_id &&
+      Number(data.story_id) !== storyId
+    ) {
       try {
         const rootRes = await fetch(`${ALGOLIA_BASE}/items/${data.story_id}`);
         if (rootRes.ok) {
@@ -202,7 +236,10 @@ export async function fetchStoryWithComments(storyId: number): Promise<HNStoryWi
             points: rootData.points ?? 0,
             user: rootData.author || 'anonymous',
             time: rootData.created_at_i || Math.floor(Date.now() / 1000),
-            commentsCount: comments.reduce((acc, c) => acc + 1 + c.totalDescendants, 0),
+            commentsCount: comments.reduce(
+              (acc, c) => acc + 1 + c.totalDescendants,
+              0
+            ),
             badges,
             type: rootData.type === 'job' ? 'job' : 'story',
             comments,
@@ -239,7 +276,10 @@ export async function fetchStoryWithComments(storyId: number): Promise<HNStoryWi
       points: data.points ?? 0,
       user: data.author || 'anonymous',
       time: data.created_at_i || Math.floor(Date.now() / 1000),
-      commentsCount: comments.reduce((acc, c) => acc + 1 + c.totalDescendants, 0),
+      commentsCount: comments.reduce(
+        (acc, c) => acc + 1 + c.totalDescendants,
+        0
+      ),
       badges,
       type: data.type === 'job' ? 'job' : 'story',
       comments,

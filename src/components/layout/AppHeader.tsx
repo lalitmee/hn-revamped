@@ -2,7 +2,10 @@
 
 import React from 'react';
 import { FeedType, LayoutMode } from '@/types/hn';
-import { TimeTravelPopover, TimeTravelPreset } from '@/components/modals/TimeTravelPopover';
+import {
+  TimeTravelPopover,
+  TimeTravelPreset,
+} from '@/components/modals/TimeTravelPopover';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { GlassSegmentedControl } from '@/components/ui/GlassSegmentedControl';
 
@@ -46,7 +49,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   return (
     <header
       style={{
-        backgroundColor: 'color-mix(in srgb, var(--bg-surface-1) 86%, transparent)',
+        backgroundColor:
+          'color-mix(in srgb, var(--bg-surface-1) 86%, transparent)',
         borderColor: 'var(--border-subtle)',
       }}
       className="sticky top-0 z-40 backdrop-blur-xl border-b px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shrink-0"
@@ -71,7 +75,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               id: tab.id,
               label: tab.label,
               icon: tab.icon,
-              badge: tab.id === 'saved' && savedCount > 0 ? savedCount : undefined,
+              badge:
+                tab.id === 'saved' && savedCount > 0 ? savedCount : undefined,
             }))}
           />
         </nav>

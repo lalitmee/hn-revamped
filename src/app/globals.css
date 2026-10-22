@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* Preloaded Local Material Symbols Rounded Icon Font (Zero FOUT) */
 @font-face {
@@ -12,7 +12,10 @@
 /* Bundled Bookerly & MonoLisa Webfonts */
 @font-face {
   font-family: 'Bookerly';
-  src: local('Bookerly'), local('Bookerly Regular'), url('/fonts/bookerly/Bookerly-Regular.ttf') format('truetype');
+  src:
+    local('Bookerly'),
+    local('Bookerly Regular'),
+    url('/fonts/bookerly/Bookerly-Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -20,7 +23,9 @@
 
 @font-face {
   font-family: 'Bookerly';
-  src: local('Bookerly Italic'), url('/fonts/bookerly/Bookerly-Italic.ttf') format('truetype');
+  src:
+    local('Bookerly Italic'),
+    url('/fonts/bookerly/Bookerly-Italic.ttf') format('truetype');
   font-weight: 400;
   font-style: italic;
   font-display: swap;
@@ -28,7 +33,9 @@
 
 @font-face {
   font-family: 'Bookerly';
-  src: local('Bookerly Bold'), url('/fonts/bookerly/Bookerly-Bold.ttf') format('truetype');
+  src:
+    local('Bookerly Bold'),
+    url('/fonts/bookerly/Bookerly-Bold.ttf') format('truetype');
   font-weight: 600 700;
   font-style: normal;
   font-display: swap;
@@ -36,7 +43,9 @@
 
 @font-face {
   font-family: 'Bookerly';
-  src: local('Bookerly Bold Italic'), url('/fonts/bookerly/Bookerly-BoldItalic.ttf') format('truetype');
+  src:
+    local('Bookerly Bold Italic'),
+    url('/fonts/bookerly/Bookerly-BoldItalic.ttf') format('truetype');
   font-weight: 600 700;
   font-style: italic;
   font-display: swap;
@@ -44,7 +53,11 @@
 
 @font-face {
   font-family: 'MonoLisa';
-  src: local('MonoLisa'), local('MonoLisa-Regular'), local('MonoLisa Regular Nerd Font'), url('/fonts/monolisa/MonoLisa-Regular.ttf') format('truetype');
+  src:
+    local('MonoLisa'),
+    local('MonoLisa-Regular'),
+    local('MonoLisa Regular Nerd Font'),
+    url('/fonts/monolisa/MonoLisa-Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -52,7 +65,11 @@
 
 @font-face {
   font-family: 'MonoLisa';
-  src: local('MonoLisa Italic'), local('MonoLisa-RegularItalic'), local('MonoLisa Regular Italic Nerd Font'), url('/fonts/monolisa/MonoLisa-Italic.ttf') format('truetype');
+  src:
+    local('MonoLisa Italic'),
+    local('MonoLisa-RegularItalic'),
+    local('MonoLisa Regular Italic Nerd Font'),
+    url('/fonts/monolisa/MonoLisa-Italic.ttf') format('truetype');
   font-weight: 400;
   font-style: italic;
   font-display: swap;
@@ -60,7 +77,11 @@
 
 @font-face {
   font-family: 'MonoLisa';
-  src: local('MonoLisa Medium'), local('MonoLisa-Medium'), local('MonoLisa Medium Nerd Font'), url('/fonts/monolisa/MonoLisa-Medium.ttf') format('truetype');
+  src:
+    local('MonoLisa Medium'),
+    local('MonoLisa-Medium'),
+    local('MonoLisa Medium Nerd Font'),
+    url('/fonts/monolisa/MonoLisa-Medium.ttf') format('truetype');
   font-weight: 500 600;
   font-style: normal;
   font-display: swap;
@@ -68,7 +89,11 @@
 
 @font-face {
   font-family: 'MonoLisa';
-  src: local('MonoLisa Bold'), local('MonoLisa-Bold'), local('MonoLisa Bold Nerd Font'), url('/fonts/monolisa/MonoLisa-Bold.ttf') format('truetype');
+  src:
+    local('MonoLisa Bold'),
+    local('MonoLisa-Bold'),
+    local('MonoLisa Bold Nerd Font'),
+    url('/fonts/monolisa/MonoLisa-Bold.ttf') format('truetype');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -76,25 +101,30 @@
 
 @font-face {
   font-family: 'MonoLisa';
-  src: local('MonoLisa Bold Italic'), local('MonoLisa-BoldItalic'), local('MonoLisa Bold Italic Nerd Font'), url('/fonts/monolisa/MonoLisa-BoldItalic.ttf') format('truetype');
+  src:
+    local('MonoLisa Bold Italic'),
+    local('MonoLisa-BoldItalic'),
+    local('MonoLisa Bold Italic Nerd Font'),
+    url('/fonts/monolisa/MonoLisa-BoldItalic.ttf') format('truetype');
   font-weight: 700;
   font-style: italic;
   font-display: swap;
 }
 
 :root {
-  --bg-canvas: #0C0C0E;
-  --bg-surface-1: #16171B;
+  --bg-canvas: #0c0c0e;
+  --bg-surface-1: #16171b;
   --bg-surface-2: #202228;
-  --bg-surface-active: #261C16;
-  --text-primary: #F3F4F6;
-  --text-secondary: #D1D5DB;
-  --text-muted: #9CA3AF;
-  --accent: #FB923C;
-  --link-unvisited: #60A5FA;
-  --link-visited: #A78BFA;
+  --bg-surface-active: #261c16;
+  --text-primary: #f3f4f6;
+  --text-secondary: #d1d5db;
+  --text-muted: #9ca3af;
+  --accent: #fb923c;
+  --link-unvisited: #60a5fa;
+  --link-visited: #a78bfa;
   --border-subtle: #262932;
-  --reader-font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+  --reader-font-family:
+    'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
   --reader-font-size: 14px;
   --reader-line-height: 1.55;
   --reader-line-width: 65ch;
@@ -112,11 +142,11 @@ body {
 /* Universal pointer cursor for all interactive elements */
 button,
 a,
-[role="button"],
+[role='button'],
 select,
 summary,
-input[type="checkbox"],
-input[type="range"],
+input[type='checkbox'],
+input[type='range'],
 label[for] {
   cursor: pointer;
 }
@@ -130,7 +160,11 @@ html,
 body,
 .custom-scrollbar {
   --scrollbar-thumb-idle: transparent;
-  --scrollbar-thumb-active: color-mix(in srgb, var(--accent) 42%, var(--border-subtle));
+  --scrollbar-thumb-active: color-mix(
+    in srgb,
+    var(--accent) 42%,
+    var(--border-subtle)
+  );
   --scrollbar-thumb-hover: var(--accent);
   --scrollbar-track: transparent;
   scrollbar-width: thin;
@@ -138,9 +172,9 @@ body,
   transition: scrollbar-color 0.25s ease;
 }
 
-html[data-scrolling="true"],
-body[data-scrolling="true"],
-.custom-scrollbar[data-scrolling="true"],
+html[data-scrolling='true'],
+body[data-scrolling='true'],
+.custom-scrollbar[data-scrolling='true'],
 .custom-scrollbar:hover {
   scrollbar-color: var(--scrollbar-thumb-active) var(--scrollbar-track);
 }
@@ -169,9 +203,9 @@ body::-webkit-scrollbar-thumb,
   transition: background-color 0.25s ease;
 }
 
-html[data-scrolling="true"]::-webkit-scrollbar-thumb,
-body[data-scrolling="true"]::-webkit-scrollbar-thumb,
-.custom-scrollbar[data-scrolling="true"]::-webkit-scrollbar-thumb {
+html[data-scrolling='true']::-webkit-scrollbar-thumb,
+body[data-scrolling='true']::-webkit-scrollbar-thumb,
+.custom-scrollbar[data-scrolling='true']::-webkit-scrollbar-thumb {
   background-color: var(--scrollbar-thumb-active);
 }
 
@@ -195,19 +229,28 @@ body::-webkit-scrollbar-thumb:hover,
   background-color: var(--bg-surface-2);
   border: 1px solid transparent;
   box-shadow: none;
-  transition: background-color 180ms cubic-bezier(0.2, 0, 0, 1),
+  transition:
+    background-color 180ms cubic-bezier(0.2, 0, 0, 1),
     color 180ms cubic-bezier(0.2, 0, 0, 1),
     transform 180ms cubic-bezier(0.2, 0, 0, 1);
 }
 
 button.liquid-glass:hover:not(:disabled),
 a.liquid-glass:hover,
-[role="switch"].liquid-glass:hover {
-  background-color: color-mix(in srgb, var(--text-primary) 8%, var(--bg-surface-2));
+[role='switch'].liquid-glass:hover {
+  background-color: color-mix(
+    in srgb,
+    var(--text-primary) 8%,
+    var(--bg-surface-2)
+  );
 }
 
 .liquid-glass-elevated {
-  background-color: color-mix(in srgb, var(--bg-surface-1) 95%, var(--bg-surface-2) 5%);
+  background-color: color-mix(
+    in srgb,
+    var(--bg-surface-1) 95%,
+    var(--bg-surface-2) 5%
+  );
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--border-subtle);
@@ -220,13 +263,13 @@ a.liquid-glass:hover,
   box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.45);
 }
 
-[data-theme-mode="light"] .liquid-glass-elevated {
+[data-theme-mode='light'] .liquid-glass-elevated {
   background-color: color-mix(in srgb, var(--bg-surface-1) 96%, #ffffff 4%);
   border: 1px solid var(--border-subtle);
   box-shadow: 0 12px 32px -4px rgba(15, 23, 42, 0.12);
 }
 
-[data-theme-mode="light"] .liquid-glass-modal {
+[data-theme-mode='light'] .liquid-glass-modal {
   background-color: var(--bg-surface-1);
   border: 1px solid var(--border-subtle);
   box-shadow: 0 24px 48px -12px rgba(15, 23, 42, 0.18);
@@ -377,13 +420,21 @@ button.liquid-glass-primary:hover:not(:disabled) {
     direction: ltr;
     overflow: hidden;
     flex-shrink: 0;
-    font-variation-settings: 'FILL' 0, 'wght' 450, 'GRAD' 0, 'opsz' 20;
+    font-variation-settings:
+      'FILL' 0,
+      'wght' 450,
+      'GRAD' 0,
+      'opsz' 20;
     user-select: none;
   }
 }
 
 .material-symbols-rounded.filled {
-  font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 20;
+  font-variation-settings:
+    'FILL' 1,
+    'wght' 500,
+    'GRAD' 0,
+    'opsz' 20;
 }
 
 /* Thoughtful Semantic Link Rules for Comments & Article Reader */
@@ -407,10 +458,16 @@ button.liquid-glass-primary:hover:not(:disabled) {
 .hn-article-body a {
   color: var(--link-unvisited);
   text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--link-unvisited) 40%, transparent);
+  text-decoration-color: color-mix(
+    in srgb,
+    var(--link-unvisited) 40%,
+    transparent
+  );
   text-underline-offset: 3px;
   font-weight: 500;
-  transition: color 0.15s ease, text-decoration-color 0.15s ease;
+  transition:
+    color 0.15s ease,
+    text-decoration-color 0.15s ease;
   word-break: break-word;
   cursor: pointer;
 }
@@ -418,7 +475,11 @@ button.liquid-glass-primary:hover:not(:disabled) {
 .hn-prose a.hn-external-link:visited,
 .hn-article-body a:visited {
   color: var(--link-visited);
-  text-decoration-color: color-mix(in srgb, var(--link-visited) 40%, transparent);
+  text-decoration-color: color-mix(
+    in srgb,
+    var(--link-visited) 40%,
+    transparent
+  );
 }
 
 .hn-prose a.hn-external-link:hover,
@@ -479,12 +540,15 @@ button.liquid-glass-primary:hover:not(:disabled) {
 /* Active Paragraph Tracker for Audio Reader */
 .hn-article-body [data-tts-idx] {
   border-radius: 10px;
-  transition: background-color 220ms ease, box-shadow 220ms ease;
+  transition:
+    background-color 220ms ease,
+    box-shadow 220ms ease;
 }
 
-.hn-article-body [data-tts-active="true"] {
+.hn-article-body [data-tts-active='true'] {
   background-color: color-mix(in srgb, var(--accent) 15%, transparent);
-  box-shadow: -8px 0 0 0 color-mix(in srgb, var(--accent) 15%, transparent),
+  box-shadow:
+    -8px 0 0 0 color-mix(in srgb, var(--accent) 15%, transparent),
     8px 0 0 0 color-mix(in srgb, var(--accent) 15%, transparent),
     0 -4px 0 0 color-mix(in srgb, var(--accent) 15%, transparent),
     0 4px 0 0 color-mix(in srgb, var(--accent) 15%, transparent);

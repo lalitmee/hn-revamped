@@ -34,7 +34,10 @@ export function GlassDropdown<T extends string>({
   useEffect(() => {
     if (!isOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
@@ -107,7 +110,9 @@ export function GlassDropdown<T extends string>({
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   {opt.icon && (
-                    <span className="material-symbols-rounded text-[16px]">{opt.icon}</span>
+                    <span className="material-symbols-rounded text-[16px]">
+                      {opt.icon}
+                    </span>
                   )}
                   <span className="truncate">{opt.label}</span>
                 </div>

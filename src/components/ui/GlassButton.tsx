@@ -29,17 +29,17 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
     size === 'sm'
       ? 'h-8 px-3 text-xs'
       : size === 'lg'
-      ? 'h-10 px-5 text-sm'
-      : 'h-9 px-3.5 text-xs';
+        ? 'h-10 px-5 text-sm'
+        : 'h-9 px-3.5 text-xs';
 
   const variantClass =
     variant === 'primary'
       ? 'liquid-glass-primary font-semibold'
       : variant === 'icon'
-      ? 'liquid-glass w-9 h-9 p-0 justify-center'
-      : variant === 'ghost'
-      ? 'hover:bg-[color-mix(in_srgb,var(--text-primary)_8%,transparent)] font-semibold'
-      : 'liquid-glass font-semibold';
+        ? 'liquid-glass w-9 h-9 p-0 justify-center'
+        : variant === 'ghost'
+          ? 'hover:bg-[color-mix(in_srgb,var(--text-primary)_8%,transparent)] font-semibold'
+          : 'liquid-glass font-semibold';
 
   return (
     <button
@@ -49,8 +49,8 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
           variant === 'primary'
             ? '#ffffff'
             : variant === 'ghost'
-            ? 'var(--text-secondary)'
-            : 'var(--text-primary)',
+              ? 'var(--text-secondary)'
+              : 'var(--text-primary)',
         ...style,
       }}
       className={`inline-flex items-center gap-2 rounded-full cursor-pointer select-none shrink-0 transition-all active:scale-[0.98] ${
@@ -65,8 +65,8 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
               variant === 'primary'
                 ? '#ffffff'
                 : iconAccent
-                ? 'var(--accent)'
-                : undefined,
+                  ? 'var(--accent)'
+                  : undefined,
           }}
           className={`material-symbols-rounded text-[17px] ${iconFilled ? 'filled' : ''}`}
         >
@@ -91,7 +91,8 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
       {shortcut && (
         <kbd
           style={{
-            backgroundColor: 'color-mix(in srgb, var(--bg-canvas) 65%, transparent)',
+            backgroundColor:
+              'color-mix(in srgb, var(--bg-canvas) 65%, transparent)',
             borderColor: 'var(--border-subtle)',
             color: 'var(--text-secondary)',
           }}

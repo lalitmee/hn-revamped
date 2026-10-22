@@ -101,8 +101,8 @@ export function GlassSegmentedControl<T extends string>({
               isIconOnly
                 ? 'w-7 h-7 justify-center'
                 : size === 'sm'
-                ? 'px-3 py-1.5 text-xs'
-                : 'px-4 py-1.5 text-xs'
+                  ? 'px-3 py-1.5 text-xs'
+                  : 'px-4 py-1.5 text-xs'
             } ${
               isActive
                 ? `${!hasMeasured ? 'liquid-glass-primary ' : ''}font-bold`

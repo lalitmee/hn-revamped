@@ -1,6 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useDeferredValue, startTransition } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useDeferredValue,
+  startTransition,
+} from 'react';
 import { HNStory } from '@/types/hn';
 import { searchHN } from '@/lib/hn-api';
 import { GlassModal } from '@/components/ui/GlassModal';
@@ -68,7 +73,10 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
       topAligned
     >
       <div
-        style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 10%, transparent)' }}
+        style={{
+          borderColor:
+            'color-mix(in srgb, var(--text-primary) 10%, transparent)',
+        }}
         className="flex flex-wrap items-center gap-3 p-4 border-b"
       >
         <span
@@ -135,20 +143,23 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                   <div className="flex-1 min-w-0 space-y-2.5">
                     <div
                       style={{
-                        backgroundColor: 'color-mix(in srgb, var(--text-primary) 12%, transparent)',
+                        backgroundColor:
+                          'color-mix(in srgb, var(--text-primary) 12%, transparent)',
                       }}
                       className={`h-4 rounded-full ${i % 2 === 0 ? 'w-4/5' : 'w-3/5'}`}
                     />
                     <div className="flex items-center gap-2">
                       <div
                         style={{
-                          backgroundColor: 'color-mix(in srgb, var(--accent) 25%, transparent)',
+                          backgroundColor:
+                            'color-mix(in srgb, var(--accent) 25%, transparent)',
                         }}
                         className="h-3 w-12 rounded-full"
                       />
                       <div
                         style={{
-                          backgroundColor: 'color-mix(in srgb, var(--text-muted) 18%, transparent)',
+                          backgroundColor:
+                            'color-mix(in srgb, var(--text-muted) 18%, transparent)',
                         }}
                         className="h-3 w-28 rounded-full"
                       />
@@ -156,7 +167,8 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                   </div>
                   <div
                     style={{
-                      backgroundColor: 'color-mix(in srgb, var(--text-primary) 10%, transparent)',
+                      backgroundColor:
+                        'color-mix(in srgb, var(--text-primary) 10%, transparent)',
                     }}
                     className="h-7 w-14 rounded-xl shrink-0"
                   />
@@ -177,7 +189,8 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                 manage_search
               </span>
               <div className="text-xs max-w-sm leading-relaxed">
-                Type any topic, domain, or Show HN title to search across all Hacker News history.
+                Type any topic, domain, or Show HN title to search across all
+                Hacker News history.
               </div>
             </div>
           )}
@@ -187,11 +200,19 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
               style={{ color: 'var(--text-muted)' }}
               className="h-[220px] flex flex-col items-center justify-center text-center px-6 gap-2 animate-story-in"
             >
-              <span className="material-symbols-rounded text-[32px] opacity-60">search_off</span>
-              <div className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
+              <span className="material-symbols-rounded text-[32px] opacity-60">
+                search_off
+              </span>
+              <div
+                className="text-sm font-semibold"
+                style={{ color: 'var(--text-secondary)' }}
+              >
                 No stories found for &ldquo;{query.trim()}&rdquo;
               </div>
-              <div className="text-xs">Try a broader keyword or switch between Top Relevance and Newest.</div>
+              <div className="text-xs">
+                Try a broader keyword or switch between Top Relevance and
+                Newest.
+              </div>
             </div>
           )}
 
@@ -209,14 +230,23 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                 className="liquid-glass animate-story-in w-full text-left p-3.5 rounded-2xl flex items-center justify-between gap-4 cursor-pointer"
               >
                 <div className="min-w-0">
-                  <div className="text-sm font-semibold truncate">{story.cleanTitle}</div>
-                  <div style={{ color: 'var(--text-muted)' }} className="text-xs mt-1">
-                    <strong style={{ color: 'var(--accent)' }}>▲ {story.points}</strong> • by{' '}
-                    {story.user} {story.domain ? `• ${story.domain}` : ''}
+                  <div className="text-sm font-semibold truncate">
+                    {story.cleanTitle}
+                  </div>
+                  <div
+                    style={{ color: 'var(--text-muted)' }}
+                    className="text-xs mt-1"
+                  >
+                    <strong style={{ color: 'var(--accent)' }}>
+                      ▲ {story.points}
+                    </strong>{' '}
+                    • by {story.user} {story.domain ? `• ${story.domain}` : ''}
                   </div>
                 </div>
                 <span className="liquid-glass px-2.5 py-1 rounded-xl text-xs font-semibold shrink-0 inline-flex items-center gap-1">
-                  <span className="material-symbols-rounded text-[15px]">forum</span>
+                  <span className="material-symbols-rounded text-[15px]">
+                    forum
+                  </span>
                   {story.commentsCount}
                 </span>
               </button>

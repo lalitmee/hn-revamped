@@ -31,7 +31,11 @@ describe('Local Storage & Filtering Service', () => {
 
   it('persists and loads user preferences', () => {
     expect(loadPreferences().themeId).toBe('obsidian-slate');
-    savePreferences({ ...DEFAULT_PREFERENCES, themeId: 'kindle-sepia', fontSize: 18 });
+    savePreferences({
+      ...DEFAULT_PREFERENCES,
+      themeId: 'kindle-sepia',
+      fontSize: 18,
+    });
     expect(loadPreferences().themeId).toBe('kindle-sepia');
     expect(loadPreferences().fontSize).toBe(18);
   });

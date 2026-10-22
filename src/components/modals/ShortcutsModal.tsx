@@ -8,10 +8,16 @@ interface ShortcutsModalProps {
   onClose: () => void;
 }
 
-export const ShortcutsModal: React.FC<ShortcutsModalProps> = ({ isOpen, onClose }) => {
+export const ShortcutsModal: React.FC<ShortcutsModalProps> = ({
+  isOpen,
+  onClose,
+}) => {
   const shortcuts = [
     { key: 'j / k', desc: 'Select next / previous story in the feed' },
-    { key: 'r', desc: 'Toggle between Discussion Comments and Article Reader View' },
+    {
+      key: 'r',
+      desc: 'Toggle between Discussion Comments and Article Reader View',
+    },
     { key: 'z', desc: 'Toggle between Split-Pane Mode and Centered Zen Mode' },
     { key: 'b', desc: 'Bookmark / unbookmark the active story' },
     { key: 'o / Enter', desc: 'Open external story URL in a new tab' },
@@ -34,7 +40,10 @@ export const ShortcutsModal: React.FC<ShortcutsModalProps> = ({ isOpen, onClose 
             key={s.key}
             className="liquid-glass flex items-center justify-between px-4 py-2.5 rounded-2xl text-xs"
           >
-            <span style={{ color: 'var(--text-secondary)' }} className="font-medium">
+            <span
+              style={{ color: 'var(--text-secondary)' }}
+              className="font-medium"
+            >
               {s.desc}
             </span>
             <kbd

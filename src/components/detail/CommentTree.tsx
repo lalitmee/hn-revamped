@@ -46,7 +46,8 @@ function filterCommentNodes(nodes: HNComment[], query: string): HNComment[] {
   for (const node of nodes) {
     const childMatches = filterCommentNodes(node.children, query);
     const selfMatches =
-      node.user.toLowerCase().includes(q) || node.text.toLowerCase().includes(q);
+      node.user.toLowerCase().includes(q) ||
+      node.text.toLowerCase().includes(q);
     if (selfMatches || childMatches.length > 0) {
       filtered.push({
         ...node,
@@ -100,7 +101,8 @@ export const CommentTree: React.FC<CommentTreeProps> = ({
     [filteredComments, visibleRootCount, deferredSearchQuery]
   );
 
-  const remainingRootCount = filteredComments.length - displayedRootComments.length;
+  const remainingRootCount =
+    filteredComments.length - displayedRootComments.length;
   const isFilteringStale = searchQuery !== deferredSearchQuery || isPending;
 
   return (
@@ -109,7 +111,9 @@ export const CommentTree: React.FC<CommentTreeProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-2.5 mb-3.5">
         <div className="liquid-glass h-9 px-4 rounded-full flex items-center gap-2.5 flex-1 min-w-[220px]">
           <span
-            style={{ color: isFilteringStale ? 'var(--accent)' : 'var(--text-muted)' }}
+            style={{
+              color: isFilteringStale ? 'var(--accent)' : 'var(--text-muted)',
+            }}
             className={`material-symbols-rounded text-[17px] shrink-0 transition-transform ${
               isFilteringStale ? 'animate-spin' : ''
             }`}

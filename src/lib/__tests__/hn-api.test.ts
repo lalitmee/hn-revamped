@@ -8,7 +8,9 @@ import { formatCommentHtml } from '../html-sanitizer';
 
 describe('HN API Utilities & Sanitizer', () => {
   it('extracts clean domain names without www.', () => {
-    expect(extractDomain('https://www.github.com/zed-industries/zed')).toBe('github.com');
+    expect(extractDomain('https://www.github.com/zed-industries/zed')).toBe(
+      'github.com'
+    );
     expect(extractDomain('https://sqlite.org/faster.html')).toBe('sqlite.org');
     expect(extractDomain(undefined)).toBeUndefined();
   });

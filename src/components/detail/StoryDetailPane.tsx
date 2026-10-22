@@ -6,7 +6,10 @@ import { formatCommentHtml } from '@/lib/html-sanitizer';
 import { formatRelativeTime } from '@/components/feed/StoryPillRow';
 import { CommentTree } from './CommentTree';
 import { ArticleReaderView } from './ArticleReaderView';
-import { GlassSegmentedControl, SegmentedItem } from '@/components/ui/GlassSegmentedControl';
+import {
+  GlassSegmentedControl,
+  SegmentedItem,
+} from '@/components/ui/GlassSegmentedControl';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { SafeViewTransition } from '@/components/ui/ViewTransitionWrapper';
 
@@ -53,15 +56,32 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
         style={{ color: 'var(--text-muted)' }}
         className="h-full flex flex-col items-center justify-center p-12 text-center gap-3"
       >
-        <span className="material-symbols-rounded text-[48px] opacity-60">newspaper</span>
-        <h3 style={{ color: 'var(--text-secondary)' }} className="text-lg font-semibold">
+        <span className="material-symbols-rounded text-[48px] opacity-60">
+          newspaper
+        </span>
+        <h3
+          style={{ color: 'var(--text-secondary)' }}
+          className="text-lg font-semibold"
+        >
           Select a story to start reading
         </h3>
         <p className="text-sm max-w-sm">
-          Use <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-xs">j</kbd> /{' '}
-          <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-xs">k</kbd> to navigate
-          stories, <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-xs">r</kbd> for
-          Reader View, or <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-xs">z</kbd>{' '}
+          Use{' '}
+          <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-xs">
+            j
+          </kbd>{' '}
+          /{' '}
+          <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-xs">
+            k
+          </kbd>{' '}
+          to navigate stories,{' '}
+          <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-xs">
+            r
+          </kbd>{' '}
+          for Reader View, or{' '}
+          <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-xs">
+            z
+          </kbd>{' '}
           for Zen Mode.
         </p>
       </div>
@@ -91,7 +111,8 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
       {/* Pinned / Sticky Liquid Glass Action & Mode Bar */}
       <div
         style={{
-          backgroundColor: 'color-mix(in srgb, var(--bg-canvas) 92%, transparent)',
+          backgroundColor:
+            'color-mix(in srgb, var(--bg-canvas) 92%, transparent)',
           borderColor: 'var(--border-subtle)',
         }}
         className="shrink-0 sticky top-0 z-20 backdrop-blur-xl px-5 md:px-6 py-2.5 border-b flex flex-wrap items-center justify-between gap-3"
@@ -121,7 +142,9 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
               className="liquid-glass h-9 px-4 rounded-full inline-flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
             >
               <span>Open Site</span>
-              <span className="material-symbols-rounded text-[15px]">north_east</span>
+              <span className="material-symbols-rounded text-[15px]">
+                north_east
+              </span>
             </a>
           )}
         </div>
@@ -151,7 +174,10 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
             {story.domain && (
               <>
                 <span>•</span>
-                <span style={{ color: 'var(--link-unvisited)' }} className="font-medium">
+                <span
+                  style={{ color: 'var(--link-unvisited)' }}
+                  className="font-medium"
+                >
                   {story.domain}
                 </span>
               </>
@@ -162,14 +188,18 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
             <div
               className="liquid-glass mt-3 p-3.5 rounded-2xl hn-prose"
               onClick={(e) => {
-                const target = (e.target as HTMLElement).closest('a[data-hn-item-id]');
+                const target = (e.target as HTMLElement).closest(
+                  'a[data-hn-item-id]'
+                );
                 if (target) {
                   e.preventDefault();
                   const id = Number(target.getAttribute('data-hn-item-id'));
                   if (id) onInternalHnLinkClick(id);
                 }
               }}
-              dangerouslySetInnerHTML={{ __html: formatCommentHtml(story.text) }}
+              dangerouslySetInnerHTML={{
+                __html: formatCommentHtml(story.text),
+              }}
             />
           )}
         </header>
@@ -190,7 +220,9 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
                   progress_activity
                 </span>
                 <span>
-                  Loading {story.commentsCount > 0 ? `${story.commentsCount} ` : ''}comments...
+                  Loading{' '}
+                  {story.commentsCount > 0 ? `${story.commentsCount} ` : ''}
+                  comments...
                 </span>
               </div>
 

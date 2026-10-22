@@ -3,7 +3,9 @@ import { parseHTML } from 'linkedom';
 import DOMPurify from 'isomorphic-dompurify';
 import { ReaderArticle } from '@/types/hn';
 
-export function detectSpecialUrlFallback(url: string): Partial<ReaderArticle> | null {
+export function detectSpecialUrlFallback(
+  url: string
+): Partial<ReaderArticle> | null {
   try {
     const parsed = new URL(url);
 
@@ -18,7 +20,10 @@ export function detectSpecialUrlFallback(url: string): Partial<ReaderArticle> | 
       };
     }
 
-    if (parsed.hostname.includes('youtube.com') || parsed.hostname === 'youtu.be') {
+    if (
+      parsed.hostname.includes('youtube.com') ||
+      parsed.hostname === 'youtu.be'
+    ) {
       const videoId =
         parsed.hostname === 'youtu.be'
           ? parsed.pathname.slice(1)
@@ -56,7 +61,10 @@ export function detectSpecialUrlFallback(url: string): Partial<ReaderArticle> | 
   return null;
 }
 
-export function extractArticleFromHtml(rawHtml: string, url: string): ReaderArticle {
+export function extractArticleFromHtml(
+  rawHtml: string,
+  url: string
+): ReaderArticle {
   const { document } = parseHTML(rawHtml);
 
   // Resolve relative links and images
@@ -98,14 +106,43 @@ export function extractArticleFromHtml(rawHtml: string, url: string): ReaderArti
 
   const sanitizedHtml = DOMPurify.sanitize(parsed.content, {
     ALLOWED_TAGS: [
-      'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'a', 'ul', 'ol', 'li',
-      'blockquote', 'pre', 'code', 'img', 'figure', 'figcaption',
-      'strong', 'em', 'b', 'i', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'hr', 'br'
+      'h1',
+      'h2',
+      'h3',
+      'h4',
+      'h5',
+      'h6',
+      'p',
+      'a',
+      'ul',
+      'ol',
+      'li',
+      'blockquote',
+      'pre',
+      'code',
+      'img',
+      'figure',
+      'figcaption',
+      'strong',
+      'em',
+      'b',
+      'i',
+      'table',
+      'thead',
+      'tbody',
+      'tr',
+      'th',
+      'td',
+      'hr',
+      'br',
     ],
     ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'target', 'rel'],
   });
 
-  const wordCount = (parsed.textContent || '').trim().split(/\s+/).filter(Boolean).length;
+  const wordCount = (parsed.textContent || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean).length;
   const readingTimeMinutes = Math.max(1, Math.ceil(wordCount / 220));
 
   return {

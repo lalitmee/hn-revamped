@@ -30,11 +30,17 @@ export const GlassSwitch: React.FC<GlassSwitchProps> = ({
       className="group liquid-glass p-4 rounded-2xl flex items-center justify-between gap-4 cursor-pointer select-none"
     >
       <div>
-        <div style={{ color: 'var(--text-primary)' }} className="text-sm font-semibold">
+        <div
+          style={{ color: 'var(--text-primary)' }}
+          className="text-sm font-semibold"
+        >
           {label}
         </div>
         {description && (
-          <div style={{ color: 'var(--text-muted)' }} className="text-xs mt-0.5">
+          <div
+            style={{ color: 'var(--text-muted)' }}
+            className="text-xs mt-0.5"
+          >
             {description}
           </div>
         )}
@@ -51,7 +57,9 @@ export const GlassSwitch: React.FC<GlassSwitchProps> = ({
         <span
           style={{
             backgroundColor: checked ? '#ffffff' : 'var(--text-muted)',
-            transform: checked ? 'translate3d(20px, 0, 0)' : 'translate3d(2px, 0, 0)',
+            transform: checked
+              ? 'translate3d(20px, 0, 0)'
+              : 'translate3d(2px, 0, 0)',
             transition:
               'transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1), width 150ms ease, height 150ms ease, background-color 150ms ease',
           }}

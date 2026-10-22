@@ -1,6 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo, useRef, startTransition } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+  startTransition,
+} from 'react';
 import {
   DetailTab,
   FeedType,
@@ -42,19 +49,23 @@ import { TimeTravelPreset } from '@/components/modals/TimeTravelPopover';
 import { GlassButton } from '@/components/ui/GlassButton';
 
 export const WorkspaceShell: React.FC = () => {
-  const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
+  const [preferences, setPreferences] =
+    useState<UserPreferences>(DEFAULT_PREFERENCES);
   const [activeFeed, setActiveFeed] = useState<FeedType>('top');
   const [timeTravel, setTimeTravel] = useState<TimeTravelPreset>('live');
   const [stories, setStories] = useState<HNStory[]>([]);
   const [page, setPage] = useState(1);
   const [loadingFeed, setLoadingFeed] = useState(true);
 
-  const [selectedStory, setSelectedStory] = useState<HNStoryWithComments | null>(null);
+  const [selectedStory, setSelectedStory] =
+    useState<HNStoryWithComments | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [activeTab, setActiveTab] = useState<DetailTab>('comments');
   const latestStoryReqRef = useRef(0);
 
-  const [readHistory, setReadHistory] = useState<Record<number, ReadHistoryEntry>>({});
+  const [readHistory, setReadHistory] = useState<
+    Record<number, ReadHistoryEntry>
+  >({});
   const [bookmarks, setBookmarks] = useState<HNStory[]>([]);
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -68,10 +79,14 @@ export const WorkspaceShell: React.FC = () => {
     setReadHistory(loadReadHistory());
     setBookmarks(loadBookmarks());
 
-    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+    if (
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function'
+    ) {
       const mql = window.matchMedia('(prefers-color-scheme: dark)');
       setSystemPrefersDark(mql.matches);
-      const listener = (e: MediaQueryListEvent) => setSystemPrefersDark(e.matches);
+      const listener = (e: MediaQueryListEvent) =>
+        setSystemPrefersDark(e.matches);
       mql.addEventListener?.('change', listener);
       return () => mql.removeEventListener?.('change', listener);
     }
@@ -84,7 +99,9 @@ export const WorkspaceShell: React.FC = () => {
 
     const handleScroll = (e: Event) => {
       const target =
-        e.target === document ? document.documentElement : (e.target as HTMLElement);
+        e.target === document
+          ? document.documentElement
+          : (e.target as HTMLElement);
       if (!target || typeof target.setAttribute !== 'function') return;
 
       target.setAttribute('data-scrolling', 'true');
@@ -97,8 +114,12 @@ export const WorkspaceShell: React.FC = () => {
       timers.set(target, timer);
     };
 
-    window.addEventListener('scroll', handleScroll, { capture: true, passive: true });
-    return () => window.removeEventListener('scroll', handleScroll, { capture: true });
+    window.addEventListener('scroll', handleScroll, {
+      capture: true,
+      passive: true,
+    });
+    return () =>
+      window.removeEventListener('scroll', handleScroll, { capture: true });
   }, []);
 
   const resolvedThemeId = useMemo(
@@ -116,7 +137,8 @@ export const WorkspaceShell: React.FC = () => {
   useEffect(() => {
     const root = document.documentElement;
     const body = document.body;
-    const schemeLock = activeTheme.mode === 'light' ? 'only light' : 'only dark';
+    const schemeLock =
+      activeTheme.mode === 'light' ? 'only light' : 'only dark';
 
     root.setAttribute('data-theme', resolvedThemeId);
     root.setAttribute('data-theme-mode', activeTheme.mode);
@@ -138,7 +160,10 @@ export const WorkspaceShell: React.FC = () => {
       (FONT_FAMILIES[preferences.fontFamily] ?? FONT_FAMILIES.sans).cssValue
     );
     root.style.setProperty('--reader-font-size', `${preferences.fontSize}px`);
-    root.style.setProperty('--reader-line-height', String(preferences.lineHeight));
+    root.style.setProperty(
+      '--reader-line-height',
+      String(preferences.lineHeight)
+    );
     root.style.setProperty(
       '--reader-line-width',
       preferences.lineWidth === 'full' ? '100%' : preferences.lineWidth
@@ -150,29 +175,43 @@ export const WorkspaceShell: React.FC = () => {
     savePreferences(next);
   }, []);
 
-  const syncStoryQueryParam = useCallback((storyId: number | null, replace = false) => {
-    if (typeof window === 'undefined') return;
-    const url = new URL(window.location.href);
-    const currentParam = url.searchParams.get('story');
-    const nextParam = storyId ? String(storyId) : null;
+  const syncStoryQueryParam = useCallback(
+    (storyId: number | null, replace = false) => {
+      if (typeof window === 'undefined') return;
+      const url = new URL(window.location.href);
+      const currentParam = url.searchParams.get('story');
+      const nextParam = storyId ? String(storyId) : null;
 
-    if (currentParam === nextParam) return;
+      if (currentParam === nextParam) return;
 
-    if (nextParam) {
-      url.searchParams.set('story', nextParam);
-    } else {
-      url.searchParams.delete('story');
-    }
+      if (nextParam) {
+        url.searchParams.set('story', nextParam);
+      } else {
+        url.searchParams.delete('story');
+      }
 
-    if (replace) {
-      window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
-    } else {
-      window.history.pushState({}, '', `${url.pathname}${url.search}${url.hash}`);
-    }
-  }, []);
+      if (replace) {
+        window.history.replaceState(
+          {},
+          '',
+          `${url.pathname}${url.search}${url.hash}`
+        );
+      } else {
+        window.history.pushState(
+          {},
+          '',
+          `${url.pathname}${url.search}${url.hash}`
+        );
+      }
+    },
+    []
+  );
 
   const handleSelectStory = useCallback(
-    (story: HNStory, options?: { skipUrlSync?: boolean; isPlaceholder?: boolean }) => {
+    (
+      story: HNStory,
+      options?: { skipUrlSync?: boolean; isPlaceholder?: boolean }
+    ) => {
       const reqId = ++latestStoryReqRef.current;
 
       if (!options?.skipUrlSync) {
@@ -206,7 +245,10 @@ export const WorkspaceShell: React.FC = () => {
             setSelectedStory(fullStory);
             setLoadingDetail(false);
           });
-          const updatedHistory = markStoryAsRead(fullStory.id, fullStory.commentsCount);
+          const updatedHistory = markStoryAsRead(
+            fullStory.id,
+            fullStory.commentsCount
+          );
           setReadHistory(updatedHistory);
           if (!options?.skipUrlSync && fullStory.id !== story.id) {
             syncStoryQueryParam(fullStory.id, true);
@@ -301,7 +343,10 @@ export const WorkspaceShell: React.FC = () => {
 
     if (timeTravel !== 'live') {
       const day = 86400;
-      const ranges: Record<Exclude<TimeTravelPreset, 'live'>, [number, number]> = {
+      const ranges: Record<
+        Exclude<TimeTravelPreset, 'live'>,
+        [number, number]
+      > = {
         yesterday: [nowSec - 2 * day, nowSec - day],
         'last-week': [nowSec - 7 * day, nowSec],
         'last-month': [nowSec - 30 * day, nowSec],
@@ -354,7 +399,10 @@ export const WorkspaceShell: React.FC = () => {
     return filtered;
   }, [stories, preferences, readHistory, selectedStory]);
 
-  const bookmarkedIds = useMemo(() => new Set(bookmarks.map((b) => b.id)), [bookmarks]);
+  const bookmarkedIds = useMemo(
+    () => new Set(bookmarks.map((b) => b.id)),
+    [bookmarks]
+  );
 
   // Global Vim-style Keyboard Navigation
   useEffect(() => {
@@ -454,7 +502,9 @@ export const WorkspaceShell: React.FC = () => {
         onSelectTimeTravel={handleSelectTimeTravel}
         onOpenSearch={() => startTransition(() => setIsSearchOpen(true))}
         isAppearanceOpen={isAppearanceOpen}
-        onOpenAppearance={() => startTransition(() => setIsAppearanceOpen((prev) => !prev))}
+        onOpenAppearance={() =>
+          startTransition(() => setIsAppearanceOpen((prev) => !prev))
+        }
         onOpenShortcuts={() => startTransition(() => setIsShortcutsOpen(true))}
         savedCount={bookmarks.length}
       />
@@ -468,79 +518,30 @@ export const WorkspaceShell: React.FC = () => {
             onClose={() => startTransition(() => setIsAppearanceOpen(false))}
           />
         ) : preferences.layoutMode === 'split' ? (
-        <main className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
-          {/* Sticky / Independently Contained Left Feed Pane */}
-          <section
-            style={{ borderColor: 'var(--border-subtle)' }}
-            className="custom-scrollbar lg:col-span-5 xl:col-span-5 border-r h-full overflow-y-auto overscroll-contain"
-          >
-            <StoryFeedPane
-              stories={visibleStories}
-              loading={loadingFeed}
-              selectedStoryId={selectedStory?.id ?? null}
-              readHistory={readHistory}
-              bookmarkedIds={bookmarkedIds}
-              onSelectStory={handleSelectStory}
-              onToggleBookmark={(story, e) => {
-                e.stopPropagation();
-                setBookmarks(toggleBookmarkStory(story).bookmarks);
-              }}
-              onLoadMore={handleLoadMore}
-              hasMore={activeFeed !== 'saved' && timeTravel === 'live'}
-            />
-          </section>
+          <main className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
+            {/* Sticky / Independently Contained Left Feed Pane */}
+            <section
+              style={{ borderColor: 'var(--border-subtle)' }}
+              className="custom-scrollbar lg:col-span-5 xl:col-span-5 border-r h-full overflow-y-auto overscroll-contain"
+            >
+              <StoryFeedPane
+                stories={visibleStories}
+                loading={loadingFeed}
+                selectedStoryId={selectedStory?.id ?? null}
+                readHistory={readHistory}
+                bookmarkedIds={bookmarkedIds}
+                onSelectStory={handleSelectStory}
+                onToggleBookmark={(story, e) => {
+                  e.stopPropagation();
+                  setBookmarks(toggleBookmarkStory(story).bookmarks);
+                }}
+                onLoadMore={handleLoadMore}
+                hasMore={activeFeed !== 'saved' && timeTravel === 'live'}
+              />
+            </section>
 
-          {/* Independently Scrollable Right Detail & Reader Pane */}
-          <section className="hidden lg:flex lg:flex-col lg:col-span-7 xl:col-span-7 h-full overflow-hidden">
-            <StoryDetailPane
-              story={selectedStory}
-              loading={loadingDetail}
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-              collapseMode={preferences.defaultCollapseMode ?? 'root-only'}
-              onCollapseModeChange={(mode) =>
-                handleUpdatePreferences({ ...preferences, defaultCollapseMode: mode })
-              }
-              isBookmarked={selectedStory ? bookmarkedIds.has(selectedStory.id) : false}
-              onToggleBookmark={() => {
-                if (!selectedStory) return;
-                setBookmarks(toggleBookmarkStory(selectedStory).bookmarks);
-              }}
-              onInternalHnLinkClick={(id) =>
-                handleSelectStory(
-                  {
-                    id,
-                    title: `Story #${id}`,
-                    cleanTitle: `Story #${id}`,
-                    points: 0,
-                    user: '',
-                    time: Math.floor(Date.now() / 1000),
-                    commentsCount: 0,
-                    badges: [],
-                    type: 'story',
-                  },
-                  { isPlaceholder: true }
-                )
-              }
-            />
-          </section>
-        </main>
-      ) : (
-        <main className="flex-1 max-w-4xl w-full mx-auto py-4 px-2 sm:px-6">
-          {selectedStory ? (
-            <div>
-              <div className="ml-5 mb-2">
-                <GlassButton
-                  icon="arrow_back"
-                  iconAccent
-                  onClick={() => {
-                    setSelectedStory(null);
-                    syncStoryQueryParam(null);
-                  }}
-                >
-                  Back to Story Feed
-                </GlassButton>
-              </div>
+            {/* Independently Scrollable Right Detail & Reader Pane */}
+            <section className="hidden lg:flex lg:flex-col lg:col-span-7 xl:col-span-7 h-full overflow-hidden">
               <StoryDetailPane
                 story={selectedStory}
                 loading={loadingDetail}
@@ -548,45 +549,102 @@ export const WorkspaceShell: React.FC = () => {
                 onTabChange={setActiveTab}
                 collapseMode={preferences.defaultCollapseMode ?? 'root-only'}
                 onCollapseModeChange={(mode) =>
-                  handleUpdatePreferences({ ...preferences, defaultCollapseMode: mode })
-                }
-                isBookmarked={bookmarkedIds.has(selectedStory.id)}
-                onToggleBookmark={() =>
-                  setBookmarks(toggleBookmarkStory(selectedStory).bookmarks)
-                }
-                onInternalHnLinkClick={(id) =>
-                  handleSelectStory({
-                    id,
-                    title: `Story #${id}`,
-                    cleanTitle: `Story #${id}`,
-                    points: 0,
-                    user: '',
-                    time: Math.floor(Date.now() / 1000),
-                    commentsCount: 0,
-                    badges: [],
-                    type: 'story',
+                  handleUpdatePreferences({
+                    ...preferences,
+                    defaultCollapseMode: mode,
                   })
                 }
+                isBookmarked={
+                  selectedStory ? bookmarkedIds.has(selectedStory.id) : false
+                }
+                onToggleBookmark={() => {
+                  if (!selectedStory) return;
+                  setBookmarks(toggleBookmarkStory(selectedStory).bookmarks);
+                }}
+                onInternalHnLinkClick={(id) =>
+                  handleSelectStory(
+                    {
+                      id,
+                      title: `Story #${id}`,
+                      cleanTitle: `Story #${id}`,
+                      points: 0,
+                      user: '',
+                      time: Math.floor(Date.now() / 1000),
+                      commentsCount: 0,
+                      badges: [],
+                      type: 'story',
+                    },
+                    { isPlaceholder: true }
+                  )
+                }
               />
-            </div>
-          ) : (
-            <StoryFeedPane
-              stories={visibleStories}
-              loading={loadingFeed}
-              selectedStoryId={null}
-              readHistory={readHistory}
-              bookmarkedIds={bookmarkedIds}
-              onSelectStory={handleSelectStory}
-              onToggleBookmark={(story, e) => {
-                e.stopPropagation();
-                setBookmarks(toggleBookmarkStory(story).bookmarks);
-              }}
-              onLoadMore={handleLoadMore}
-              hasMore={activeFeed !== 'saved' && timeTravel === 'live'}
-            />
-          )}
-        </main>
-      )}
+            </section>
+          </main>
+        ) : (
+          <main className="flex-1 max-w-4xl w-full mx-auto py-4 px-2 sm:px-6">
+            {selectedStory ? (
+              <div>
+                <div className="ml-5 mb-2">
+                  <GlassButton
+                    icon="arrow_back"
+                    iconAccent
+                    onClick={() => {
+                      setSelectedStory(null);
+                      syncStoryQueryParam(null);
+                    }}
+                  >
+                    Back to Story Feed
+                  </GlassButton>
+                </div>
+                <StoryDetailPane
+                  story={selectedStory}
+                  loading={loadingDetail}
+                  activeTab={activeTab}
+                  onTabChange={setActiveTab}
+                  collapseMode={preferences.defaultCollapseMode ?? 'root-only'}
+                  onCollapseModeChange={(mode) =>
+                    handleUpdatePreferences({
+                      ...preferences,
+                      defaultCollapseMode: mode,
+                    })
+                  }
+                  isBookmarked={bookmarkedIds.has(selectedStory.id)}
+                  onToggleBookmark={() =>
+                    setBookmarks(toggleBookmarkStory(selectedStory).bookmarks)
+                  }
+                  onInternalHnLinkClick={(id) =>
+                    handleSelectStory({
+                      id,
+                      title: `Story #${id}`,
+                      cleanTitle: `Story #${id}`,
+                      points: 0,
+                      user: '',
+                      time: Math.floor(Date.now() / 1000),
+                      commentsCount: 0,
+                      badges: [],
+                      type: 'story',
+                    })
+                  }
+                />
+              </div>
+            ) : (
+              <StoryFeedPane
+                stories={visibleStories}
+                loading={loadingFeed}
+                selectedStoryId={null}
+                readHistory={readHistory}
+                bookmarkedIds={bookmarkedIds}
+                onSelectStory={handleSelectStory}
+                onToggleBookmark={(story, e) => {
+                  e.stopPropagation();
+                  setBookmarks(toggleBookmarkStory(story).bookmarks);
+                }}
+                onLoadMore={handleLoadMore}
+                hasMore={activeFeed !== 'saved' && timeTravel === 'live'}
+              />
+            )}
+          </main>
+        )}
       </SafeViewTransition>
 
       <CommandPaletteModal

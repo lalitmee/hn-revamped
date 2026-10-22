@@ -1,14 +1,21 @@
 import { describe, it, expect } from 'vitest';
-import { detectSpecialUrlFallback, extractArticleFromHtml } from '../reader-extractor';
+import {
+  detectSpecialUrlFallback,
+  extractArticleFromHtml,
+} from '../reader-extractor';
 import { prepareReaderSpeechSegments } from '@/components/detail/ArticleReaderView';
 
 describe('Article Reader View Extractor', () => {
   it('detects YouTube, GitHub repo, and PDF URLs cleanly', () => {
-    const yt = detectSpecialUrlFallback('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+    const yt = detectSpecialUrlFallback(
+      'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+    );
     expect(yt?.fallbackType).toBe('youtube');
     expect(yt?.youtubeVideoId).toBe('dQw4w9WgXcQ');
 
-    const gh = detectSpecialUrlFallback('https://github.com/zed-industries/zed');
+    const gh = detectSpecialUrlFallback(
+      'https://github.com/zed-industries/zed'
+    );
     expect(gh?.fallbackType).toBe('github');
     expect(gh?.githubRepo).toEqual({ owner: 'zed-industries', repo: 'zed' });
 
@@ -32,7 +39,10 @@ describe('Article Reader View Extractor', () => {
         </body>
       </html>
     `;
-    const article = extractArticleFromHtml(sampleHtml, 'https://sqlite.org/fast.html');
+    const article = extractArticleFromHtml(
+      sampleHtml,
+      'https://sqlite.org/fast.html'
+    );
     expect(article.title).toContain('Why SQLite is Fast');
     expect(article.contentHtml).toContain('without network roundtrips');
     expect(article.contentHtml).not.toContain('<script>');

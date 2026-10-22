@@ -52,7 +52,10 @@ export const GlassModal: React.FC<GlassModalProps> = ({
       >
         {title && (
           <div
-            style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 10%, transparent)' }}
+            style={{
+              borderColor:
+                'color-mix(in srgb, var(--text-primary) 10%, transparent)',
+            }}
             className="flex items-center justify-between px-6 py-4 border-b shrink-0"
           >
             <div className="flex items-center gap-2.5">
@@ -64,7 +67,9 @@ export const GlassModal: React.FC<GlassModalProps> = ({
                   {icon}
                 </span>
               )}
-              <h2 className="text-base sm:text-lg font-bold tracking-tight">{title}</h2>
+              <h2 className="text-base sm:text-lg font-bold tracking-tight">
+                {title}
+              </h2>
             </div>
             <button
               type="button"
@@ -72,7 +77,9 @@ export const GlassModal: React.FC<GlassModalProps> = ({
               onClick={onClose}
               className="liquid-glass w-8 h-8 rounded-full inline-flex items-center justify-center cursor-pointer"
             >
-              <span className="material-symbols-rounded text-[18px]">close</span>
+              <span className="material-symbols-rounded text-[18px]">
+                close
+              </span>
             </button>
           </div>
         )}

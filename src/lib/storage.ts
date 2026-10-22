@@ -97,7 +97,9 @@ export function toggleBookmarkStory(story: HNStory): {
 } {
   const current = loadBookmarks();
   const exists = current.some((b) => b.id === story.id);
-  const next = exists ? current.filter((b) => b.id !== story.id) : [story, ...current];
+  const next = exists
+    ? current.filter((b) => b.id !== story.id)
+    : [story, ...current];
 
   if (typeof window !== 'undefined') {
     try {
@@ -114,14 +116,21 @@ export function filterStories(
   prefs: UserPreferences,
   history: Record<number, ReadHistoryEntry>
 ): HNStory[] {
-  const keywords = prefs.mutedKeywords.map((k) => k.toLowerCase().trim()).filter(Boolean);
-  const domains = prefs.mutedDomains.map((d) => d.toLowerCase().trim()).filter(Boolean);
+  const keywords = prefs.mutedKeywords
+    .map((k) => k.toLowerCase().trim())
+    .filter(Boolean);
+  const domains = prefs.mutedDomains
+    .map((d) => d.toLowerCase().trim())
+    .filter(Boolean);
 
   return stories.filter((story) => {
     if (prefs.hideReadStories && history[story.id]) {
       return false;
     }
-    if (story.domain && domains.some((d) => story.domain!.toLowerCase().includes(d))) {
+    if (
+      story.domain &&
+      domains.some((d) => story.domain!.toLowerCase().includes(d))
+    ) {
       return false;
     }
     const lowerTitle = story.title.toLowerCase();

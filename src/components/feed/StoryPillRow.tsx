@@ -67,13 +67,13 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
         backgroundColor: showInlineSelection
           ? 'var(--bg-surface-active)'
           : isSelected
-          ? 'transparent'
-          : 'var(--bg-surface-1)',
+            ? 'transparent'
+            : 'var(--bg-surface-1)',
         borderColor: showInlineSelection
           ? 'color-mix(in srgb, var(--accent) 55%, var(--border-subtle))'
           : isSelected
-          ? 'transparent'
-          : 'var(--border-subtle)',
+            ? 'transparent'
+            : 'var(--border-subtle)',
         opacity: isRead && !isSelected ? 0.68 : 1,
         transition:
           'background-color 240ms cubic-bezier(0.22, 1, 0.36, 1), border-color 240ms cubic-bezier(0.22, 1, 0.36, 1), transform 200ms cubic-bezier(0.22, 1, 0.36, 1)',
@@ -122,12 +122,15 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
             <span
               key={badge.type}
               style={{
-                backgroundColor: 'color-mix(in srgb, var(--link-unvisited) 15%, transparent)',
+                backgroundColor:
+                  'color-mix(in srgb, var(--link-unvisited) 15%, transparent)',
                 color: 'var(--link-unvisited)',
               }}
               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold tracking-wide uppercase"
             >
-              <span className="material-symbols-rounded text-[13px]">{badge.icon}</span>
+              <span className="material-symbols-rounded text-[13px]">
+                {badge.icon}
+              </span>
               {badge.label}
             </span>
           ))}
@@ -161,13 +164,18 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
         >
           <span className="inline-flex items-center gap-1">
             <span className="material-symbols-rounded text-[14px]">person</span>
-            <strong style={{ color: 'var(--text-secondary)' }} className="font-medium">
+            <strong
+              style={{ color: 'var(--text-secondary)' }}
+              className="font-medium"
+            >
               {story.user}
             </strong>
           </span>
 
           <span className="inline-flex items-center gap-1">
-            <span className="material-symbols-rounded text-[14px]">schedule</span>
+            <span className="material-symbols-rounded text-[14px]">
+              schedule
+            </span>
             {formatRelativeTime(story.time)}
           </span>
 

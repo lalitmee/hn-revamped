@@ -40,14 +40,18 @@ describe('StoryPillRow Component', () => {
     expect(screen.getByText('428')).toBeInTheDocument();
     expect(screen.getByText('Show HN')).toBeInTheDocument();
     expect(
-      screen.getByText('Zed 1.0 – High-performance multiplayer code editor in Rust')
+      screen.getByText(
+        'Zed 1.0 – High-performance multiplayer code editor in Rust'
+      )
     ).toBeInTheDocument();
     expect(screen.getByText('zed.dev')).toBeInTheDocument();
     expect(screen.getByText('+18 new')).toBeInTheDocument();
     expect(screen.getByText('214')).toBeInTheDocument();
 
     fireEvent.click(
-      screen.getByText('Zed 1.0 – High-performance multiplayer code editor in Rust')
+      screen.getByText(
+        'Zed 1.0 – High-performance multiplayer code editor in Rust'
+      )
     );
     expect(onSelect).toHaveBeenCalledWith(mockStory);
   });

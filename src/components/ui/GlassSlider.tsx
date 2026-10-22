@@ -21,7 +21,10 @@ export const GlassSlider: React.FC<GlassSliderProps> = ({
   step = 1,
   onChange,
 }) => {
-  const percentage = Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100));
+  const percentage = Math.min(
+    100,
+    Math.max(0, ((value - min) / (max - min)) * 100)
+  );
 
   return (
     <div className="liquid-glass p-4 rounded-2xl space-y-3">
@@ -34,7 +37,8 @@ export const GlassSlider: React.FC<GlassSliderProps> = ({
         </span>
         <span
           style={{
-            backgroundColor: 'color-mix(in srgb, var(--accent) 16%, transparent)',
+            backgroundColor:
+              'color-mix(in srgb, var(--accent) 16%, transparent)',
             color: 'var(--accent)',
           }}
           className="px-2.5 py-0.5 rounded-full text-xs font-bold font-mono"
@@ -47,7 +51,8 @@ export const GlassSlider: React.FC<GlassSliderProps> = ({
         {/* Clean Material 3 Slider Track */}
         <div
           style={{
-            backgroundColor: 'color-mix(in srgb, var(--text-primary) 12%, transparent)',
+            backgroundColor:
+              'color-mix(in srgb, var(--text-primary) 12%, transparent)',
           }}
           className="w-full h-2 rounded-full overflow-hidden"
         >

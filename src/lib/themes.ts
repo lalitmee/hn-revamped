@@ -1,4 +1,9 @@
-import { ThemeDefinition, ThemeId, UserPreferences, FontFamilyId } from '@/types/hn';
+import {
+  ThemeDefinition,
+  ThemeId,
+  UserPreferences,
+  FontFamilyId,
+} from '@/types/hn';
 
 export const THEMES: Record<ThemeId, ThemeDefinition> = {
   'warm-paper': {
@@ -223,10 +228,14 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
   },
 };
 
-export const FONT_FAMILIES: Record<FontFamilyId, { label: string; cssValue: string }> = {
+export const FONT_FAMILIES: Record<
+  FontFamilyId,
+  { label: string; cssValue: string }
+> = {
   sans: {
     label: 'Editorial Sans',
-    cssValue: "'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif",
+    cssValue:
+      "'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif",
   },
   bookerly: {
     label: 'Kindle Bookerly',
@@ -287,10 +296,10 @@ export function resolveActiveThemeId(
   const darkId = prefs.darkThemeId ?? 'obsidian-slate';
 
   if (mode === 'light') {
-    return THEMES[ prefs.themeId ]?.mode === 'light' ? prefs.themeId : lightId;
+    return THEMES[prefs.themeId]?.mode === 'light' ? prefs.themeId : lightId;
   }
   if (mode === 'dark') {
-    return THEMES[ prefs.themeId ]?.mode === 'dark' ? prefs.themeId : darkId;
+    return THEMES[prefs.themeId]?.mode === 'dark' ? prefs.themeId : darkId;
   }
   return systemPrefersDark ? darkId : lightId;
 }

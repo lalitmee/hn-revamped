@@ -49,21 +49,27 @@ describe('CommentTree & Progressive Depth-Gated Rendering', () => {
 
     expect(screen.getByText('tptacek')).toBeInTheDocument();
     // Nested replies are collapsed initially behind "Show 3 replies"
-    expect(screen.queryByText(/We cache per-monitor DPI/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/We cache per-monitor DPI/)
+    ).not.toBeInTheDocument();
 
     const expandAllBtn = screen.getByRole('button', { name: /Expand All/i });
     fireEvent.click(expandAllBtn);
 
     expect(screen.getByText('nathansobo')).toBeInTheDocument();
     expect(screen.getByText('OP')).toBeInTheDocument();
-    expect(screen.getByText(/Depth 2 reply visible initially/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Depth 2 reply visible initially/)
+    ).toBeInTheDocument();
 
     // Depth 3 should be gated behind "Load 1 deeper reply"
     expect(
       screen.queryByText(/Depth 3 reply gated behind on-demand load button/)
     ).not.toBeInTheDocument();
 
-    const loadDeeperBtn = screen.getByRole('button', { name: /Load 1 deeper reply/i });
+    const loadDeeperBtn = screen.getByRole('button', {
+      name: /Load 1 deeper reply/i,
+    });
     fireEvent.click(loadDeeperBtn);
 
     expect(
@@ -74,13 +80,19 @@ describe('CommentTree & Progressive Depth-Gated Rendering', () => {
   it('supports collapsing all replies or collapsing all comments into single lines', () => {
     render(<CommentTree comments={sampleComments} storyAuthor="nathansobo" />);
 
-    const collapseRepliesBtn = screen.getByRole('button', { name: /Collapse Replies/i });
+    const collapseRepliesBtn = screen.getByRole('button', {
+      name: /Collapse Replies/i,
+    });
     fireEvent.click(collapseRepliesBtn);
 
-    expect(screen.queryByText(/We cache per-monitor DPI/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/We cache per-monitor DPI/)
+    ).not.toBeInTheDocument();
     expect(screen.getByText(/How does glyph caching work/)).toBeInTheDocument();
 
-    const collapseAllBtn = screen.getByRole('button', { name: /Collapse All/i });
+    const collapseAllBtn = screen.getByRole('button', {
+      name: /Collapse All/i,
+    });
     fireEvent.click(collapseAllBtn);
 
     // In Collapse All mode, the full paragraph is replaced by the single-line summary bar (+4)

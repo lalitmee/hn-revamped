@@ -1,4 +1,5 @@
-export type FeedType = 'top' | 'new' | 'best' | 'ask' | 'show' | 'jobs' | 'saved';
+export type FeedType =
+  'top' | 'new' | 'best' | 'ask' | 'show' | 'jobs' | 'saved';
 
 export type LayoutMode = 'split' | 'zen';
 
@@ -6,7 +7,8 @@ export type DetailTab = 'comments' | 'reader';
 
 export type ThreadCollapseMode = 'expanded' | 'root-only' | 'collapse-all';
 
-export type FontFamilyId = 'sans' | 'bookerly' | 'serif' | 'hyperlegible' | 'monolisa' | 'mono';
+export type FontFamilyId =
+  'sans' | 'bookerly' | 'serif' | 'hyperlegible' | 'monolisa' | 'mono';
 
 export type LineWidthOption = '55ch' | '65ch' | '75ch' | 'full';
 
@@ -48,7 +50,8 @@ export interface ThemeDefinition {
   colors: ThemeColors;
 }
 
-export type StoryBadgeType = 'show' | 'ask' | 'launch' | 'pdf' | 'video' | 'github' | 'audio';
+export type StoryBadgeType =
+  'show' | 'ask' | 'launch' | 'pdf' | 'video' | 'github' | 'audio';
 
 export interface StoryBadge {
   type: StoryBadgeType;

@@ -147,13 +147,17 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
         className="flex flex-col items-center justify-center py-20 px-6 text-center gap-2"
       >
         <span className="material-symbols-rounded text-[40px]">inbox</span>
-        <p className="text-base font-medium">No stories match your current view or filters.</p>
+        <p className="text-base font-medium">
+          No stories match your current view or filters.
+        </p>
       </div>
     );
   }
 
   const isAppendingMore = loading && stories.length > 0;
-  const hasFloatingIndicator = Boolean(indicatorRect && indicatorRect.height > 0);
+  const hasFloatingIndicator = Boolean(
+    indicatorRect && indicatorRect.height > 0
+  );
 
   return (
     <div ref={containerRef} className="relative flex flex-col gap-3 p-4">
@@ -166,7 +170,8 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
             width: `${indicatorRect.width}px`,
             height: `${indicatorRect.height}px`,
             backgroundColor: 'var(--bg-surface-active)',
-            borderColor: 'color-mix(in srgb, var(--accent) 55%, var(--border-subtle))',
+            borderColor:
+              'color-mix(in srgb, var(--accent) 55%, var(--border-subtle))',
             transition:
               'transform 320ms cubic-bezier(0.22, 1, 0.36, 1), height 260ms cubic-bezier(0.22, 1, 0.36, 1), width 200ms ease, opacity 200ms ease',
           }}
@@ -181,7 +186,8 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
 
       {stories.map((story, idx) => {
         const staggerIdx = Math.max(0, idx - newlyAddedStartIndex);
-        const delayMs = idx >= newlyAddedStartIndex ? Math.min(staggerIdx * 35, 350) : 0;
+        const delayMs =
+          idx >= newlyAddedStartIndex ? Math.min(staggerIdx * 35, 350) : 0;
         return (
           <div
             key={story.id}
@@ -195,7 +201,11 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
               isSelected={selectedStoryId === story.id}
               hasFloatingIndicator={hasFloatingIndicator}
               isRead={Boolean(readHistory[story.id])}
-              newCommentsDelta={getNewCommentsDelta(story.id, story.commentsCount, readHistory)}
+              newCommentsDelta={getNewCommentsDelta(
+                story.id,
+                story.commentsCount,
+                readHistory
+              )}
               isBookmarked={bookmarkedIds.has(story.id)}
               onSelect={onSelectStory}
               onToggleBookmark={onToggleBookmark}
@@ -231,15 +241,15 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
             <span
               style={{ color: 'var(--accent)' }}
               className={`material-symbols-rounded text-[19px] transition-transform duration-300 ${
-                isAppendingMore
-                  ? 'animate-spin'
-                  : 'group-hover:translate-y-0.5'
+                isAppendingMore ? 'animate-spin' : 'group-hover:translate-y-0.5'
               }`}
             >
               {isAppendingMore ? 'progress_activity' : 'expand_circle_down'}
             </span>
             <span>
-              {isAppendingMore ? 'Fetching next 10 stories...' : 'Load More Stories'}
+              {isAppendingMore
+                ? 'Fetching next 10 stories...'
+                : 'Load More Stories'}
             </span>
           </button>
         </div>

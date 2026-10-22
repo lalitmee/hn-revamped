@@ -1,6 +1,12 @@
 'use client';
 
-import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+import React, {
+  useEffect,
+  useState,
+  useMemo,
+  useRef,
+  useCallback,
+} from 'react';
 import { ReaderArticle } from '@/types/hn';
 import { GlassDropdown } from '@/components/ui/GlassDropdown';
 
@@ -87,7 +93,9 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
   const [ttsSupported, setTtsSupported] = useState(false);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoiceURI, setSelectedVoiceURI] = useState<string>('');
-  const [playbackState, setPlaybackState] = useState<'idle' | 'playing' | 'paused'>('idle');
+  const [playbackState, setPlaybackState] = useState<
+    'idle' | 'playing' | 'paused'
+  >('idle');
   const [activeSegmentIdx, setActiveSegmentIdx] = useState<number>(0);
   const [playbackRate, setPlaybackRate] = useState<number>(1);
   const [ttsNotice, setTtsNotice] = useState<string | null>(null);
@@ -110,13 +118,16 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
     const updateVoices = () => {
       const available = window.speechSynthesis.getVoices() || [];
       const englishOrAll =
-        available.filter((v) => v.lang.toLowerCase().startsWith('en')).length > 0
+        available.filter((v) => v.lang.toLowerCase().startsWith('en')).length >
+        0
           ? available.filter((v) => v.lang.toLowerCase().startsWith('en'))
           : available;
       setVoices(englishOrAll);
       if (englishOrAll.length > 0 && !selectedVoiceRef.current) {
         const preferred =
-          englishOrAll.find((v) => /natural|google|siri|premium/i.test(v.name)) ||
+          englishOrAll.find((v) =>
+            /natural|google|siri|premium/i.test(v.name)
+          ) ||
           englishOrAll.find((v) => v.default) ||
           englishOrAll[0];
         if (preferred) {
@@ -129,7 +140,10 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
     updateVoices();
     window.speechSynthesis.addEventListener?.('voiceschanged', updateVoices);
     return () => {
-      window.speechSynthesis.removeEventListener?.('voiceschanged', updateVoices);
+      window.speechSynthesis.removeEventListener?.(
+        'voiceschanged',
+        updateVoices
+      );
       window.speechSynthesis.cancel();
     };
   }, []);
@@ -230,7 +244,8 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
     if (playbackState === 'idle') return;
 
     // Segment 0 is the story title; if segment 0 is playing, highlight the first body paragraph (idx 1) so the tracker is always visible on the text
-    const highlightIdx = activeSegmentIdx === 0 && segments.length > 1 ? 1 : activeSegmentIdx;
+    const highlightIdx =
+      activeSegmentIdx === 0 && segments.length > 1 ? 1 : activeSegmentIdx;
     const target = container.querySelector<HTMLElement>(
       `[data-tts-idx="${highlightIdx}"]`
     );
@@ -240,11 +255,18 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
         target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
     }
-  }, [activeSegmentIdx, playbackState, playbackRate, selectedVoiceURI, segments.length]);
+  }, [
+    activeSegmentIdx,
+    playbackState,
+    playbackRate,
+    selectedVoiceURI,
+    segments.length,
+  ]);
 
   const speakSegmentAt = useCallback(
     (index: number) => {
-      if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+      if (typeof window === 'undefined' || !('speechSynthesis' in window))
+        return;
       if (index < 0 || index >= segments.length) {
         setPlaybackState('idle');
         setActiveSegmentIdx(0);
@@ -295,7 +317,8 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
 
         utterance.onerror = (event) => {
           if (speechSeqRef.current !== seq) return;
-          if (event.error === 'interrupted' || event.error === 'canceled') return;
+          if (event.error === 'interrupted' || event.error === 'canceled')
+            return;
           setPlaybackState('idle');
           setTtsNotice(
             'No speech synthesis voice responded on this system. Check your OS speech-dispatcher or browser TTS settings.'
@@ -350,7 +373,9 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
         className="py-16 text-center flex flex-col items-center gap-2"
       >
         <span className="material-symbols-rounded text-[36px]">forum</span>
-        <p>This is a text-only Hacker News discussion without an external URL.</p>
+        <p>
+          This is a text-only Hacker News discussion without an external URL.
+        </p>
       </div>
     );
   }
@@ -402,8 +427,12 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
         </span>
         <div>
           <h4 className="text-lg font-semibold mb-1">{storyTitle}</h4>
-          <p style={{ color: 'var(--text-muted)' }} className="text-sm max-w-md">
-            This resource ({article?.fallbackType?.toUpperCase() || 'External Site'}) is best
+          <p
+            style={{ color: 'var(--text-muted)' }}
+            className="text-sm max-w-md"
+          >
+            This resource (
+            {article?.fallbackType?.toUpperCase() || 'External Site'}) is best
             viewed directly in its original tab.
           </p>
         </div>
@@ -415,7 +444,9 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm shadow hover:brightness-110 transition"
         >
           <span>Open Original Article</span>
-          <span className="material-symbols-rounded text-[18px]">north_east</span>
+          <span className="material-symbols-rounded text-[18px]">
+            north_east
+          </span>
         </a>
       </div>
     );
@@ -437,13 +468,18 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
     >
       {/* Reader Metadata & Integrated Liquid Glass Audio Reader Bar */}
       <div
-        style={{ color: 'var(--text-muted)', borderColor: 'var(--border-subtle)' }}
+        style={{
+          color: 'var(--text-muted)',
+          borderColor: 'var(--border-subtle)',
+        }}
         className="flex flex-col gap-3 pb-3.5 mb-5 border-b text-xs"
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3">
             <span className="inline-flex items-center gap-1">
-              <span className="material-symbols-rounded text-[15px]">schedule</span>
+              <span className="material-symbols-rounded text-[15px]">
+                schedule
+              </span>
               {article.readingTimeMinutes} min read
             </span>
             {article.byline && <span>• By {article.byline}</span>}
@@ -476,15 +512,15 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
                     {playbackState === 'playing'
                       ? 'pause'
                       : playbackState === 'paused'
-                      ? 'play_arrow'
-                      : 'headphones'}
+                        ? 'play_arrow'
+                        : 'headphones'}
                   </span>
                   <span className="leading-none">
                     {playbackState === 'playing'
                       ? 'Pause'
                       : playbackState === 'paused'
-                      ? 'Resume'
-                      : 'Listen'}
+                        ? 'Resume'
+                        : 'Listen'}
                   </span>
                 </button>
 
@@ -550,7 +586,10 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
                         value={selectedVoiceURI}
                         options={voices.map((v) => ({
                           id: v.voiceURI,
-                          label: v.name.replace(/Microsoft |Google |Apple /g, ''),
+                          label: v.name.replace(
+                            /Microsoft |Google |Apple /g,
+                            ''
+                          ),
                           icon: 'graphic_eq',
                         }))}
                         onChange={(uri) => {
@@ -592,7 +631,9 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
               className="inline-flex items-center gap-1 font-semibold ml-1"
             >
               Original URL
-              <span className="material-symbols-rounded text-[15px]">north_east</span>
+              <span className="material-symbols-rounded text-[15px]">
+                north_east
+              </span>
             </a>
           </div>
         </div>
@@ -617,7 +658,8 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
         {ttsNotice && (
           <div
             style={{
-              backgroundColor: 'color-mix(in srgb, var(--accent) 12%, transparent)',
+              backgroundColor:
+                'color-mix(in srgb, var(--accent) 12%, transparent)',
               color: 'var(--text-secondary)',
             }}
             className="px-3 py-2 rounded-xl text-[11.5px] flex items-center justify-between gap-2"

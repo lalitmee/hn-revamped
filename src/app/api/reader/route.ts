@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { detectSpecialUrlFallback, extractArticleFromHtml } from '@/lib/reader-extractor';
+import {
+  detectSpecialUrlFallback,
+  extractArticleFromHtml,
+} from '@/lib/reader-extractor';
 
 export const maxDuration = 10;
 
@@ -18,7 +21,8 @@ const ERROR_CACHE_HEADERS = {
 function isSafePublicUrl(rawUrl: string): boolean {
   try {
     const parsed = new URL(rawUrl);
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:')
+      return false;
     const host = parsed.hostname.toLowerCase();
     if (
       host === 'localhost' ||
@@ -39,7 +43,10 @@ function isSafePublicUrl(rawUrl: string): boolean {
 export async function GET(request: NextRequest) {
   const targetUrl = request.nextUrl.searchParams.get('url');
   if (!targetUrl || !isSafePublicUrl(targetUrl)) {
-    return NextResponse.json({ error: 'Invalid or unsupported URL' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Invalid or unsupported URL' },
+      { status: 400 }
+    );
   }
 
   const special = detectSpecialUrlFallback(targetUrl);
