@@ -4,6 +4,7 @@ import React, {
   useState,
   useMemo,
   useEffect,
+  useRef,
   useDeferredValue,
   useTransition,
 } from 'react';
@@ -80,13 +81,24 @@ export const CommentTree: React.FC<CommentTreeProps> = ({
   const collapseMode = controlledCollapseMode ?? internalCollapseMode;
   const [modeVersion, setModeVersion] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const [isPending, startTransition] = useTransition();
   const [visibleRootCount, setVisibleRootCount] = useState(budget.rootBatch);
 
-  // Reset root batch count based on adaptive budget when switching stories
+  // Focus search input when filter is expanded
+  useEffect(() => {
+    if (isSearchOpen) {
+      searchInputRef.current?.focus();
+    }
+  }, [isSearchOpen]);
+
+  // Reset root batch count and search state when switching stories
   useEffect(() => {
     setVisibleRootCount(budget.rootBatch);
+    setSearchQuery('');
+    setIsSearchOpen(false);
   }, [comments, budget.rootBatch]);
 
   const filteredComments = useMemo(
@@ -108,36 +120,80 @@ export const CommentTree: React.FC<CommentTreeProps> = ({
 
   return (
     <div>
-      {/* Clean Material 3 Thread Toolbar (No Nested Box-Inside-Box) */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5 mb-3.5">
-        <div className="liquid-glass h-9 px-4 rounded-full flex items-center gap-2.5 flex-1 min-w-[220px]">
-          <span
-            style={{
-              color: isFilteringStale ? 'var(--accent)' : 'var(--text-muted)',
-            }}
-            className={`material-symbols-rounded text-[17px] shrink-0 transition-transform ${
-              isFilteringStale ? 'animate-spin' : ''
-            }`}
-          >
-            {isFilteringStale ? 'progress_activity' : 'search'}
-          </span>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Filter thread by keyword or @author..."
-            style={{ color: 'var(--text-primary)' }}
-            className="bg-transparent text-xs sm:text-sm focus:outline-none w-full"
-          />
-          {searchQuery && (
+      {/* Condensed Thread Toolbar: Expandable Filter & Icon-Only Collapse Controls */}
+      <div className="flex items-center justify-between gap-2.5 mb-3.5">
+        <div className="flex items-center gap-2 min-w-0">
+          {isSearchOpen || searchQuery ? (
+            <div className="liquid-glass h-8 px-3 rounded-full flex items-center gap-2 flex-1 sm:w-64 max-w-xs transition-all duration-200">
+              <span
+                style={{
+                  color: isFilteringStale
+                    ? 'var(--accent)'
+                    : 'var(--text-muted)',
+                }}
+                className={`material-symbols-rounded text-[16px] shrink-0 ${
+                  isFilteringStale ? 'animate-spin' : ''
+                }`}
+              >
+                {isFilteringStale ? 'progress_activity' : 'search'}
+              </span>
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    if (searchQuery) {
+                      setSearchQuery('');
+                    } else {
+                      setIsSearchOpen(false);
+                    }
+                  }
+                }}
+                placeholder="Filter comments or @author..."
+                style={{ color: 'var(--text-primary)' }}
+                className="bg-transparent text-xs focus:outline-none w-full min-w-0"
+              />
+              {searchQuery && (
+                <span
+                  style={{ color: 'var(--text-muted)' }}
+                  className="text-[10px] font-semibold shrink-0"
+                >
+                  {filteredComments.length}
+                </span>
+              )}
+              <button
+                type="button"
+                aria-label={searchQuery ? 'Clear filter' : 'Close filter'}
+                onClick={() => {
+                  if (searchQuery) {
+                    setSearchQuery('');
+                    searchInputRef.current?.focus();
+                  } else {
+                    setIsSearchOpen(false);
+                  }
+                }}
+                style={{ color: 'var(--text-muted)' }}
+                className="material-symbols-rounded text-[16px] cursor-pointer hover:opacity-80 shrink-0"
+              >
+                close
+              </button>
+            </div>
+          ) : (
             <button
               type="button"
-              aria-label="Clear thread search"
-              onClick={() => setSearchQuery('')}
-              style={{ color: 'var(--text-muted)' }}
-              className="material-symbols-rounded text-[16px] cursor-pointer hover:opacity-80"
+              aria-label="Filter comments"
+              title="Filter comments by keyword or @author"
+              onClick={() => setIsSearchOpen(true)}
+              style={{
+                color: 'var(--text-secondary)',
+              }}
+              className="liquid-glass w-8 h-8 rounded-full inline-flex items-center justify-center cursor-pointer hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors duration-200"
             >
-              close
+              <span className="material-symbols-rounded text-[18px]">
+                filter_list
+              </span>
             </button>
           )}
         </div>
@@ -155,21 +211,18 @@ export const CommentTree: React.FC<CommentTreeProps> = ({
           items={[
             {
               id: 'expanded',
-              label: 'Expand All',
               icon: 'unfold_more',
-              title: 'Expand all comments and nested replies',
+              title: 'Expand All',
             },
             {
               id: 'root-only',
-              label: 'Collapse Replies',
               icon: 'unfold_less',
-              title: 'Collapse nested replies and show root comments only',
+              title: 'Collapse Replies',
             },
             {
               id: 'collapse-all',
-              label: 'Collapse All',
               icon: 'compress',
-              title: 'Collapse every comment into a single-line summary bar',
+              title: 'Collapse All',
             },
           ]}
         />

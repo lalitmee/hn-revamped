@@ -99,6 +99,37 @@ describe('CommentTree & Progressive Depth-Gated Rendering', () => {
     expect(screen.getByText('+4')).toBeInTheDocument();
   });
 
+  it('toggles thread filter input on icon click and filters comments by keyword', () => {
+    render(<CommentTree comments={sampleComments} storyAuthor="nathansobo" />);
+
+    // Initially the filter input is collapsed behind the filter button
+    expect(
+      screen.queryByPlaceholderText(/Filter comments or @author/i)
+    ).not.toBeInTheDocument();
+
+    const filterBtn = screen.getByRole('button', { name: /Filter comments/i });
+    fireEvent.click(filterBtn);
+
+    const input = screen.getByPlaceholderText(/Filter comments or @author/i);
+    expect(input).toBeInTheDocument();
+
+    // Type a keyword that matches
+    fireEvent.change(input, { target: { value: 'glyph' } });
+    expect(screen.getByText(/How does glyph caching work/)).toBeInTheDocument();
+
+    // Type a keyword that doesn't match
+    fireEvent.change(input, { target: { value: 'nonexistent query' } });
+    expect(
+      screen.getByText('No comments match your filter.')
+    ).toBeInTheDocument();
+
+    // Clear filter
+    const clearBtn = screen.getByRole('button', { name: /Clear filter/i });
+    fireEvent.click(clearBtn);
+
+    expect(screen.getByText('tptacek')).toBeInTheDocument();
+  });
+
   it('calculates adaptive root, depth, and sibling budgets based on total comment count', () => {
     expect(getAdaptiveThreadBudget(20)).toEqual({
       rootBatch: 25,
