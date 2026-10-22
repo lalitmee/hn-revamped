@@ -373,7 +373,13 @@ export const WorkspaceShell: React.FC = () => {
     loader
       .then((items) => {
         if (!active) return;
-        setStories(items);
+        const seen = new Set<number>();
+        const unique = items.filter((s) => {
+          if (seen.has(s.id)) return false;
+          seen.add(s.id);
+          return true;
+        });
+        setStories(unique);
         setPage(1);
         setLoadingFeed(false);
       })
@@ -394,7 +400,11 @@ export const WorkspaceShell: React.FC = () => {
     setLoadingFeed(true);
     fetchFeedStories(activeFeed, nextPage, loadedPageSizeRef.current)
       .then((more) => {
-        setStories((prev) => [...prev, ...more]);
+        setStories((prev) => {
+          const existingIds = new Set(prev.map((s) => s.id));
+          const uniqueMore = more.filter((s) => !existingIds.has(s.id));
+          return [...prev, ...uniqueMore];
+        });
         setPage(nextPage);
         setLoadingFeed(false);
       })
@@ -405,10 +415,20 @@ export const WorkspaceShell: React.FC = () => {
 
   const visibleStories = useMemo(() => {
     const filtered = filterStories(stories, preferences, readHistory);
-    if (selectedStory && !filtered.some((s) => s.id === selectedStory.id)) {
-      return [selectedStory, ...filtered];
+    const seen = new Set<number>();
+    const list: HNStory[] = [];
+    for (const story of filtered) {
+      if (!seen.has(story.id)) {
+        seen.add(story.id);
+        list.push(story);
+      }
     }
-    return filtered;
+    // Only prepend selectedStory if it originated from an external URL/comment link
+    // and does not already exist in the current feed page.
+    if (selectedStory && !seen.has(selectedStory.id)) {
+      list.unshift(selectedStory);
+    }
+    return list;
   }, [stories, preferences, readHistory, selectedStory]);
 
   const bookmarkedIds = useMemo(

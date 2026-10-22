@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { HNStory, ReadHistoryEntry } from '@/types/hn';
 import { getNewCommentsDelta } from '@/lib/storage';
 import { StoryPillRow } from './StoryPillRow';
@@ -40,14 +40,23 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
     height: number;
   } | null>(null);
 
+  const deduplicatedStories = useMemo(() => {
+    const seen = new Set<number>();
+    return stories.filter((s) => {
+      if (seen.has(s.id)) return false;
+      seen.add(s.id);
+      return true;
+    });
+  }, [stories]);
+
   useEffect(() => {
-    if (stories.length > prevCountRef.current) {
+    if (deduplicatedStories.length > prevCountRef.current) {
       setNewlyAddedStartIndex(prevCountRef.current);
-    } else if (stories.length === 0) {
+    } else if (deduplicatedStories.length === 0) {
       setNewlyAddedStartIndex(0);
     }
-    prevCountRef.current = stories.length;
-  }, [stories.length]);
+    prevCountRef.current = deduplicatedStories.length;
+  }, [deduplicatedStories.length]);
 
   // Measure the active story card so the shared selection indicator can glide between posts
   useEffect(() => {
@@ -126,9 +135,9 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
       cancelAnimationFrame(rafId);
       clearTimeout(timer);
     };
-  }, [selectedStoryId, stories.length]);
+  }, [selectedStoryId, deduplicatedStories.length]);
 
-  if (loading && stories.length === 0) {
+  if (loading && deduplicatedStories.length === 0) {
     return (
       <div
         className={`min-h-full flex flex-col ${
@@ -148,7 +157,7 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
     );
   }
 
-  if (stories.length === 0) {
+  if (deduplicatedStories.length === 0) {
     return (
       <div
         style={{ color: 'var(--text-muted)' }}
@@ -162,7 +171,7 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
     );
   }
 
-  const isAppendingMore = loading && stories.length > 0;
+  const isAppendingMore = loading && deduplicatedStories.length > 0;
   const hasFloatingIndicator = Boolean(
     indicatorRect && indicatorRect.height > 0
   );
@@ -195,7 +204,7 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
         </div>
       )}
 
-      {stories.map((story, idx) => {
+      {deduplicatedStories.map((story, idx) => {
         const staggerIdx = Math.max(0, idx - newlyAddedStartIndex);
         const delayMs =
           idx >= newlyAddedStartIndex ? Math.min(staggerIdx * 35, 350) : 0;
