@@ -49,6 +49,7 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
   const [modeVersion, setModeVersion] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isStoryTextExpanded, setIsStoryTextExpanded] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Focus search input when filter is expanded in top bar
@@ -58,10 +59,11 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
     }
   }, [isSearchOpen]);
 
-  // Reset search when switching stories
+  // Reset search and story text expansion when switching stories
   useEffect(() => {
     setSearchQuery('');
     setIsSearchOpen(false);
+    setIsStoryTextExpanded(false);
   }, [story?.id]);
 
   const isInitialPlaceholder = Boolean(
@@ -295,18 +297,26 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
       </div>
 
       {/* Independently Scrollable Story Content & Comments/Reader Body */}
-      <div className="custom-scrollbar px-5 md:px-6 pt-3.5 pb-6 flex-1 min-h-0 overflow-y-auto overscroll-contain">
-        <header className="mb-4">
+      <div
+        className={`custom-scrollbar px-5 md:px-6 pb-6 flex-1 min-h-0 overflow-y-auto overscroll-contain ${
+          compact ? 'pt-2' : 'pt-3.5'
+        }`}
+      >
+        <header className={compact ? 'mb-2.5' : 'mb-4'}>
           <h1
             style={{ color: 'var(--text-primary)' }}
-            className="text-lg md:text-xl font-bold leading-snug tracking-tight"
+            className={`font-bold leading-snug tracking-tight ${
+              compact ? 'text-base md:text-lg' : 'text-lg md:text-xl'
+            }`}
           >
             {story.cleanTitle}
           </h1>
 
           <div
             style={{ color: 'var(--text-muted)' }}
-            className="flex flex-wrap items-center gap-2.5 mt-1.5 text-xs"
+            className={`flex flex-wrap items-center gap-2 text-xs ${
+              compact ? 'mt-1' : 'mt-1.5'
+            }`}
           >
             <span style={{ color: 'var(--accent)' }} className="font-bold">
               ▲ {story.points} points
@@ -330,21 +340,67 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
 
           {story.text && (
             <div
-              className="liquid-glass mt-3 p-3.5 rounded-2xl hn-prose"
-              onClick={(e) => {
-                const target = (e.target as HTMLElement).closest(
-                  'a[data-hn-item-id]'
-                );
-                if (target) {
-                  e.preventDefault();
-                  const id = Number(target.getAttribute('data-hn-item-id'));
-                  if (id) onInternalHnLinkClick(id);
-                }
-              }}
-              dangerouslySetInnerHTML={{
-                __html: formatCommentHtml(story.text),
-              }}
-            />
+              className={`liquid-glass relative transition-all ${
+                compact ? 'mt-2 p-2.5 rounded-xl' : 'mt-3 p-3.5 rounded-2xl'
+              }`}
+            >
+              <div
+                className={`hn-prose ${compact ? 'hn-prose-compact' : ''} ${
+                  compact && !isStoryTextExpanded && story.text.length > 280
+                    ? 'max-h-24 overflow-hidden'
+                    : ''
+                }`}
+                onClick={(e) => {
+                  const target = (e.target as HTMLElement).closest(
+                    'a[data-hn-item-id]'
+                  );
+                  if (target) {
+                    e.preventDefault();
+                    const id = Number(target.getAttribute('data-hn-item-id'));
+                    if (id) onInternalHnLinkClick(id);
+                  }
+                }}
+                dangerouslySetInnerHTML={{
+                  __html: formatCommentHtml(story.text),
+                }}
+              />
+              {compact && !isStoryTextExpanded && story.text.length > 280 && (
+                <div
+                  style={{
+                    background:
+                      'linear-gradient(to top, var(--bg-surface-1) 30%, transparent 100%)',
+                  }}
+                  className="absolute inset-x-0 bottom-0 pt-6 pb-1 px-3 flex justify-center rounded-b-xl"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setIsStoryTextExpanded(true)}
+                    style={{ color: 'var(--accent)' }}
+                    className="text-xs font-semibold inline-flex items-center gap-1 hover:underline cursor-pointer"
+                  >
+                    <span>Show full text</span>
+                    <span className="material-symbols-rounded text-[14px]">
+                      expand_more
+                    </span>
+                  </button>
+                </div>
+              )}
+              {compact && isStoryTextExpanded && story.text.length > 280 && (
+                <div className="mt-2 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setIsStoryTextExpanded(false)}
+                    style={{ color: 'var(--text-muted)' }}
+                    className="text-xs font-medium inline-flex items-center gap-0.5 hover:underline cursor-pointer"
+                  >
+                    <span>Collapse</span>
+                    <span className="material-symbols-rounded text-[14px]">
+                      expand_less
+                    </span>
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </header>
 

@@ -67,6 +67,7 @@ export const CommentTree: React.FC<CommentTreeProps> = ({
   comments,
   storyAuthor,
   collapseMode: controlledCollapseMode,
+  compact = false,
   onCollapseModeChange,
   onInternalHnLinkClick,
   externalSearchQuery,
@@ -267,6 +268,7 @@ export const CommentTree: React.FC<CommentTreeProps> = ({
                   initialSiblingReplies={budget.siblingReplies}
                   storyAuthor={storyAuthor}
                   collapseMode={collapseMode}
+                  compact={compact}
                   modeVersion={modeVersion}
                   onInternalHnLinkClick={onInternalHnLinkClick}
                 />

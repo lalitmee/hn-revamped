@@ -450,6 +450,21 @@ button.liquid-glass-primary:hover:not(:disabled) {
   margin-bottom: 0.6em;
 }
 
+.hn-prose.hn-prose-compact p {
+  margin-bottom: 0.32em;
+}
+
+.hn-prose.hn-prose-compact pre,
+.hn-prose.hn-prose-compact .hn-article-body pre {
+  padding: 8px 12px;
+  margin: 0.5em 0;
+}
+
+.hn-prose.hn-prose-compact blockquote {
+  margin: 0.4em 0;
+  padding-left: 10px;
+}
+
 .hn-prose p:last-child {
   margin-bottom: 0;
 }

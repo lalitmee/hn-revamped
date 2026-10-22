@@ -152,4 +152,19 @@ describe('CommentTree & Progressive Depth-Gated Rendering', () => {
       siblingReplies: 2,
     });
   });
+
+  it('forwards compact prop to render high-density borderless threaded comments', () => {
+    const { container } = render(
+      <CommentTree
+        comments={sampleComments}
+        storyAuthor="nathansobo"
+        compact={true}
+      />
+    );
+
+    expect(screen.getByText('tptacek')).toBeInTheDocument();
+    // In compact mode, the root node has compact padding and margin classes
+    const rootNode = container.querySelector('.mb-1.pb-1\\.5');
+    expect(rootNode).toBeInTheDocument();
+  });
 });

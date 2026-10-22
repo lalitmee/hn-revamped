@@ -123,25 +123,33 @@ export const CommentNode: React.FC<CommentNodeProps> = ({
           backgroundColor: isCollapsed
             ? 'var(--bg-surface-2)'
             : isRoot
-              ? 'var(--bg-surface-1)'
+              ? compact
+                ? 'transparent'
+                : 'var(--bg-surface-1)'
               : 'transparent',
           borderTop: isCollapsed
             ? '0px solid transparent'
             : isRoot
-              ? '1px solid var(--border-subtle)'
-              : '1px solid color-mix(in srgb, var(--border-subtle) 55%, transparent)',
+              ? compact
+                ? '0px solid transparent'
+                : '1px solid var(--border-subtle)'
+              : '1px solid color-mix(in srgb, var(--border-subtle) 60%, transparent)',
           borderRight:
-            isRoot && !isCollapsed
+            isRoot && !isCollapsed && !compact
               ? '1px solid var(--border-subtle)'
               : '0px solid transparent',
           borderBottom:
             isRoot && !isCollapsed
-              ? '1px solid var(--border-subtle)'
+              ? compact
+                ? '1px solid color-mix(in srgb, var(--border-subtle) 80%, transparent)'
+                : '1px solid var(--border-subtle)'
               : '0px solid transparent',
           borderLeft: isCollapsed
             ? `3px solid ${guideColor}`
             : isRoot
-              ? '1px solid var(--border-subtle)'
+              ? compact
+                ? '0px solid transparent'
+                : '1px solid var(--border-subtle)'
               : '0px solid transparent',
           transition:
             'background-color 280ms cubic-bezier(0.22, 1, 0.36, 1), padding 280ms cubic-bezier(0.22, 1, 0.36, 1), margin 280ms cubic-bezier(0.22, 1, 0.36, 1), border-color 280ms cubic-bezier(0.22, 1, 0.36, 1)',
@@ -149,14 +157,14 @@ export const CommentNode: React.FC<CommentNodeProps> = ({
         className={`relative focus:outline-none ${
           isCollapsed
             ? compact
-              ? 'my-1.5 py-1.5 px-2.5 rounded-xl cursor-pointer hover:brightness-105'
+              ? 'my-1 py-1 px-2 rounded-lg cursor-pointer hover:brightness-105'
               : 'my-2 py-2 px-3 rounded-2xl cursor-pointer hover:brightness-105'
             : isRoot
               ? compact
-                ? 'mb-2 p-2.5 rounded-xl'
+                ? 'mb-1 pb-1.5 pt-1 px-0.5'
                 : 'mb-2.5 p-3.5 rounded-2xl'
               : compact
-                ? 'mt-2 pt-2'
+                ? 'mt-1 pt-1'
                 : 'mt-2.5 pt-2.5'
         }`}
       >
@@ -171,7 +179,7 @@ export const CommentNode: React.FC<CommentNodeProps> = ({
               toggleCollapsed();
             }}
             style={{
-              width: isCollapsed ? '0px' : compact ? '12px' : '16px',
+              width: isCollapsed ? '0px' : compact ? '10px' : '16px',
               opacity: isCollapsed ? 0 : 1,
               transition:
                 'width 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 200ms cubic-bezier(0.22, 1, 0.36, 1)',
@@ -180,19 +188,23 @@ export const CommentNode: React.FC<CommentNodeProps> = ({
           >
             <span
               style={{ backgroundColor: guideColor }}
-              className="w-[3px] h-full rounded-full opacity-80 group-hover/bar:w-[5px] group-hover/bar:opacity-100 transition-all"
+              className={`${compact ? 'w-[2px]' : 'w-[3px]'} h-full rounded-full opacity-80 group-hover/bar:w-[4px] group-hover/bar:opacity-100 transition-all`}
             />
           </button>
 
           <div
             style={{
-              paddingLeft: isCollapsed ? '0px' : compact ? '6px' : '8px',
+              paddingLeft: isCollapsed ? '0px' : compact ? '4px' : '8px',
               transition: 'padding-left 260ms cubic-bezier(0.22, 1, 0.36, 1)',
             }}
             className="flex-1 min-w-0"
           >
             {/* Persistent Header Row that Morphs Between Expanded Header & Collapsed Summary Card */}
-            <div className="flex items-center justify-between gap-3 text-[13px]">
+            <div
+              className={`flex items-center justify-between gap-2.5 ${
+                compact ? 'text-xs' : 'text-[13px]'
+              }`}
+            >
               <div className="flex items-center gap-1.5 min-w-0 truncate">
                 <span
                   style={{
@@ -201,11 +213,15 @@ export const CommentNode: React.FC<CommentNodeProps> = ({
                       : isCollapsed
                         ? `color-mix(in srgb, ${guideColor} 55%, var(--text-secondary))`
                         : `color-mix(in srgb, ${guideColor} 82%, var(--text-primary))`,
-                    backgroundColor: isOP
-                      ? 'color-mix(in srgb, var(--accent) 14%, transparent)'
-                      : `color-mix(in srgb, ${guideColor} 12%, transparent)`,
+                    backgroundColor: compact
+                      ? 'transparent'
+                      : isOP
+                        ? 'color-mix(in srgb, var(--accent) 14%, transparent)'
+                        : `color-mix(in srgb, ${guideColor} 12%, transparent)`,
                   }}
-                  className="px-2 py-0.5 rounded-md font-semibold shrink-0 transition-colors duration-200"
+                  className={`font-semibold shrink-0 transition-colors duration-200 ${
+                    compact ? 'px-0 py-0' : 'px-2 py-0.5 rounded-md'
+                  }`}
                 >
                   {comment.user}
                 </span>
@@ -217,7 +233,9 @@ export const CommentNode: React.FC<CommentNodeProps> = ({
                         'color-mix(in srgb, var(--accent) 20%, transparent)',
                       color: 'var(--accent)',
                     }}
-                    className="px-1.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider shrink-0"
+                    className={`rounded text-[10px] font-bold uppercase tracking-wider shrink-0 ${
+                      compact ? 'px-1 py-0' : 'px-1.5 py-0.5'
+                    }`}
                   >
                     OP
                   </span>
@@ -269,7 +287,11 @@ export const CommentNode: React.FC<CommentNodeProps> = ({
                   transition:
                     'background-color 260ms cubic-bezier(0.22, 1, 0.36, 1), color 220ms cubic-bezier(0.22, 1, 0.36, 1), transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1)',
                 }}
-                className="h-7 px-2.5 rounded-full shrink-0 inline-flex items-center gap-1 text-xs font-bold cursor-pointer hover:brightness-110 active:scale-90 focus:outline-none"
+                className={`shrink-0 inline-flex items-center gap-1 font-bold cursor-pointer hover:brightness-110 active:scale-90 focus:outline-none ${
+                  compact
+                    ? 'h-5 px-1.5 rounded-md text-[11px]'
+                    : 'h-7 px-2.5 rounded-full text-xs'
+                }`}
               >
                 <span
                   style={{
@@ -280,7 +302,9 @@ export const CommentNode: React.FC<CommentNodeProps> = ({
                     transition:
                       'transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1)',
                   }}
-                  className="material-symbols-rounded text-[15px]"
+                  className={`material-symbols-rounded ${
+                    compact ? 'text-[13px]' : 'text-[15px]'
+                  }`}
                 >
                   {isCollapsed ? 'unfold_more' : 'unfold_less'}
                 </span>
@@ -301,7 +325,7 @@ export const CommentNode: React.FC<CommentNodeProps> = ({
                 display: 'grid',
                 gridTemplateRows: isCollapsed ? '0fr' : '1fr',
                 opacity: isCollapsed ? 0 : 1,
-                marginTop: isCollapsed ? '0px' : '6px',
+                marginTop: isCollapsed ? '0px' : compact ? '3px' : '6px',
                 transition:
                   'grid-template-rows 300ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms cubic-bezier(0.22, 1, 0.36, 1), margin-top 280ms cubic-bezier(0.22, 1, 0.36, 1)',
               }}
@@ -310,7 +334,7 @@ export const CommentNode: React.FC<CommentNodeProps> = ({
               <div className="overflow-hidden min-h-0">
                 {/* Comment Prose Body */}
                 <div
-                  className="hn-prose"
+                  className={`hn-prose ${compact ? 'hn-prose-compact' : ''}`}
                   onClick={(e) => {
                     const target = (e.target as HTMLElement).closest(
                       'a[data-hn-item-id]'
@@ -336,9 +360,17 @@ export const CommentNode: React.FC<CommentNodeProps> = ({
                           startTransition(() => setHideChildrenOnly(false))
                         }
                         style={{ color: 'var(--accent)' }}
-                        className="liquid-glass mt-2.5 h-7 px-3 rounded-full inline-flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer active:scale-95 transition-transform"
+                        className={
+                          compact
+                            ? 'mt-1 py-0.5 px-2 rounded-md inline-flex items-center gap-1 text-[11px] font-semibold cursor-pointer hover:bg-[color-mix(in_srgb,var(--accent)_12%,transparent)] transition-colors'
+                            : 'liquid-glass mt-2.5 h-7 px-3 rounded-full inline-flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer active:scale-95 transition-transform'
+                        }
                       >
-                        <span className="material-symbols-rounded text-[15px]">
+                        <span
+                          className={`material-symbols-rounded ${
+                            compact ? 'text-[13px]' : 'text-[15px]'
+                          }`}
+                        >
                           unfold_more
                         </span>
                         Show {comment.totalDescendants}{' '}
@@ -355,9 +387,17 @@ export const CommentNode: React.FC<CommentNodeProps> = ({
                           )
                         }
                         style={{ color: 'var(--accent)' }}
-                        className="liquid-glass mt-2.5 h-7 px-3.5 rounded-full inline-flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer active:scale-95 transition-transform"
+                        className={
+                          compact
+                            ? 'mt-1 py-0.5 px-2.5 rounded-md inline-flex items-center gap-1 text-[11px] font-semibold cursor-pointer hover:bg-[color-mix(in_srgb,var(--accent)_12%,transparent)] transition-colors'
+                            : 'liquid-glass mt-2.5 h-7 px-3.5 rounded-full inline-flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer active:scale-95 transition-transform'
+                        }
                       >
-                        <span className="material-symbols-rounded text-[15px]">
+                        <span
+                          className={`material-symbols-rounded ${
+                            compact ? 'text-[13px]' : 'text-[15px]'
+                          }`}
+                        >
                           subdirectory_arrow_right
                         </span>
                         Load {comment.totalDescendants} deeper{' '}
@@ -391,11 +431,17 @@ export const CommentNode: React.FC<CommentNodeProps> = ({
                               )
                             }
                             style={{ color: 'var(--text-secondary)' }}
-                            className="liquid-glass mt-3 h-7 px-3 rounded-full inline-flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer active:scale-95 transition-transform"
+                            className={
+                              compact
+                                ? 'mt-1 py-0.5 px-2 rounded-md inline-flex items-center gap-1 text-[11px] font-semibold cursor-pointer hover:bg-[color-mix(in_srgb,var(--text-primary)_6%,transparent)] transition-colors'
+                                : 'liquid-glass mt-3 h-7 px-3 rounded-full inline-flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer active:scale-95 transition-transform'
+                            }
                           >
                             <span
                               style={{ color: 'var(--accent)' }}
-                              className="material-symbols-rounded text-[15px]"
+                              className={`material-symbols-rounded ${
+                                compact ? 'text-[13px]' : 'text-[15px]'
+                              }`}
                             >
                               expand_more
                             </span>
