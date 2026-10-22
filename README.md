@@ -156,4 +156,4 @@ Press `?` anywhere in the app to display the keyboard shortcuts modal:
 
 ## License
 
-Private project. All rights reserved.
+No project-level license is currently provided. Public visibility does not grant permission to reuse or distribute the source. All rights reserved.
