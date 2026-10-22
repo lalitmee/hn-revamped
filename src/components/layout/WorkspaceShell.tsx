@@ -56,6 +56,15 @@ export const WorkspaceShell: React.FC = () => {
   const [stories, setStories] = useState<HNStory[]>([]);
   const [page, setPage] = useState(1);
   const [loadingFeed, setLoadingFeed] = useState(true);
+  const [prefsHydrated, setPrefsHydrated] = useState(false);
+
+  // Compact cards fit more rows on screen, so fetch a larger first batch.
+  const desiredPageSize = preferences.cardDensity === 'compact' ? 15 : 10;
+  const desiredPageSizeRef = useRef(desiredPageSize);
+  desiredPageSizeRef.current = desiredPageSize;
+  // Page size is pinned per feed load so "load more" offsets stay consistent
+  // even if density is toggled mid-session.
+  const loadedPageSizeRef = useRef(desiredPageSize);
 
   const [selectedStory, setSelectedStory] =
     useState<HNStoryWithComments | null>(null);
@@ -76,6 +85,7 @@ export const WorkspaceShell: React.FC = () => {
   // Hydrate local preferences, read history, bookmarks, and OS color scheme
   useEffect(() => {
     setPreferences(loadPreferences());
+    setPrefsHydrated(true);
     setReadHistory(loadReadHistory());
     setBookmarks(loadBookmarks());
 
@@ -328,9 +338,11 @@ export const WorkspaceShell: React.FC = () => {
 
   // Load feed or time-travel stories
   useEffect(() => {
+    if (!prefsHydrated) return;
     let active = true;
     setLoadingFeed(true);
     setStories([]);
+    loadedPageSizeRef.current = desiredPageSizeRef.current;
 
     if (activeFeed === 'saved') {
       setStories(loadBookmarks());
@@ -355,7 +367,7 @@ export const WorkspaceShell: React.FC = () => {
       const [start, end] = ranges[timeTravel];
       loader = fetchTimeTravelStories(start, end);
     } else {
-      loader = fetchFeedStories(activeFeed, 1, 10);
+      loader = fetchFeedStories(activeFeed, 1, loadedPageSizeRef.current);
     }
 
     loader
@@ -374,13 +386,13 @@ export const WorkspaceShell: React.FC = () => {
     return () => {
       active = false;
     };
-  }, [activeFeed, timeTravel]);
+  }, [activeFeed, timeTravel, prefsHydrated]);
 
   const handleLoadMore = useCallback(() => {
     if (activeFeed === 'saved' || timeTravel !== 'live') return;
     const nextPage = page + 1;
     setLoadingFeed(true);
-    fetchFeedStories(activeFeed, nextPage, 10)
+    fetchFeedStories(activeFeed, nextPage, loadedPageSizeRef.current)
       .then((more) => {
         setStories((prev) => [...prev, ...more]);
         setPage(nextPage);
@@ -536,6 +548,7 @@ export const WorkspaceShell: React.FC = () => {
                   setBookmarks(toggleBookmarkStory(story).bookmarks);
                 }}
                 onLoadMore={handleLoadMore}
+                compact={preferences.cardDensity === 'compact'}
                 hasMore={activeFeed !== 'saved' && timeTravel === 'live'}
               />
             </section>
@@ -548,6 +561,7 @@ export const WorkspaceShell: React.FC = () => {
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
                 collapseMode={preferences.defaultCollapseMode ?? 'root-only'}
+                compact={preferences.cardDensity === 'compact'}
                 onCollapseModeChange={(mode) =>
                   handleUpdatePreferences({
                     ...preferences,
@@ -602,6 +616,7 @@ export const WorkspaceShell: React.FC = () => {
                   activeTab={activeTab}
                   onTabChange={setActiveTab}
                   collapseMode={preferences.defaultCollapseMode ?? 'root-only'}
+                  compact={preferences.cardDensity === 'compact'}
                   onCollapseModeChange={(mode) =>
                     handleUpdatePreferences({
                       ...preferences,
@@ -640,6 +655,7 @@ export const WorkspaceShell: React.FC = () => {
                   setBookmarks(toggleBookmarkStory(story).bookmarks);
                 }}
                 onLoadMore={handleLoadMore}
+                compact={preferences.cardDensity === 'compact'}
                 hasMore={activeFeed !== 'saved' && timeTravel === 'live'}
               />
             )}

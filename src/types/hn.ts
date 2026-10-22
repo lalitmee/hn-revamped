@@ -2,6 +2,7 @@ export type FeedType =
   'top' | 'new' | 'best' | 'ask' | 'show' | 'jobs' | 'saved';
 
 export type LayoutMode = 'split' | 'zen';
+export type CardDensity = 'comfortable' | 'compact';
 
 export type DetailTab = 'comments' | 'reader';
 
@@ -121,6 +122,7 @@ export interface UserPreferences {
   lineHeight: number;
   lineWidth: LineWidthOption;
   layoutMode: LayoutMode;
+  cardDensity?: CardDensity;
   defaultCollapseMode?: ThreadCollapseMode;
   hideReadStories: boolean;
   mutedKeywords: string[];

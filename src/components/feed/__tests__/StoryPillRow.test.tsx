@@ -24,6 +24,28 @@ const mockStory: HNStory = {
 };
 
 describe('StoryPillRow Component', () => {
+  it('renders compact variant with title, points, comments and metadata on one line', () => {
+    render(
+      <StoryPillRow
+        story={mockStory}
+        index={3}
+        isSelected={false}
+        compact
+        isRead={false}
+        newCommentsDelta={0}
+        isBookmarked={false}
+        onSelect={vi.fn()}
+        onToggleBookmark={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText(mockStory.cleanTitle)).toBeInTheDocument();
+    expect(screen.getByText('428')).toBeInTheDocument();
+    expect(screen.getByText('214')).toBeInTheDocument();
+    expect(screen.getByText('#3')).toBeInTheDocument();
+    expect(screen.getByText('zed.dev')).toBeInTheDocument();
+  });
+
   it('renders score pill, smart badges, clean title, domain, and +N new comments badge', () => {
     const onSelect = vi.fn();
     const onToggleBookmark = vi.fn();

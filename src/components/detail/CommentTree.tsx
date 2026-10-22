@@ -34,6 +34,7 @@ interface CommentTreeProps {
   comments: HNComment[];
   storyAuthor: string;
   collapseMode?: ThreadCollapseMode;
+  compact?: boolean;
   onCollapseModeChange?: (mode: ThreadCollapseMode) => void;
   onInternalHnLinkClick?: (storyId: number) => void;
 }

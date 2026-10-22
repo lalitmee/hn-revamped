@@ -27,6 +27,7 @@ interface CommentNodeProps {
   initialSiblingReplies?: number;
   storyAuthor: string;
   collapseMode: ThreadCollapseMode;
+  compact?: boolean;
   modeVersion?: number;
   onInternalHnLinkClick?: (storyId: number) => void;
 }
@@ -38,6 +39,7 @@ export const CommentNode: React.FC<CommentNodeProps> = ({
   initialSiblingReplies = INITIAL_SIBLING_REPLIES,
   storyAuthor,
   collapseMode,
+  compact = false,
   modeVersion = 0,
   onInternalHnLinkClick,
 }) => {
@@ -146,10 +148,16 @@ export const CommentNode: React.FC<CommentNodeProps> = ({
         }}
         className={`relative focus:outline-none ${
           isCollapsed
-            ? 'my-2 py-2 px-3 rounded-2xl cursor-pointer hover:brightness-105'
+            ? compact
+              ? 'my-1.5 py-1.5 px-2.5 rounded-xl cursor-pointer hover:brightness-105'
+              : 'my-2 py-2 px-3 rounded-2xl cursor-pointer hover:brightness-105'
             : isRoot
-              ? 'mb-2.5 p-3.5 rounded-2xl'
-              : 'mt-2.5 pt-2.5'
+              ? compact
+                ? 'mb-2 p-2.5 rounded-xl'
+                : 'mb-2.5 p-3.5 rounded-2xl'
+              : compact
+                ? 'mt-2 pt-2'
+                : 'mt-2.5 pt-2.5'
         }`}
       >
         <div className="flex">
@@ -163,7 +171,7 @@ export const CommentNode: React.FC<CommentNodeProps> = ({
               toggleCollapsed();
             }}
             style={{
-              width: isCollapsed ? '0px' : '16px',
+              width: isCollapsed ? '0px' : compact ? '12px' : '16px',
               opacity: isCollapsed ? 0 : 1,
               transition:
                 'width 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 200ms cubic-bezier(0.22, 1, 0.36, 1)',
@@ -178,7 +186,7 @@ export const CommentNode: React.FC<CommentNodeProps> = ({
 
           <div
             style={{
-              paddingLeft: isCollapsed ? '0px' : '8px',
+              paddingLeft: isCollapsed ? '0px' : compact ? '6px' : '8px',
               transition: 'padding-left 260ms cubic-bezier(0.22, 1, 0.36, 1)',
             }}
             className="flex-1 min-w-0"
@@ -366,6 +374,7 @@ export const CommentNode: React.FC<CommentNodeProps> = ({
                             initialSiblingReplies={initialSiblingReplies}
                             storyAuthor={storyAuthor}
                             collapseMode="expanded"
+                            compact={compact}
                             modeVersion={modeVersion}
                             onInternalHnLinkClick={onInternalHnLinkClick}
                           />
