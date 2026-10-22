@@ -15,15 +15,45 @@ export function formatRelativeTime(unixSeconds: number): string {
 
   const years = Math.floor(diffDays / 365);
   const remAfterYears = diffDays % 365;
-  const months = Math.floor(remAfterYears / 30);
-  const days = remAfterYears % 30;
+  let months = Math.floor(remAfterYears / 30);
+  let resolvedYears = years;
+  let days = remAfterYears % 30;
+
+  if (months >= 12) {
+    resolvedYears += 1;
+    months -= 12;
+  }
 
   const parts: string[] = [];
-  if (years > 0) parts.push(`${years}y`);
+  if (resolvedYears > 0) parts.push(`${resolvedYears}y`);
   if (months > 0) parts.push(`${months}m`);
   if (days > 0) parts.push(`${days}d`);
 
   return `${parts.join(' ')} ago`;
+}
+
+export function formatRelativeTimeConcise(unixSeconds: number): string {
+  const diffSec = Math.max(1, Math.floor(Date.now() / 1000) - unixSeconds);
+  if (diffSec < 60) return `${diffSec}s ago`;
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  const diffDays = Math.floor(diffHr / 24);
+  if (diffDays < 30) return `${diffDays}d ago`;
+
+  const years = Math.floor(diffDays / 365);
+  const remAfterYears = diffDays % 365;
+  let months = Math.floor(remAfterYears / 30);
+  let resolvedYears = years;
+
+  if (months >= 12) {
+    resolvedYears += 1;
+    months -= 12;
+  }
+
+  if (resolvedYears > 0) return `${resolvedYears}y ago`;
+  return `${Math.max(1, months)}mo ago`;
 }
 
 interface StoryPillRowProps {

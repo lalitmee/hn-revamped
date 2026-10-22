@@ -11,6 +11,13 @@ import { searchHN } from '@/lib/hn-api';
 import { GlassModal } from '@/components/ui/GlassModal';
 import { GlassSegmentedControl } from '@/components/ui/GlassSegmentedControl';
 import { SafeViewTransition } from '@/components/ui/ViewTransitionWrapper';
+import { formatRelativeTimeConcise } from '@/components/feed/StoryPillRow';
+
+const publishedDateFormatter = new Intl.DateTimeFormat(undefined, {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+});
 
 interface CommandPaletteModalProps {
   isOpen: boolean;
@@ -148,30 +155,46 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                       }}
                       className={`h-4 rounded-full ${i % 2 === 0 ? 'w-4/5' : 'w-3/5'}`}
                     />
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2.5">
                       <div
                         style={{
                           backgroundColor:
                             'color-mix(in srgb, var(--accent) 25%, transparent)',
                         }}
-                        className="h-3 w-12 rounded-full"
+                        className="h-3 w-10 rounded-full"
                       />
                       <div
                         style={{
                           backgroundColor:
                             'color-mix(in srgb, var(--text-muted) 18%, transparent)',
                         }}
-                        className="h-3 w-28 rounded-full"
+                        className="h-3 w-16 rounded-full"
+                      />
+                      <div
+                        style={{
+                          backgroundColor:
+                            'color-mix(in srgb, var(--link-unvisited) 18%, transparent)',
+                        }}
+                        className="h-3 w-24 rounded-full"
                       />
                     </div>
                   </div>
-                  <div
-                    style={{
-                      backgroundColor:
-                        'color-mix(in srgb, var(--text-primary) 10%, transparent)',
-                    }}
-                    className="h-7 w-14 rounded-xl shrink-0"
-                  />
+                  <div className="shrink-0 flex flex-col items-end gap-1.5 pl-2">
+                    <div
+                      style={{
+                        backgroundColor:
+                          'color-mix(in srgb, var(--text-primary) 10%, transparent)',
+                      }}
+                      className="h-6 w-12 rounded-xl"
+                    />
+                    <div
+                      style={{
+                        backgroundColor:
+                          'color-mix(in srgb, var(--text-muted) 16%, transparent)',
+                      }}
+                      className="h-3 w-14 rounded-full"
+                    />
+                  </div>
                 </div>
               ))}
             </div>
@@ -229,26 +252,63 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                 style={{ animationDelay: `${Math.min(idx * 35, 280)}ms` }}
                 className="liquid-glass animate-story-in w-full text-left p-3.5 rounded-2xl flex items-center justify-between gap-4 cursor-pointer"
               >
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="text-sm font-semibold truncate">
                     {story.cleanTitle}
                   </div>
                   <div
                     style={{ color: 'var(--text-muted)' }}
-                    className="text-xs mt-1"
+                    className="flex items-center flex-wrap gap-2.5 text-xs mt-1.5"
                   >
-                    <strong style={{ color: 'var(--accent)' }}>
-                      ▲ {story.points}
-                    </strong>{' '}
-                    • by {story.user} {story.domain ? `• ${story.domain}` : ''}
+                    <span
+                      style={{ color: 'var(--accent)' }}
+                      className="font-semibold inline-flex items-center gap-0.5"
+                    >
+                      <span>▲</span> {story.points}
+                    </span>
+
+                    <span className="inline-flex items-center gap-1">
+                      <span className="material-symbols-rounded text-[13px]">
+                        person
+                      </span>
+                      <span>{story.user}</span>
+                    </span>
+
+                    {story.domain && (
+                      <span className="inline-flex items-center gap-1 truncate max-w-[200px]">
+                        <span
+                          style={{ color: 'var(--link-unvisited)' }}
+                          className="material-symbols-rounded text-[13px]"
+                        >
+                          language
+                        </span>
+                        <span className="truncate">{story.domain}</span>
+                      </span>
+                    )}
                   </div>
                 </div>
-                <span className="liquid-glass px-2.5 py-1 rounded-xl text-xs font-semibold shrink-0 inline-flex items-center gap-1">
-                  <span className="material-symbols-rounded text-[15px]">
-                    forum
+
+                <div className="shrink-0 flex flex-col items-end gap-1.5 pl-2">
+                  <span className="liquid-glass px-2.5 py-1 rounded-xl text-xs font-semibold inline-flex items-center gap-1">
+                    <span className="material-symbols-rounded text-[14px]">
+                      forum
+                    </span>
+                    {story.commentsCount}
                   </span>
-                  {story.commentsCount}
-                </span>
+                  <time
+                    dateTime={new Date(story.time * 1000).toISOString()}
+                    title={`Published ${publishedDateFormatter.format(
+                      new Date(story.time * 1000)
+                    )} (${new Date(story.time * 1000).toLocaleString()})`}
+                    style={{ color: 'var(--text-muted)' }}
+                    className="text-[11px] font-medium tracking-tight hover:underline inline-flex items-center gap-1"
+                  >
+                    <span className="material-symbols-rounded text-[12px] opacity-70">
+                      schedule
+                    </span>
+                    {formatRelativeTimeConcise(story.time)}
+                  </time>
+                </div>
               </button>
             ))}
         </div>
