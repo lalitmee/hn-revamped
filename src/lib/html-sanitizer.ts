@@ -1,4 +1,4 @@
-import DOMPurify from 'isomorphic-dompurify';
+import DOMPurify from 'dompurify';
 
 const HN_ITEM_REGEX = /^https?:\/\/news\.ycombinator\.com\/item\?id=(\d+)/i;
 

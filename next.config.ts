@@ -2,7 +2,7 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  serverExternalPackages: ['isomorphic-dompurify', 'jsdom', 'linkedom', '@mozilla/readability'],
+  serverExternalPackages: ['linkedom', '@mozilla/readability'],
 };
 
 export default nextConfig;

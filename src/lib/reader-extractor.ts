@@ -1,7 +1,18 @@
 import { Readability } from '@mozilla/readability';
 import { parseHTML } from 'linkedom';
-import DOMPurify from 'isomorphic-dompurify';
+import createDOMPurify from 'dompurify';
 import { ReaderArticle } from '@/types/hn';
+
+// Polyfill window for DOMPurify if running under Node.js runtime without native DOM
+const { window: linkedomWindow } = parseHTML(
+  '<!DOCTYPE html><html><body></body></html>'
+);
+if (typeof globalThis.window === 'undefined') {
+  (globalThis as any).window = linkedomWindow;
+}
+const DOMPurify = createDOMPurify(
+  typeof window !== 'undefined' ? window : (linkedomWindow as any)
+);
 
 export function detectSpecialUrlFallback(
   url: string
