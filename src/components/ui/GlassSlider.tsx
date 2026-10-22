@@ -27,21 +27,12 @@ export const GlassSlider: React.FC<GlassSliderProps> = ({
   );
 
   return (
-    <div className="liquid-glass p-4 rounded-2xl space-y-3">
+    <div className="space-y-2">
       <div className="flex items-center justify-between">
+        <span className="text-sm font-medium">{label}</span>
         <span
-          style={{ color: 'var(--text-secondary)' }}
-          className="text-xs font-bold uppercase tracking-wider"
-        >
-          {label}
-        </span>
-        <span
-          style={{
-            backgroundColor:
-              'color-mix(in srgb, var(--accent) 16%, transparent)',
-            color: 'var(--accent)',
-          }}
-          className="px-2.5 py-0.5 rounded-full text-xs font-bold font-mono"
+          style={{ color: 'var(--text-muted)' }}
+          className="text-xs font-mono"
         >
           {valueLabel}
         </span>

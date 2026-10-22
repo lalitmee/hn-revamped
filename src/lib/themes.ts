@@ -281,6 +281,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   lineHeight: 1.55,
   lineWidth: '65ch',
   layoutMode: 'split',
+  cardDensity: 'comfortable',
   defaultCollapseMode: 'root-only',
   hideReadStories: false,
   mutedKeywords: [],

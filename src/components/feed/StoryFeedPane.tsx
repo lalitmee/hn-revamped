@@ -15,6 +15,7 @@ interface StoryFeedPaneProps {
   onToggleBookmark: (story: HNStory, e: React.MouseEvent) => void;
   onLoadMore?: () => void;
   hasMore?: boolean;
+  compact?: boolean;
 }
 
 export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
@@ -27,6 +28,7 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
   onToggleBookmark,
   onLoadMore,
   hasMore,
+  compact = false,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const prevCountRef = useRef(0);
@@ -128,12 +130,18 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
 
   if (loading && stories.length === 0) {
     return (
-      <div className="flex flex-col gap-3 p-4">
-        {Array.from({ length: 8 }).map((_, i) => (
+      <div
+        className={`min-h-full flex flex-col ${
+          compact ? 'gap-1.5 p-3' : 'gap-3 p-4'
+        }`}
+      >
+        {Array.from({ length: compact ? 20 : 12 }).map((_, i) => (
           <div
             key={i}
-            style={{ animationDelay: `${i * 45}ms` }}
-            className="liquid-glass liquid-shimmer h-24 rounded-2xl animate-story-in"
+            style={{ animationDelay: `${i * 30}ms` }}
+            className={`liquid-glass liquid-shimmer animate-story-in shrink-0 ${
+              compact ? 'h-14 rounded-xl' : 'h-24 rounded-2xl'
+            }`}
           />
         ))}
       </div>
@@ -160,7 +168,10 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
   );
 
   return (
-    <div ref={containerRef} className="relative flex flex-col gap-3 p-4">
+    <div
+      ref={containerRef}
+      className={`relative flex flex-col ${compact ? 'gap-1.5 p-3' : 'gap-3 p-4'}`}
+    >
       {/* Shared Traveling Selection Backdrop & Left Accent Indicator */}
       {hasFloatingIndicator && indicatorRect && (
         <div
@@ -175,11 +186,11 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
             transition:
               'transform 320ms cubic-bezier(0.22, 1, 0.36, 1), height 260ms cubic-bezier(0.22, 1, 0.36, 1), width 200ms ease, opacity 200ms ease',
           }}
-          className="pointer-events-none absolute top-0 left-0 z-0 overflow-hidden rounded-2xl border will-change-transform"
+          className={`pointer-events-none absolute top-0 left-0 z-0 overflow-hidden border will-change-transform ${compact ? 'rounded-xl' : 'rounded-2xl'}`}
         >
           <span
             style={{ backgroundColor: 'var(--accent)' }}
-            className="absolute left-0 top-3 bottom-3 w-1 rounded-r-full"
+            className={`absolute left-0 w-1 rounded-r-full ${compact ? 'top-2 bottom-2' : 'top-3 bottom-3'}`}
           />
         </div>
       )}
@@ -200,6 +211,7 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
               index={idx + 1}
               isSelected={selectedStoryId === story.id}
               hasFloatingIndicator={hasFloatingIndicator}
+              compact={compact}
               isRead={Boolean(readHistory[story.id])}
               newCommentsDelta={getNewCommentsDelta(
                 story.id,
@@ -216,12 +228,19 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
 
       {/* Animated Skeleton Placeholders While Appending Next Batch */}
       {isAppendingMore && (
-        <div className="flex flex-col gap-3 mt-1" aria-live="polite">
-          {Array.from({ length: 3 }).map((_, i) => (
+        <div
+          className={`flex flex-col ${
+            compact ? 'gap-1.5 mt-0.5' : 'gap-3 mt-1'
+          }`}
+          aria-live="polite"
+        >
+          {Array.from({ length: compact ? 4 : 3 }).map((_, i) => (
             <div
               key={`more-skeleton-${i}`}
-              style={{ animationDelay: `${i * 60}ms` }}
-              className="liquid-glass liquid-shimmer h-24 rounded-2xl animate-story-in"
+              style={{ animationDelay: `${i * 45}ms` }}
+              className={`liquid-glass liquid-shimmer animate-story-in ${
+                compact ? 'h-14 rounded-xl' : 'h-24 rounded-2xl'
+              }`}
             />
           ))}
         </div>

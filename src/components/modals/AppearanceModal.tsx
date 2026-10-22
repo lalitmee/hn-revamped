@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import {
+  CardDensity,
   FontFamilyId,
   HNComment,
   HNStory,
@@ -67,7 +68,7 @@ const PREVIEW_COMMENT: HNComment = {
   id: 99001,
   user: 'systems_craft',
   time: Math.floor(Date.now() / 1000) - 5400,
-  text: `<p>We moved glyph rasterization off the main thread and saw frame times drop below <code>0.4ms</code> on 120Hz displays. Full benchmarks are in <a href="https://example.com/benchmarks">https://example.com/benchmarks</a>.</p><blockquote><p>Zero layout jitter even under heavy stdout streaming.</p></blockquote>`,
+  text: `<p>We moved glyph rasterization off the main thread and saw frame times drop below <code>0.4ms</code> on 120Hz displays. Our layout architecture ensures consistent frame pacing and responsive rendering across diverse display densities and line lengths.</p><blockquote><p>Zero layout jitter even under heavy stdout streaming.</p></blockquote>`,
   totalDescendants: 1,
   children: [
     {
@@ -92,11 +93,6 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
   const [domainInput, setDomainInput] = useState('');
 
   if (!isOpen) return null;
-
-  const readerThemes = Object.values(THEMES).filter(
-    (t) => t.category === 'reader'
-  );
-  const codeThemes = Object.values(THEMES).filter((t) => t.category === 'code');
 
   const currentMode: ThemeMode = preferences.themeMode ?? 'system';
   const lightThemeId: ThemeId = preferences.lightThemeId ?? 'warm-paper';
@@ -149,7 +145,9 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
     preferences.fontFamily !== DEFAULT_PREFERENCES.fontFamily ||
     preferences.fontSize !== DEFAULT_PREFERENCES.fontSize ||
     Math.abs(preferences.lineHeight - DEFAULT_PREFERENCES.lineHeight) > 0.001 ||
-    preferences.lineWidth !== DEFAULT_PREFERENCES.lineWidth;
+    preferences.lineWidth !== DEFAULT_PREFERENCES.lineWidth ||
+    (preferences.cardDensity ?? 'comfortable') !==
+      (DEFAULT_PREFERENCES.cardDensity ?? 'comfortable');
 
   const isFiltersModified =
     preferences.hideReadStories !== DEFAULT_PREFERENCES.hideReadStories ||
@@ -177,6 +175,7 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
       fontSize: DEFAULT_PREFERENCES.fontSize,
       lineHeight: DEFAULT_PREFERENCES.lineHeight,
       lineWidth: DEFAULT_PREFERENCES.lineWidth,
+      cardDensity: DEFAULT_PREFERENCES.cardDensity,
     });
   };
 
@@ -196,9 +195,157 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
     });
   };
 
+  const lightThemes = Object.values(THEMES).filter((t) => t.mode === 'light');
+  const darkThemes = Object.values(THEMES).filter((t) => t.mode === 'dark');
+
+  const renderThemeTile = (t: (typeof THEMES)[ThemeId]) => {
+    const isSelected = preferences.themeId === t.id;
+    return (
+      <button
+        key={t.id}
+        type="button"
+        onClick={() => handleSelectPalette(t.id as ThemeId)}
+        aria-pressed={isSelected}
+        title={t.inspiration}
+        style={{
+          backgroundColor: t.colors.bgCanvas,
+          color: t.colors.textPrimary,
+          borderColor: isSelected ? 'var(--accent)' : t.colors.borderSubtle,
+          boxShadow: isSelected ? '0 0 0 1px var(--accent)' : undefined,
+        }}
+        className="px-3 py-2.5 rounded-xl border text-left cursor-pointer flex items-center justify-between gap-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+      >
+        <span className="text-[13px] font-medium truncate">{t.name}</span>
+        <span className="flex items-center -space-x-1 shrink-0">
+          {[t.colors.bgSurface2, t.colors.accent, t.colors.linkUnvisited].map(
+            (c, i) => (
+              <span
+                key={i}
+                style={{ backgroundColor: c }}
+                className="w-3 h-3 rounded-full border border-black/15"
+              />
+            )
+          )}
+        </span>
+      </button>
+    );
+  };
+
+  const resetLinkClass = (enabled: boolean) =>
+    `liquid-glass h-8 px-3 rounded-full inline-flex items-center gap-1.5 text-xs font-semibold transition-all ${
+      enabled
+        ? 'cursor-pointer active:scale-95'
+        : 'opacity-40 cursor-not-allowed'
+    }`;
+
+  const sectionTitle = (
+    title: string,
+    enabled: boolean,
+    onReset: () => void
+  ) => (
+    <div className="flex items-center justify-between gap-3">
+      <h2 className="text-base font-medium">{title}</h2>
+      <button
+        type="button"
+        disabled={!enabled}
+        onClick={onReset}
+        style={{ color: enabled ? 'var(--accent)' : 'var(--text-muted)' }}
+        className={resetLinkClass(enabled)}
+      >
+        <span className="material-symbols-rounded text-[15px]">history</span>
+        Reset
+      </button>
+    </div>
+  );
+
+  const groupLabel = (text: string) => (
+    <div
+      style={{ color: 'var(--text-muted)' }}
+      className="text-xs font-medium mb-2.5"
+    >
+      {text}
+    </div>
+  );
+
+  const rowDivider = { borderColor: 'var(--border-subtle)' };
+
+  const renderMuteList = (
+    title: string,
+    placeholder: string,
+    input: string,
+    setInput: (v: string) => void,
+    items: string[],
+    commit: (next: string[]) => void
+  ) => {
+    const add = () => {
+      const clean = input.trim();
+      if (clean && !items.includes(clean)) {
+        commit([...items, clean]);
+        setInput('');
+      }
+    };
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="text-sm font-medium">{title}</div>
+          {items.length > 0 && (
+            <button
+              type="button"
+              onClick={() => commit([])}
+              style={{ color: 'var(--accent)' }}
+              className="liquid-glass h-7 px-3 rounded-full text-xs font-semibold cursor-pointer active:scale-95"
+            >
+              Clear all
+            </button>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') add();
+            }}
+            placeholder={placeholder}
+            style={{
+              backgroundColor: 'transparent',
+              borderColor: 'var(--border-subtle)',
+            }}
+            className="flex-1 min-w-0 px-3.5 py-2 rounded-full border text-xs focus:outline-none focus:border-[var(--accent)]"
+          />
+          <GlassButton variant="primary" icon="add" onClick={add}>
+            Add
+          </GlassButton>
+        </div>
+        {items.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {items.map((item) => (
+              <span
+                key={item}
+                style={{ backgroundColor: 'var(--bg-surface-2)' }}
+                className="inline-flex items-center gap-1 pl-3 pr-1.5 py-1 rounded-full text-xs"
+              >
+                <span>{item}</span>
+                <button
+                  type="button"
+                  aria-label={`Remove ${item}`}
+                  onClick={() => commit(items.filter((i) => i !== item))}
+                  className="material-symbols-rounded text-[14px] cursor-pointer opacity-60 hover:opacity-100"
+                >
+                  close
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="flex-1 min-h-0 flex flex-col overflow-hidden animate-story-in">
-      {/* Pinned / Sticky Top Studio Header Bar */}
+      {/* Pinned Header */}
       <div
         style={{
           backgroundColor:
@@ -207,34 +354,16 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
         }}
         className="shrink-0 z-20 backdrop-blur-xl border-b"
       >
-        <div className="max-w-[1600px] w-full mx-auto px-4 sm:px-8 xl:px-10 py-4 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
+        <div className="max-w-[1400px] w-full mx-auto px-4 sm:px-8 xl:px-10 py-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
             <GlassButton
               icon="arrow_back"
-              iconAccent
               onClick={onClose}
               title="Return to stories (Esc or t)"
             >
-              Back to Feed
+              Back
             </GlassButton>
-            <div>
-              <h1 className="text-lg sm:text-xl font-bold tracking-tight flex items-center gap-2">
-                <span
-                  style={{ color: 'var(--accent)' }}
-                  className="material-symbols-rounded text-[22px]"
-                >
-                  palette
-                </span>
-                <span>Appearance, Typography &amp; Filter Studio</span>
-              </h1>
-              <p
-                style={{ color: 'var(--text-muted)' }}
-                className="text-xs mt-0.5"
-              >
-                Customize your reading surfaces, Material 3 accent color,
-                typography measure, and feed filters with live preview
-              </p>
-            </div>
+            <h1 className="text-lg font-medium tracking-tight">Appearance</h1>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -242,549 +371,193 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
               value={activeTab}
               onChange={setActiveTab}
               items={[
-                { id: 'themes', label: 'Themes & Colors', icon: 'palette' },
-                {
-                  id: 'typography',
-                  label: 'Typography & Layout',
-                  icon: 'text_fields',
-                },
+                { id: 'themes', label: 'Theme', icon: 'palette' },
+                { id: 'typography', label: 'Text', icon: 'text_fields' },
                 {
                   id: 'filters',
-                  label: 'Feed Filters',
+                  label: 'Filters',
                   icon: 'tune',
                   badge: filterBadgeCount || undefined,
                 },
               ]}
             />
-
             <button
               type="button"
               disabled={!isAnyModified}
               onClick={handleResetAll}
-              title={
-                isAnyModified
-                  ? 'Reset all themes, typography, and feed filters to factory defaults'
-                  : 'All studio settings are already at factory defaults'
-              }
+              title="Reset theme, text, and filters to defaults"
               style={{
                 color: isAnyModified ? 'var(--accent)' : 'var(--text-muted)',
-                borderColor: isAnyModified
-                  ? 'color-mix(in srgb, var(--accent) 35%, var(--border-subtle))'
-                  : 'var(--border-subtle)',
               }}
-              className={`liquid-glass h-9 px-3.5 rounded-full inline-flex items-center gap-1.5 text-xs font-semibold border transition-all ${
-                isAnyModified
-                  ? 'cursor-pointer hover:brightness-110 active:scale-95'
-                  : 'opacity-45 cursor-not-allowed'
-              }`}
+              className={resetLinkClass(isAnyModified)}
             >
               <span className="material-symbols-rounded text-[16px]">
                 restart_alt
               </span>
-              <span>Reset All</span>
+              Reset all
             </button>
           </div>
         </div>
       </div>
 
-      {/* Independently Scrollable Studio Body */}
+      {/* Scrollable Body */}
       <div className="custom-scrollbar flex-1 min-h-0 overflow-y-auto overscroll-contain">
-        <div className="max-w-[1600px] w-full mx-auto px-4 sm:px-8 xl:px-10 py-6">
-          {/* Spacious 12-Column Split Studio: Controls (Left 7 cols) + Sticky Live Preview (Right 5 cols) */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            {/* LEFT 7 COLUMNS: Studio Controls */}
-            <div className="lg:col-span-7 space-y-6">
-              {/* TAB 1: THEMES & ACCENT COLORS */}
+        <div className="max-w-[1400px] w-full mx-auto px-4 sm:px-8 xl:px-10 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
+            {/* Controls */}
+            <div className="lg:col-span-7">
               {activeTab === 'themes' && (
-                <div className="space-y-6 animate-story-in">
-                  {/* Per-Section Header & Reset Bar */}
-                  <div className="flex items-center justify-between gap-3 px-1">
+                <div className="space-y-8 animate-story-in">
+                  {sectionTitle('Theme', isThemesModified, handleResetThemes)}
+
+                  {/* Mode */}
+                  <div
+                    style={rowDivider}
+                    className="flex flex-wrap items-center justify-between gap-3 pb-6 border-b"
+                  >
                     <div>
-                      <h2 className="text-sm font-bold">
-                        Themes &amp; Color Palette
-                      </h2>
-                      <p
+                      <div className="text-sm font-medium">Mode</div>
+                      <div
                         style={{ color: 'var(--text-muted)' }}
-                        className="text-xs"
+                        className="text-xs mt-0.5"
                       >
-                        Default: System mode (
-                        {
-                          THEMES[
-                            DEFAULT_PREFERENCES.lightThemeId ?? 'warm-paper'
-                          ].name
-                        }{' '}
-                        /{' '}
-                        {
-                          THEMES[
-                            DEFAULT_PREFERENCES.darkThemeId ?? 'obsidian-slate'
-                          ].name
-                        }
-                        ) with theme accent
-                      </p>
+                        {THEMES[lightThemeId].name} / {THEMES[darkThemeId].name}
+                      </div>
                     </div>
-                    <button
-                      type="button"
-                      disabled={!isThemesModified}
-                      onClick={handleResetThemes}
-                      style={{
-                        color: isThemesModified
-                          ? 'var(--accent)'
-                          : 'var(--text-muted)',
-                      }}
-                      className={`liquid-glass h-8 px-3 rounded-full inline-flex items-center gap-1.5 text-xs font-semibold transition-all ${
-                        isThemesModified
-                          ? 'cursor-pointer hover:brightness-110 active:scale-95'
-                          : 'opacity-45 cursor-not-allowed'
-                      }`}
-                    >
-                      <span className="material-symbols-rounded text-[15px]">
-                        history
-                      </span>
-                      <span>Reset Themes</span>
-                    </button>
+                    <GlassSegmentedControl<ThemeMode>
+                      size="sm"
+                      value={currentMode}
+                      onChange={handleSelectMode}
+                      items={[
+                        { id: 'light', label: 'Light', icon: 'light_mode' },
+                        { id: 'system', label: 'System', icon: 'contrast' },
+                        { id: 'dark', label: 'Dark', icon: 'dark_mode' },
+                      ]}
+                    />
                   </div>
 
-                  {/* Color Mode + Accent Color Row */}
-                  <div className="grid grid-cols-1 gap-4">
-                    {/* Color Scheme Mode */}
-                    <div className="liquid-glass p-5 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div>
-                        <div className="text-sm font-bold">
-                          Color Scheme Mode
-                        </div>
-                        <div
-                          style={{ color: 'var(--text-muted)' }}
-                          className="text-xs mt-1"
-                        >
-                          Auto-sync with your OS or lock to your preferred Light
-                          ({THEMES[lightThemeId].name}) or Dark (
-                          {THEMES[darkThemeId].name}) preset
-                        </div>
-                      </div>
-                      <GlassSegmentedControl<ThemeMode>
-                        size="sm"
-                        value={currentMode}
-                        onChange={handleSelectMode}
-                        items={[
-                          { id: 'light', label: 'Light', icon: 'light_mode' },
-                          { id: 'system', label: 'System', icon: 'contrast' },
-                          { id: 'dark', label: 'Dark', icon: 'dark_mode' },
-                        ]}
-                      />
-                    </div>
-
-                    {/* Primary Accent Color Picker */}
-                    <div className="liquid-glass p-5 rounded-3xl space-y-4">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div>
-                          <div className="text-sm font-bold">
-                            Primary Accent Color
-                          </div>
-                          <div
-                            style={{ color: 'var(--text-muted)' }}
-                            className="text-xs mt-1"
-                          >
-                            Select a Material 3 swatch, pick any custom hex
-                            color, or use the theme default
-                          </div>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            onUpdate({ ...preferences, customAccent: null })
-                          }
-                          style={{
-                            backgroundColor: !preferences.customAccent
-                              ? 'var(--accent)'
-                              : 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
-                            color: !preferences.customAccent
-                              ? '#ffffff'
-                              : 'var(--text-secondary)',
-                          }}
-                          className="px-3.5 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-colors"
-                        >
-                          Theme Default (
-                          {THEMES[preferences.themeId]?.colors.accent})
-                        </button>
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-3 pt-1">
-                        {ACCENT_PRESETS.map((preset) => {
-                          const isActive =
-                            preferences.customAccent?.toLowerCase() ===
-                            preset.color.toLowerCase();
-                          return (
-                            <button
-                              key={preset.id}
-                              type="button"
-                              title={`${preset.label} (${preset.color})`}
-                              aria-label={preset.label}
-                              onClick={() =>
-                                onUpdate({
-                                  ...preferences,
-                                  customAccent: preset.color,
-                                })
-                              }
-                              style={{
-                                backgroundColor: preset.color,
-                                boxShadow: isActive
-                                  ? `0 0 0 3px var(--bg-surface-2), 0 0 0 5px ${preset.color}`
-                                  : undefined,
-                              }}
-                              className="w-9 h-9 rounded-full flex items-center justify-center cursor-pointer transition-transform hover:scale-110 active:scale-95 focus:outline-none"
-                            >
-                              {isActive && (
-                                <span className="material-symbols-rounded text-white text-[17px] font-bold">
-                                  check
-                                </span>
-                              )}
-                            </button>
-                          );
-                        })}
-
-                        {/* Custom Color Picker Pill */}
-                        <label
-                          title="Pick any custom accent color"
-                          style={{
-                            backgroundColor:
-                              'color-mix(in srgb, var(--text-primary) 8%, transparent)',
-                            borderColor: preferences.customAccent
-                              ? 'var(--accent)'
-                              : 'var(--border-subtle)',
-                          }}
-                          className="relative inline-flex items-center gap-2.5 px-3.5 py-2 rounded-full border text-xs font-semibold cursor-pointer hover:brightness-105 ml-auto"
-                        >
-                          <span
-                            style={{
-                              backgroundColor:
-                                preferences.customAccent ??
-                                THEMES[preferences.themeId]?.colors.accent,
-                            }}
-                            className="w-4 h-4 rounded-full shrink-0 border border-black/15"
-                          />
-                          <span className="font-mono uppercase leading-none">
-                            {preferences.customAccent ?? 'Custom'}
-                          </span>
-                          <span
-                            style={{ color: 'var(--text-secondary)' }}
-                            className="material-symbols-rounded text-[15px]"
-                          >
-                            edit
-                          </span>
-                          <input
-                            type="color"
-                            aria-label="Custom accent color picker"
-                            value={
-                              preferences.customAccent ??
-                              THEMES[preferences.themeId]?.colors.accent ??
-                              '#F97316'
+                  {/* Accent */}
+                  <div style={rowDivider} className="pb-6 border-b space-y-3">
+                    <div className="text-sm font-medium">Accent color</div>
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      {(() => {
+                        const themeAccent =
+                          THEMES[preferences.themeId]?.colors.accent;
+                        const isDefault = !preferences.customAccent;
+                        return (
+                          <button
+                            type="button"
+                            title="Theme default"
+                            aria-label="Theme default accent"
+                            aria-pressed={isDefault}
+                            onClick={() =>
+                              onUpdate({ ...preferences, customAccent: null })
                             }
-                            onChange={(e) =>
+                            style={{
+                              backgroundColor: themeAccent,
+                              boxShadow: isDefault
+                                ? `0 0 0 2px var(--bg-canvas), 0 0 0 4px ${themeAccent}`
+                                : undefined,
+                            }}
+                            className="w-7 h-7 rounded-full flex items-center justify-center cursor-pointer transition-transform hover:scale-105 focus:outline-none"
+                          >
+                            <span className="material-symbols-rounded text-white text-[16px]">
+                              {isDefault ? 'check' : 'auto_awesome'}
+                            </span>
+                          </button>
+                        );
+                      })()}
+                      {ACCENT_PRESETS.map((preset) => {
+                        const isActive =
+                          preferences.customAccent?.toLowerCase() ===
+                          preset.color.toLowerCase();
+                        return (
+                          <button
+                            key={preset.id}
+                            type="button"
+                            title={preset.label}
+                            aria-label={preset.label}
+                            aria-pressed={isActive}
+                            onClick={() =>
                               onUpdate({
                                 ...preferences,
-                                customAccent: e.target.value.toUpperCase(),
+                                customAccent: preset.color,
                               })
                             }
-                            className="sr-only"
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* E-Book & Editorial Reader Themes */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <span
-                        style={{ color: 'var(--accent)' }}
-                        className="material-symbols-rounded text-[18px]"
-                      >
-                        menu_book
-                      </span>
-                      <h2
-                        style={{ color: 'var(--text-secondary)' }}
-                        className="text-xs font-bold uppercase tracking-wider"
-                      >
-                        E-Book &amp; Editorial Reader Themes (6)
-                      </h2>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3.5">
-                      {readerThemes.map((t) => {
-                        const isSelected = preferences.themeId === t.id;
-                        const isPreferredPair =
-                          (t.mode === 'light' && lightThemeId === t.id) ||
-                          (t.mode === 'dark' && darkThemeId === t.id);
-                        return (
-                          <button
-                            key={t.id}
-                            type="button"
-                            onClick={() => handleSelectPalette(t.id as ThemeId)}
                             style={{
-                              backgroundColor: t.colors.bgCanvas,
-                              color: t.colors.textPrimary,
-                              borderColor: isSelected
-                                ? 'var(--accent)'
-                                : t.colors.borderSubtle,
-                              boxShadow: isSelected
-                                ? '0 0 0 2px var(--accent), 0 10px 24px -6px rgba(0,0,0,0.22)'
-                                : '0 2px 8px -2px rgba(0,0,0,0.08)',
-                              backfaceVisibility: 'hidden',
-                              transition:
-                                'transform 260ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1), border-color 220ms ease',
+                              backgroundColor: preset.color,
+                              boxShadow: isActive
+                                ? `0 0 0 2px var(--bg-canvas), 0 0 0 4px ${preset.color}`
+                                : undefined,
                             }}
-                            className="p-4 rounded-2xl border text-left cursor-pointer hover:-translate-y-0.5 active:translate-y-0 flex flex-col justify-between gap-3 focus:outline-none"
+                            className="w-7 h-7 rounded-full flex items-center justify-center cursor-pointer transition-transform hover:scale-105 focus:outline-none"
                           >
-                            <div className="flex items-start justify-between gap-2 w-full">
-                              <div className="min-w-0">
-                                <div className="text-sm font-bold truncate">
-                                  {t.name}
-                                </div>
-                                <div
-                                  style={{ color: t.colors.textMuted }}
-                                  className="text-[11px] mt-0.5 truncate"
-                                >
-                                  {t.inspiration}
-                                </div>
-                              </div>
-
-                              {/* Palette Swatch Dots */}
-                              <div className="flex items-center -space-x-1.5 shrink-0">
-                                <span
-                                  style={{
-                                    backgroundColor: t.colors.bgSurface2,
-                                  }}
-                                  className="w-4 h-4 rounded-full border border-black/20"
-                                  title="Surface"
-                                />
-                                <span
-                                  style={{ backgroundColor: t.colors.accent }}
-                                  className="w-4 h-4 rounded-full border border-black/20"
-                                  title="Primary Accent"
-                                />
-                                <span
-                                  style={{
-                                    backgroundColor: t.colors.linkUnvisited,
-                                  }}
-                                  className="w-4 h-4 rounded-full border border-black/20"
-                                  title="Unvisited Link"
-                                />
-                              </div>
-                            </div>
-
-                            <div className="flex items-center justify-between gap-1.5 pt-1">
-                              <span
-                                style={{
-                                  backgroundColor: t.colors.bgSurface2,
-                                  color: t.colors.textSecondary,
-                                }}
-                                className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase whitespace-nowrap shrink-0"
-                              >
-                                {t.mode === 'light'
-                                  ? 'Light Surface'
-                                  : 'Dark Surface'}
+                            {isActive && (
+                              <span className="material-symbols-rounded text-white text-[16px]">
+                                check
                               </span>
-
-                              {isSelected ? (
-                                <span
-                                  style={{
-                                    backgroundColor: 'var(--accent)',
-                                    color: '#fff',
-                                  }}
-                                  className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase whitespace-nowrap shrink-0"
-                                >
-                                  Active
-                                </span>
-                              ) : isPreferredPair ? (
-                                <span
-                                  style={{
-                                    backgroundColor: t.colors.bgSurface2,
-                                    color: t.colors.accent,
-                                  }}
-                                  className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase whitespace-nowrap shrink-0"
-                                >
-                                  {t.mode === 'light'
-                                    ? 'Light Default'
-                                    : 'Dark Default'}
-                                </span>
-                              ) : null}
-                            </div>
+                            )}
                           </button>
                         );
                       })}
+                      <label
+                        title="Custom color"
+                        style={{ borderColor: 'var(--border-subtle)' }}
+                        className="relative w-7 h-7 rounded-full border flex items-center justify-center cursor-pointer hover:bg-[var(--bg-surface-2)]"
+                      >
+                        <span
+                          style={{ color: 'var(--text-secondary)' }}
+                          className="material-symbols-rounded text-[16px]"
+                        >
+                          add
+                        </span>
+                        <input
+                          type="color"
+                          aria-label="Custom accent color picker"
+                          value={
+                            preferences.customAccent ??
+                            THEMES[preferences.themeId]?.colors.accent ??
+                            '#F97316'
+                          }
+                          onChange={(e) =>
+                            onUpdate({
+                              ...preferences,
+                              customAccent: e.target.value.toUpperCase(),
+                            })
+                          }
+                          className="sr-only"
+                        />
+                      </label>
                     </div>
                   </div>
 
-                  {/* Developer & Code Editor Themes */}
+                  {/* Palettes */}
                   <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <span
-                        style={{ color: 'var(--accent)' }}
-                        className="material-symbols-rounded text-[18px]"
-                      >
-                        terminal
-                      </span>
-                      <h2
-                        style={{ color: 'var(--text-secondary)' }}
-                        className="text-xs font-bold uppercase tracking-wider"
-                      >
-                        Developer &amp; Code Editor Themes (5)
-                      </h2>
+                    {groupLabel('Light')}
+                    <div className="grid grid-cols-2 xl:grid-cols-3 gap-2.5">
+                      {lightThemes.map(renderThemeTile)}
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3.5">
-                      {codeThemes.map((t) => {
-                        const isSelected = preferences.themeId === t.id;
-                        const isPreferredPair =
-                          (t.mode === 'light' && lightThemeId === t.id) ||
-                          (t.mode === 'dark' && darkThemeId === t.id);
-                        return (
-                          <button
-                            key={t.id}
-                            type="button"
-                            onClick={() => handleSelectPalette(t.id as ThemeId)}
-                            style={{
-                              backgroundColor: t.colors.bgCanvas,
-                              color: t.colors.textPrimary,
-                              borderColor: isSelected
-                                ? 'var(--accent)'
-                                : t.colors.borderSubtle,
-                              boxShadow: isSelected
-                                ? '0 0 0 2px var(--accent), 0 10px 24px -6px rgba(0,0,0,0.22)'
-                                : '0 2px 8px -2px rgba(0,0,0,0.08)',
-                              backfaceVisibility: 'hidden',
-                              transition:
-                                'transform 260ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1), border-color 220ms ease',
-                            }}
-                            className="p-4 rounded-2xl border text-left cursor-pointer hover:-translate-y-0.5 active:translate-y-0 flex flex-col justify-between gap-3 focus:outline-none"
-                          >
-                            <div className="flex items-start justify-between gap-2 w-full">
-                              <div className="min-w-0">
-                                <div className="text-sm font-bold truncate">
-                                  {t.name}
-                                </div>
-                                <div
-                                  style={{ color: t.colors.textMuted }}
-                                  className="text-[11px] mt-0.5 truncate"
-                                >
-                                  {t.inspiration}
-                                </div>
-                              </div>
-
-                              <div className="flex items-center -space-x-1.5 shrink-0">
-                                <span
-                                  style={{
-                                    backgroundColor: t.colors.bgSurface2,
-                                  }}
-                                  className="w-4 h-4 rounded-full border border-black/20"
-                                />
-                                <span
-                                  style={{ backgroundColor: t.colors.accent }}
-                                  className="w-4 h-4 rounded-full border border-black/20"
-                                />
-                                <span
-                                  style={{
-                                    backgroundColor: t.colors.linkUnvisited,
-                                  }}
-                                  className="w-4 h-4 rounded-full border border-black/20"
-                                />
-                              </div>
-                            </div>
-
-                            <div className="flex items-center justify-between gap-1.5 pt-1">
-                              <span
-                                style={{
-                                  backgroundColor: t.colors.bgSurface2,
-                                  color: t.colors.textSecondary,
-                                }}
-                                className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase whitespace-nowrap shrink-0"
-                              >
-                                {t.mode === 'light'
-                                  ? 'Light Surface'
-                                  : 'Dark Surface'}
-                              </span>
-
-                              {isSelected ? (
-                                <span
-                                  style={{
-                                    backgroundColor: 'var(--accent)',
-                                    color: '#fff',
-                                  }}
-                                  className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase whitespace-nowrap shrink-0"
-                                >
-                                  Active
-                                </span>
-                              ) : isPreferredPair ? (
-                                <span
-                                  style={{
-                                    backgroundColor: t.colors.bgSurface2,
-                                    color: t.colors.accent,
-                                  }}
-                                  className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase whitespace-nowrap shrink-0"
-                                >
-                                  {t.mode === 'light'
-                                    ? 'Light Default'
-                                    : 'Dark Default'}
-                                </span>
-                              ) : null}
-                            </div>
-                          </button>
-                        );
-                      })}
+                  </div>
+                  <div>
+                    {groupLabel('Dark')}
+                    <div className="grid grid-cols-2 xl:grid-cols-3 gap-2.5">
+                      {darkThemes.map(renderThemeTile)}
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* TAB 2: TYPOGRAPHY & LAYOUT */}
               {activeTab === 'typography' && (
-                <div className="space-y-6 animate-story-in">
-                  {/* Per-Section Header & Reset Bar */}
-                  <div className="flex items-center justify-between gap-3 px-1">
-                    <div>
-                      <h2 className="text-sm font-bold">
-                        Typography &amp; Reading Measure
-                      </h2>
-                      <p
-                        style={{ color: 'var(--text-muted)' }}
-                        className="text-xs"
-                      >
-                        Default:{' '}
-                        {FONT_FAMILIES[DEFAULT_PREFERENCES.fontFamily].label} ·{' '}
-                        {DEFAULT_PREFERENCES.fontSize}px ·{' '}
-                        {DEFAULT_PREFERENCES.lineHeight}× ·{' '}
-                        {DEFAULT_PREFERENCES.lineWidth}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      disabled={!isTypographyModified}
-                      onClick={handleResetTypography}
-                      style={{
-                        color: isTypographyModified
-                          ? 'var(--accent)'
-                          : 'var(--text-muted)',
-                      }}
-                      className={`liquid-glass h-8 px-3 rounded-full inline-flex items-center gap-1.5 text-xs font-semibold transition-all ${
-                        isTypographyModified
-                          ? 'cursor-pointer hover:brightness-110 active:scale-95'
-                          : 'opacity-45 cursor-not-allowed'
-                      }`}
-                    >
-                      <span className="material-symbols-rounded text-[15px]">
-                        history
-                      </span>
-                      <span>Reset Typography</span>
-                    </button>
-                  </div>
+                <div className="space-y-8 animate-story-in">
+                  {sectionTitle(
+                    'Text',
+                    isTypographyModified,
+                    handleResetTypography
+                  )}
 
                   <div>
-                    <label
-                      style={{ color: 'var(--text-secondary)' }}
-                      className="block text-xs font-bold uppercase tracking-wider mb-3"
-                    >
-                      Font Family
-                    </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    {groupLabel('Font')}
+                    <div className="grid grid-cols-2 gap-2.5">
                       {(Object.keys(FONT_FAMILIES) as FontFamilyId[]).map(
                         (fid) => {
                           const isActive = preferences.fontFamily === fid;
@@ -792,27 +565,22 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                             <button
                               key={fid}
                               type="button"
+                              aria-pressed={isActive}
                               onClick={() =>
                                 onUpdate({ ...preferences, fontFamily: fid })
                               }
                               style={{
                                 fontFamily: FONT_FAMILIES[fid].cssValue,
-                                color: isActive
-                                  ? '#ffffff'
-                                  : 'var(--text-primary)',
+                                borderColor: isActive
+                                  ? 'var(--accent)'
+                                  : 'var(--border-subtle)',
+                                boxShadow: isActive
+                                  ? '0 0 0 1px var(--accent)'
+                                  : undefined,
                               }}
-                              className={`p-4 rounded-2xl text-left cursor-pointer transition-all ${
-                                isActive
-                                  ? 'liquid-glass-primary font-bold'
-                                  : 'liquid-glass font-medium'
-                              }`}
+                              className="px-4 py-3 rounded-xl border text-left text-sm cursor-pointer transition-colors hover:bg-[var(--bg-surface-2)]"
                             >
-                              <div className="text-base">
-                                {FONT_FAMILIES[fid].label}
-                              </div>
-                              <div className="text-xs opacity-80 mt-1">
-                                The quick brown fox jumps over 123 lazy dogs.
-                              </div>
+                              {FONT_FAMILIES[fid].label}
                             </button>
                           );
                         }
@@ -820,10 +588,9 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Sliders for Font Size & Line Height */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
                     <GlassSlider
-                      label="Font Size"
+                      label="Size"
                       valueLabel={`${preferences.fontSize}px`}
                       value={preferences.fontSize}
                       min={13}
@@ -833,9 +600,8 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                         onUpdate({ ...preferences, fontSize: val })
                       }
                     />
-
                     <GlassSlider
-                      label="Line Spacing"
+                      label="Line spacing"
                       valueLabel={`${preferences.lineHeight.toFixed(2)}×`}
                       value={preferences.lineHeight}
                       min={1.35}
@@ -847,367 +613,136 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                     />
                   </div>
 
-                  {/* Reading Line Width */}
-                  <div className="liquid-glass p-5 rounded-3xl space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <div className="text-sm font-bold">
-                        Reading Line Width (Measure)
-                      </div>
+                      <div className="text-sm font-medium">Reading width</div>
                       <div
                         style={{ color: 'var(--text-muted)' }}
                         className="text-xs mt-0.5"
                       >
-                        Controls maximum character column width for comments and
-                        Article Reader View
+                        Column width for comments and reader mode
                       </div>
                     </div>
                     <GlassSegmentedControl<LineWidthOption>
-                      fullWidth
+                      size="sm"
                       value={preferences.lineWidth}
                       onChange={(w) =>
                         onUpdate({ ...preferences, lineWidth: w })
                       }
                       items={[
-                        { id: '55ch', label: 'Compact (55ch)' },
-                        { id: '65ch', label: 'Optimal (65ch)' },
-                        { id: '75ch', label: 'Wide (75ch)' },
-                        { id: 'full', label: 'Full Width' },
+                        {
+                          id: '55ch',
+                          label: 'Narrow',
+                          icon: 'format_align_center',
+                        },
+                        { id: '65ch', label: 'Optimal', icon: 'width_normal' },
+                        { id: '75ch', label: 'Wide', icon: 'width_wide' },
+                        { id: 'full', label: 'Full', icon: 'width_full' },
+                      ]}
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-medium">Card density</div>
+                      <div
+                        style={{ color: 'var(--text-muted)' }}
+                        className="text-xs mt-0.5"
+                      >
+                        Compact feed rows and discussion cards
+                      </div>
+                    </div>
+                    <GlassSegmentedControl<CardDensity>
+                      size="sm"
+                      value={preferences.cardDensity ?? 'comfortable'}
+                      onChange={(d) =>
+                        onUpdate({ ...preferences, cardDensity: d })
+                      }
+                      items={[
+                        {
+                          id: 'comfortable',
+                          label: 'Comfortable',
+                          icon: 'view_agenda',
+                        },
+                        {
+                          id: 'compact',
+                          label: 'Compact',
+                          icon: 'view_headline',
+                        },
                       ]}
                     />
                   </div>
                 </div>
               )}
 
-              {/* TAB 3: FEED FILTERS */}
               {activeTab === 'filters' && (
-                <div className="space-y-5 animate-story-in">
-                  {/* Per-Section Header & Reset Bar */}
-                  <div className="flex items-center justify-between gap-3 px-1">
-                    <div>
-                      <h2 className="text-sm font-bold">
-                        Feed Visibility &amp; Muted Filters
-                      </h2>
-                      <p
-                        style={{ color: 'var(--text-muted)' }}
-                        className="text-xs"
-                      >
-                        Control read-story visibility and keyword/domain mutes
-                        independently of your visual theme
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      disabled={!isFiltersModified}
-                      onClick={handleResetFilters}
-                      style={{
-                        color: isFiltersModified
-                          ? 'var(--accent)'
-                          : 'var(--text-muted)',
-                      }}
-                      className={`liquid-glass h-8 px-3 rounded-full inline-flex items-center gap-1.5 text-xs font-semibold transition-all ${
-                        isFiltersModified
-                          ? 'cursor-pointer hover:brightness-110 active:scale-95'
-                          : 'opacity-45 cursor-not-allowed'
-                      }`}
-                    >
-                      <span className="material-symbols-rounded text-[15px]">
-                        history
-                      </span>
-                      <span>Reset Filters</span>
-                    </button>
-                  </div>
+                <div className="space-y-8 animate-story-in">
+                  {sectionTitle(
+                    'Filters',
+                    isFiltersModified,
+                    handleResetFilters
+                  )}
 
                   <GlassSwitch
-                    label="Auto-hide already read stories"
-                    description="Automatically hide stories from the feed once you have opened them"
+                    label="Hide read stories"
+                    description="Remove stories from the feed once opened"
                     checked={preferences.hideReadStories}
                     onChange={(checked) =>
                       onUpdate({ ...preferences, hideReadStories: checked })
                     }
                   />
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Muted Keywords */}
-                    <div className="liquid-glass p-5 rounded-3xl space-y-3.5">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <div className="text-sm font-bold">
-                            Muted Keywords
-                          </div>
-                          <div
-                            style={{ color: 'var(--text-muted)' }}
-                            className="text-xs mt-0.5"
-                          >
-                            Stories with titles containing these words will be
-                            hidden from your feed.
-                          </div>
-                        </div>
-                        {preferences.mutedKeywords.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              onUpdate({ ...preferences, mutedKeywords: [] })
-                            }
-                            style={{ color: 'var(--accent)' }}
-                            className="text-xs font-semibold shrink-0 cursor-pointer hover:underline"
-                          >
-                            Clear all
-                          </button>
-                        )}
-                      </div>
+                  {renderMuteList(
+                    'Muted keywords',
+                    'e.g. crypto, layoff',
+                    keywordInput,
+                    setKeywordInput,
+                    preferences.mutedKeywords,
+                    (next) => onUpdate({ ...preferences, mutedKeywords: next })
+                  )}
 
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={keywordInput}
-                          onChange={(e) => setKeywordInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              const clean = keywordInput.trim();
-                              if (
-                                clean &&
-                                !preferences.mutedKeywords.includes(clean)
-                              ) {
-                                onUpdate({
-                                  ...preferences,
-                                  mutedKeywords: [
-                                    ...preferences.mutedKeywords,
-                                    clean,
-                                  ],
-                                });
-                                setKeywordInput('');
-                              }
-                            }
-                          }}
-                          placeholder="e.g. crypto, layoff, nft..."
-                          style={{
-                            backgroundColor: 'var(--bg-canvas)',
-                            borderColor: 'var(--border-subtle)',
-                          }}
-                          className="flex-1 px-3.5 py-2 rounded-full border text-xs focus:outline-none"
-                        />
-                        <GlassButton
-                          variant="primary"
-                          icon="add"
-                          onClick={() => {
-                            const clean = keywordInput.trim();
-                            if (
-                              clean &&
-                              !preferences.mutedKeywords.includes(clean)
-                            ) {
-                              onUpdate({
-                                ...preferences,
-                                mutedKeywords: [
-                                  ...preferences.mutedKeywords,
-                                  clean,
-                                ],
-                              });
-                              setKeywordInput('');
-                            }
-                          }}
-                        >
-                          Add
-                        </GlassButton>
-                      </div>
-
-                      {preferences.mutedKeywords.length > 0 ? (
-                        <div className="flex flex-wrap gap-1.5 pt-1">
-                          {preferences.mutedKeywords.map((kw) => (
-                            <span
-                              key={kw}
-                              style={{ backgroundColor: 'var(--bg-canvas)' }}
-                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium"
-                            >
-                              <span>{kw}</span>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  onUpdate({
-                                    ...preferences,
-                                    mutedKeywords:
-                                      preferences.mutedKeywords.filter(
-                                        (k) => k !== kw
-                                      ),
-                                  })
-                                }
-                                className="material-symbols-rounded text-[14px] cursor-pointer hover:text-red-400"
-                              >
-                                close
-                              </button>
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <div
-                          style={{ color: 'var(--text-muted)' }}
-                          className="text-xs italic"
-                        >
-                          No muted keywords configured.
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Muted Domains */}
-                    <div className="liquid-glass p-5 rounded-3xl space-y-3.5">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <div className="text-sm font-bold">Muted Domains</div>
-                          <div
-                            style={{ color: 'var(--text-muted)' }}
-                            className="text-xs mt-0.5"
-                          >
-                            Hide links originating from specific websites.
-                          </div>
-                        </div>
-                        {preferences.mutedDomains.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              onUpdate({ ...preferences, mutedDomains: [] })
-                            }
-                            style={{ color: 'var(--accent)' }}
-                            className="text-xs font-semibold shrink-0 cursor-pointer hover:underline"
-                          >
-                            Clear all
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={domainInput}
-                          onChange={(e) => setDomainInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              const clean = domainInput.trim();
-                              if (
-                                clean &&
-                                !preferences.mutedDomains.includes(clean)
-                              ) {
-                                onUpdate({
-                                  ...preferences,
-                                  mutedDomains: [
-                                    ...preferences.mutedDomains,
-                                    clean,
-                                  ],
-                                });
-                                setDomainInput('');
-                              }
-                            }
-                          }}
-                          placeholder="e.g. medium.com, x.com..."
-                          style={{
-                            backgroundColor: 'var(--bg-canvas)',
-                            borderColor: 'var(--border-subtle)',
-                          }}
-                          className="flex-1 px-3.5 py-2 rounded-full border text-xs focus:outline-none"
-                        />
-                        <GlassButton
-                          variant="primary"
-                          icon="add"
-                          onClick={() => {
-                            const clean = domainInput.trim();
-                            if (
-                              clean &&
-                              !preferences.mutedDomains.includes(clean)
-                            ) {
-                              onUpdate({
-                                ...preferences,
-                                mutedDomains: [
-                                  ...preferences.mutedDomains,
-                                  clean,
-                                ],
-                              });
-                              setDomainInput('');
-                            }
-                          }}
-                        >
-                          Add
-                        </GlassButton>
-                      </div>
-
-                      {preferences.mutedDomains.length > 0 ? (
-                        <div className="flex flex-wrap gap-1.5 pt-1">
-                          {preferences.mutedDomains.map((dom) => (
-                            <span
-                              key={dom}
-                              style={{ backgroundColor: 'var(--bg-canvas)' }}
-                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium"
-                            >
-                              <span>{dom}</span>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  onUpdate({
-                                    ...preferences,
-                                    mutedDomains:
-                                      preferences.mutedDomains.filter(
-                                        (d) => d !== dom
-                                      ),
-                                  })
-                                }
-                                className="material-symbols-rounded text-[14px] cursor-pointer hover:text-red-400"
-                              >
-                                close
-                              </button>
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <div
-                          style={{ color: 'var(--text-muted)' }}
-                          className="text-xs italic"
-                        >
-                          No muted domains configured.
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  {renderMuteList(
+                    'Muted domains',
+                    'e.g. medium.com',
+                    domainInput,
+                    setDomainInput,
+                    preferences.mutedDomains,
+                    (next) => onUpdate({ ...preferences, mutedDomains: next })
+                  )}
                 </div>
               )}
             </div>
 
-            {/* RIGHT 5 COLUMNS: Sticky Live Interactive HN Preview */}
+            {/* Live Preview */}
             <aside className="lg:col-span-5 lg:sticky lg:top-6 space-y-4">
-              <div className="flex items-center justify-between px-1">
-                <span
-                  style={{ color: 'var(--text-secondary)' }}
-                  className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
-                >
-                  <span
-                    style={{ color: 'var(--accent)' }}
-                    className="material-symbols-rounded text-[16px]"
-                  >
-                    visibility
-                  </span>
-                  Live Workspace Preview
-                </span>
-                <span
-                  style={{ color: 'var(--text-muted)' }}
-                  className="text-xs font-medium"
-                >
-                  {THEMES[preferences.themeId]?.name} · {preferences.fontSize}px
+              <div
+                style={{ color: 'var(--text-muted)' }}
+                className="flex items-center justify-between text-xs font-medium"
+              >
+                <span>Preview</span>
+                <span>
+                  {THEMES[preferences.themeId]?.name} · {preferences.fontSize}
+                  px
                 </span>
               </div>
 
-              {/* Live Selected & Unselected Story Pill Preview */}
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 <StoryPillRow
                   story={PREVIEW_SELECTED_STORY}
                   index={1}
                   isSelected={true}
+                  compact={preferences.cardDensity === 'compact'}
                   isRead={false}
                   newCommentsDelta={0}
                   isBookmarked={true}
                   onSelect={() => {}}
                   onToggleBookmark={(s, e) => e.stopPropagation()}
                 />
-
                 <StoryPillRow
                   story={PREVIEW_SECONDARY_STORY}
                   index={2}
                   isSelected={false}
+                  compact={preferences.cardDensity === 'compact'}
                   isRead={true}
                   newCommentsDelta={14}
                   isBookmarked={false}
@@ -1216,40 +751,40 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                 />
               </div>
 
-              {/* Live Discussion Thread & Prose Typography Preview */}
               <div
-                style={{
-                  backgroundColor: 'var(--bg-surface-1)',
-                  borderColor: 'var(--border-subtle)',
-                }}
-                className="p-5 rounded-3xl border space-y-3"
+                style={{ borderColor: 'var(--border-subtle)' }}
+                className="p-5 rounded-2xl border space-y-3"
               >
-                <div className="flex items-center justify-between">
-                  <span
-                    style={{ color: 'var(--text-muted)' }}
-                    className="text-[11px] font-bold uppercase tracking-wider"
-                  >
-                    Comment Thread &amp; Prose Preview
-                  </span>
-                  <span
-                    style={{
-                      backgroundColor:
-                        'color-mix(in srgb, var(--accent) 16%, transparent)',
-                      color: 'var(--accent)',
-                    }}
-                    className="px-2.5 py-0.5 rounded-full text-[11px] font-bold"
-                  >
-                    {FONT_FAMILIES[preferences.fontFamily].label}
+                <div
+                  style={{ color: 'var(--text-muted)' }}
+                  className="flex items-center justify-between text-[11px] font-medium"
+                >
+                  <span>Comment discussion</span>
+                  <span>
+                    Width:{' '}
+                    {preferences.lineWidth === 'full'
+                      ? '100%'
+                      : preferences.lineWidth}
                   </span>
                 </div>
-
-                <CommentNode
-                  comment={PREVIEW_COMMENT}
-                  depth={0}
-                  maxAllowedDepth={2}
-                  storyAuthor="systems_craft"
-                  collapseMode="expanded"
-                />
+                <div
+                  style={{
+                    maxWidth:
+                      preferences.lineWidth === 'full'
+                        ? '100%'
+                        : preferences.lineWidth,
+                  }}
+                  className="transition-[max-width] duration-200"
+                >
+                  <CommentNode
+                    comment={PREVIEW_COMMENT}
+                    depth={0}
+                    maxAllowedDepth={2}
+                    storyAuthor="systems_craft"
+                    collapseMode="expanded"
+                    compact={preferences.cardDensity === 'compact'}
+                  />
+                </div>
               </div>
             </aside>
           </div>

@@ -19,6 +19,7 @@ interface StoryDetailPaneProps {
   activeTab: DetailTab;
   onTabChange: (tab: DetailTab) => void;
   collapseMode?: ThreadCollapseMode;
+  compact?: boolean;
   onCollapseModeChange?: (mode: ThreadCollapseMode) => void;
   isBookmarked: boolean;
   onToggleBookmark: () => void;
@@ -31,6 +32,7 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
   activeTab,
   onTabChange,
   collapseMode,
+  compact = false,
   onCollapseModeChange,
   isBookmarked,
   onToggleBookmark,
@@ -208,7 +210,13 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
           {activeTab === 'reader' ? (
             <ArticleReaderView url={story.url} storyTitle={story.cleanTitle} />
           ) : loading && story.comments.length === 0 ? (
-            <div className="space-y-3.5" role="status" aria-live="polite">
+            <div
+              className={`min-h-full flex flex-col ${
+                compact ? 'space-y-2.5' : 'space-y-3.5'
+              }`}
+              role="status"
+              aria-live="polite"
+            >
               <div
                 style={{ color: 'var(--text-muted)' }}
                 className="flex items-center gap-2 text-xs font-medium py-1"
@@ -226,11 +234,15 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
                 </span>
               </div>
 
-              {Array.from({ length: 4 }).map((_, i) => (
+              {Array.from({ length: compact ? 12 : 8 }).map((_, i) => (
                 <div
                   key={`comment-skeleton-${i}`}
-                  style={{ animationDelay: `${i * 45}ms` }}
-                  className="liquid-glass liquid-shimmer animate-story-in p-4 rounded-2xl space-y-3"
+                  style={{ animationDelay: `${i * 30}ms` }}
+                  className={`liquid-glass liquid-shimmer animate-story-in shrink-0 ${
+                    compact
+                      ? 'p-2.5 rounded-xl space-y-2'
+                      : 'p-4 rounded-2xl space-y-3'
+                  }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -239,14 +251,18 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
                           backgroundColor:
                             'color-mix(in srgb, var(--accent) 28%, transparent)',
                         }}
-                        className="h-3.5 w-24 rounded-full"
+                        className={`rounded-full ${
+                          compact ? 'h-3 w-20' : 'h-3.5 w-24'
+                        }`}
                       />
                       <div
                         style={{
                           backgroundColor:
                             'color-mix(in srgb, var(--text-muted) 18%, transparent)',
                         }}
-                        className="h-3 w-14 rounded-full"
+                        className={`rounded-full ${
+                          compact ? 'h-2.5 w-12' : 'h-3 w-14'
+                        }`}
                       />
                     </div>
                     <div
@@ -254,23 +270,29 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
                         backgroundColor:
                           'color-mix(in srgb, var(--text-primary) 10%, transparent)',
                       }}
-                      className="h-6 w-12 rounded-full"
+                      className={`rounded-full ${
+                        compact ? 'h-5 w-10' : 'h-6 w-12'
+                      }`}
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className={compact ? 'space-y-1.5' : 'space-y-2'}>
                     <div
                       style={{
                         backgroundColor:
                           'color-mix(in srgb, var(--text-primary) 12%, transparent)',
                       }}
-                      className="h-3.5 w-full rounded-full"
+                      className={`rounded-full ${
+                        compact ? 'h-3 w-full' : 'h-3.5 w-full'
+                      }`}
                     />
                     <div
                       style={{
                         backgroundColor:
                           'color-mix(in srgb, var(--text-primary) 10%, transparent)',
                       }}
-                      className={`h-3.5 rounded-full ${i % 2 === 0 ? 'w-4/5' : 'w-2/3'}`}
+                      className={`rounded-full ${
+                        compact ? 'h-3' : 'h-3.5'
+                      } ${i % 2 === 0 ? 'w-4/5' : 'w-2/3'}`}
                     />
                   </div>
                 </div>
@@ -281,6 +303,7 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
               comments={story.comments}
               storyAuthor={story.user}
               collapseMode={collapseMode}
+              compact={compact}
               onCollapseModeChange={onCollapseModeChange}
               onInternalHnLinkClick={onInternalHnLinkClick}
             />
