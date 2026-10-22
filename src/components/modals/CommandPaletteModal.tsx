@@ -1,11 +1,6 @@
 'use client';
 
-import React, {
-  useState,
-  useEffect,
-  useDeferredValue,
-  startTransition,
-} from 'react';
+import React, { useState, useEffect, startTransition } from 'react';
 import { HNStory } from '@/types/hn';
 import { searchHN } from '@/lib/hn-api';
 import { GlassModal } from '@/components/ui/GlassModal';
@@ -33,7 +28,6 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
   const [query, setQuery] = useState('');
   const [sortBy, setSortBy] = useState<'relevance' | 'date'>('relevance');
   const [results, setResults] = useState<HNStory[]>([]);
-  const deferredResults = useDeferredValue(results);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -51,16 +45,13 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
       searchHN({ query: trimmed, sortBy })
         .then((hits) => {
           if (!cancelled) {
-            startTransition(() => setResults(hits));
+            setResults(hits);
+            setLoading(false);
           }
         })
         .catch(() => {
           if (!cancelled) {
-            startTransition(() => setResults([]));
-          }
-        })
-        .finally(() => {
-          if (!cancelled) {
+            setResults([]);
             setLoading(false);
           }
         });
@@ -218,7 +209,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
             </div>
           )}
 
-          {!loading && query.trim() && deferredResults.length === 0 && (
+          {!loading && query.trim() && results.length === 0 && (
             <div
               style={{ color: 'var(--text-muted)' }}
               className="h-[220px] flex flex-col items-center justify-center text-center px-6 gap-2 animate-story-in"
@@ -241,7 +232,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
 
           {!loading &&
             Boolean(query.trim()) &&
-            deferredResults.map((story, idx) => (
+            results.map((story, idx) => (
               <button
                 key={story.id}
                 type="button"

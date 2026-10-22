@@ -1,6 +1,12 @@
 'use client';
 
-import React, { startTransition } from 'react';
+import React, {
+  startTransition,
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+} from 'react';
 import { DetailTab, HNStoryWithComments, ThreadCollapseMode } from '@/types/hn';
 import { formatCommentHtml } from '@/lib/html-sanitizer';
 import { formatRelativeTime } from '@/components/feed/StoryPillRow';
@@ -10,7 +16,6 @@ import {
   GlassSegmentedControl,
   SegmentedItem,
 } from '@/components/ui/GlassSegmentedControl';
-import { GlassButton } from '@/components/ui/GlassButton';
 import { SafeViewTransition } from '@/components/ui/ViewTransitionWrapper';
 
 interface StoryDetailPaneProps {
@@ -38,6 +43,27 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
   onToggleBookmark,
   onInternalHnLinkClick,
 }) => {
+  const [internalCollapseMode, setInternalCollapseMode] =
+    useState<ThreadCollapseMode>(collapseMode ?? 'root-only');
+  const activeCollapseMode = collapseMode ?? internalCollapseMode;
+  const [modeVersion, setModeVersion] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Focus search input when filter is expanded in top bar
+  useEffect(() => {
+    if (isSearchOpen) {
+      searchInputRef.current?.focus();
+    }
+  }, [isSearchOpen]);
+
+  // Reset search when switching stories
+  useEffect(() => {
+    setSearchQuery('');
+    setIsSearchOpen(false);
+  }, [story?.id]);
+
   const isInitialPlaceholder = Boolean(
     story && loading && story.points === 0 && !story.user
   );
@@ -125,27 +151,143 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
           onChange={(nextTab) => startTransition(() => onTabChange(nextTab))}
         />
 
-        <div className="flex items-center gap-2">
-          <GlassButton
-            variant={isBookmarked ? 'primary' : 'glass'}
-            icon="bookmark"
-            iconFilled={isBookmarked}
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {activeTab === 'comments' && (
+            <>
+              {isSearchOpen || searchQuery ? (
+                <div className="liquid-glass h-8 px-2.5 rounded-full flex items-center gap-1.5 w-44 sm:w-56 transition-all duration-200">
+                  <span
+                    style={{ color: 'var(--text-muted)' }}
+                    className="material-symbols-rounded text-[15px] shrink-0"
+                  >
+                    search
+                  </span>
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') {
+                        if (searchQuery) {
+                          setSearchQuery('');
+                        } else {
+                          setIsSearchOpen(false);
+                        }
+                      }
+                    }}
+                    placeholder="Filter thread..."
+                    style={{ color: 'var(--text-primary)' }}
+                    className="bg-transparent text-xs focus:outline-none w-full min-w-0"
+                  />
+                  <button
+                    type="button"
+                    aria-label={searchQuery ? 'Clear filter' : 'Close filter'}
+                    onClick={() => {
+                      if (searchQuery) {
+                        setSearchQuery('');
+                        searchInputRef.current?.focus();
+                      } else {
+                        setIsSearchOpen(false);
+                      }
+                    }}
+                    style={{ color: 'var(--text-muted)' }}
+                    className="material-symbols-rounded text-[15px] cursor-pointer hover:opacity-80 shrink-0"
+                  >
+                    close
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  aria-label="Filter comments"
+                  title="Filter comments by keyword or @author"
+                  onClick={() => setIsSearchOpen(true)}
+                  style={{
+                    color: 'var(--text-secondary)',
+                  }}
+                  className="liquid-glass w-8 h-8 rounded-full inline-flex items-center justify-center cursor-pointer hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors duration-200"
+                >
+                  <span className="material-symbols-rounded text-[17px]">
+                    filter_list
+                  </span>
+                </button>
+              )}
+
+              <GlassSegmentedControl<ThreadCollapseMode>
+                size="sm"
+                value={activeCollapseMode}
+                onChange={(nextMode) => {
+                  startTransition(() => {
+                    setInternalCollapseMode(nextMode);
+                    onCollapseModeChange?.(nextMode);
+                    setModeVersion((v) => v + 1);
+                  });
+                }}
+                items={[
+                  {
+                    id: 'expanded',
+                    icon: 'unfold_more',
+                    title: 'Expand All',
+                  },
+                  {
+                    id: 'root-only',
+                    icon: 'unfold_less',
+                    title: 'Collapse Replies',
+                  },
+                  {
+                    id: 'collapse-all',
+                    icon: 'compress',
+                    title: 'Collapse All',
+                  },
+                ]}
+              />
+
+              <div
+                style={{
+                  backgroundColor:
+                    'color-mix(in srgb, var(--border-subtle) 90%, transparent)',
+                }}
+                className="h-4 w-[1px] mx-0.5 shrink-0"
+              />
+            </>
+          )}
+
+          <button
+            type="button"
+            aria-label={isBookmarked ? 'Saved' : 'Save'}
+            title={isBookmarked ? 'Saved to bookmarks' : 'Save story'}
             onClick={onToggleBookmark}
+            style={{
+              color: isBookmarked ? '#ffffff' : 'var(--text-secondary)',
+            }}
+            className={`w-8 h-8 rounded-full inline-flex items-center justify-center shrink-0 cursor-pointer select-none transition-colors duration-200 ${
+              isBookmarked
+                ? 'liquid-glass-primary'
+                : 'liquid-glass hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)]'
+            }`}
           >
-            {isBookmarked ? 'Saved' : 'Save'}
-          </GlassButton>
+            <span
+              className={`material-symbols-rounded text-[17px] ${
+                isBookmarked ? 'filled' : ''
+              }`}
+            >
+              bookmark
+            </span>
+          </button>
 
           {story.url && (
             <a
               href={story.url}
               target="_blank"
               rel="noopener noreferrer"
+              aria-label="Open original website"
+              title="Open site in new tab"
               style={{ color: 'var(--link-unvisited)' }}
-              className="liquid-glass h-9 px-4 rounded-full inline-flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
+              className="liquid-glass w-8 h-8 rounded-full inline-flex items-center justify-center shrink-0 hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] cursor-pointer transition-colors duration-200"
             >
-              <span>Open Site</span>
-              <span className="material-symbols-rounded text-[15px]">
-                north_east
+              <span className="material-symbols-rounded text-[17px]">
+                open_in_new
               </span>
             </a>
           )}
@@ -302,10 +444,13 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
             <CommentTree
               comments={story.comments}
               storyAuthor={story.user}
-              collapseMode={collapseMode}
+              collapseMode={activeCollapseMode}
               compact={compact}
               onCollapseModeChange={onCollapseModeChange}
               onInternalHnLinkClick={onInternalHnLinkClick}
+              externalSearchQuery={searchQuery}
+              modeVersion={modeVersion}
+              hideToolbar={true}
             />
           )}
         </SafeViewTransition>

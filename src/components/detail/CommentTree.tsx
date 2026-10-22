@@ -38,6 +38,9 @@ interface CommentTreeProps {
   compact?: boolean;
   onCollapseModeChange?: (mode: ThreadCollapseMode) => void;
   onInternalHnLinkClick?: (storyId: number) => void;
+  externalSearchQuery?: string;
+  modeVersion?: number;
+  hideToolbar?: boolean;
 }
 
 function filterCommentNodes(nodes: HNComment[], query: string): HNComment[] {
@@ -66,6 +69,9 @@ export const CommentTree: React.FC<CommentTreeProps> = ({
   collapseMode: controlledCollapseMode,
   onCollapseModeChange,
   onInternalHnLinkClick,
+  externalSearchQuery,
+  modeVersion: controlledModeVersion,
+  hideToolbar = false,
 }) => {
   const totalCommentsCount = useMemo(
     () => comments.reduce((acc, c) => acc + 1 + c.totalDescendants, 0),
@@ -79,8 +85,13 @@ export const CommentTree: React.FC<CommentTreeProps> = ({
   const [internalCollapseMode, setInternalCollapseMode] =
     useState<ThreadCollapseMode>(controlledCollapseMode ?? 'root-only');
   const collapseMode = controlledCollapseMode ?? internalCollapseMode;
-  const [modeVersion, setModeVersion] = useState(0);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [internalModeVersion, setInternalModeVersion] = useState(0);
+  const modeVersion = controlledModeVersion ?? internalModeVersion;
+  const [internalSearchQuery, setInternalSearchQuery] = useState('');
+  const searchQuery =
+    externalSearchQuery !== undefined
+      ? externalSearchQuery
+      : internalSearchQuery;
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const deferredSearchQuery = useDeferredValue(searchQuery);
@@ -97,7 +108,7 @@ export const CommentTree: React.FC<CommentTreeProps> = ({
   // Reset root batch count and search state when switching stories
   useEffect(() => {
     setVisibleRootCount(budget.rootBatch);
-    setSearchQuery('');
+    setInternalSearchQuery('');
     setIsSearchOpen(false);
   }, [comments, budget.rootBatch]);
 
@@ -121,112 +132,114 @@ export const CommentTree: React.FC<CommentTreeProps> = ({
   return (
     <div>
       {/* Condensed Thread Toolbar: Expandable Filter & Icon-Only Collapse Controls */}
-      <div className="flex items-center justify-between gap-2.5 mb-3.5">
-        <div className="flex items-center gap-2 min-w-0">
-          {isSearchOpen || searchQuery ? (
-            <div className="liquid-glass h-8 px-3 rounded-full flex items-center gap-2 flex-1 sm:w-64 max-w-xs transition-all duration-200">
-              <span
-                style={{
-                  color: isFilteringStale
-                    ? 'var(--accent)'
-                    : 'var(--text-muted)',
-                }}
-                className={`material-symbols-rounded text-[16px] shrink-0 ${
-                  isFilteringStale ? 'animate-spin' : ''
-                }`}
-              >
-                {isFilteringStale ? 'progress_activity' : 'search'}
-              </span>
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') {
+      {!hideToolbar && (
+        <div className="flex items-center justify-between gap-2.5 mb-3.5">
+          <div className="flex items-center gap-2 min-w-0">
+            {isSearchOpen || searchQuery ? (
+              <div className="liquid-glass h-8 px-3 rounded-full flex items-center gap-2 flex-1 sm:w-64 max-w-xs transition-all duration-200">
+                <span
+                  style={{
+                    color: isFilteringStale
+                      ? 'var(--accent)'
+                      : 'var(--text-muted)',
+                  }}
+                  className={`material-symbols-rounded text-[16px] shrink-0 ${
+                    isFilteringStale ? 'animate-spin' : ''
+                  }`}
+                >
+                  {isFilteringStale ? 'progress_activity' : 'search'}
+                </span>
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setInternalSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      if (searchQuery) {
+                        setInternalSearchQuery('');
+                      } else {
+                        setIsSearchOpen(false);
+                      }
+                    }
+                  }}
+                  placeholder="Filter comments or @author..."
+                  style={{ color: 'var(--text-primary)' }}
+                  className="bg-transparent text-xs focus:outline-none w-full min-w-0"
+                />
+                {searchQuery && (
+                  <span
+                    style={{ color: 'var(--text-muted)' }}
+                    className="text-[10px] font-semibold shrink-0"
+                  >
+                    {filteredComments.length}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  aria-label={searchQuery ? 'Clear filter' : 'Close filter'}
+                  onClick={() => {
                     if (searchQuery) {
-                      setSearchQuery('');
+                      setInternalSearchQuery('');
+                      searchInputRef.current?.focus();
                     } else {
                       setIsSearchOpen(false);
                     }
-                  }
-                }}
-                placeholder="Filter comments or @author..."
-                style={{ color: 'var(--text-primary)' }}
-                className="bg-transparent text-xs focus:outline-none w-full min-w-0"
-              />
-              {searchQuery && (
-                <span
+                  }}
                   style={{ color: 'var(--text-muted)' }}
-                  className="text-[10px] font-semibold shrink-0"
+                  className="material-symbols-rounded text-[16px] cursor-pointer hover:opacity-80 shrink-0"
                 >
-                  {filteredComments.length}
-                </span>
-              )}
+                  close
+                </button>
+              </div>
+            ) : (
               <button
                 type="button"
-                aria-label={searchQuery ? 'Clear filter' : 'Close filter'}
-                onClick={() => {
-                  if (searchQuery) {
-                    setSearchQuery('');
-                    searchInputRef.current?.focus();
-                  } else {
-                    setIsSearchOpen(false);
-                  }
+                aria-label="Filter comments"
+                title="Filter comments by keyword or @author"
+                onClick={() => setIsSearchOpen(true)}
+                style={{
+                  color: 'var(--text-secondary)',
                 }}
-                style={{ color: 'var(--text-muted)' }}
-                className="material-symbols-rounded text-[16px] cursor-pointer hover:opacity-80 shrink-0"
+                className="liquid-glass w-8 h-8 rounded-full inline-flex items-center justify-center cursor-pointer hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors duration-200"
               >
-                close
+                <span className="material-symbols-rounded text-[18px]">
+                  filter_list
+                </span>
               </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              aria-label="Filter comments"
-              title="Filter comments by keyword or @author"
-              onClick={() => setIsSearchOpen(true)}
-              style={{
-                color: 'var(--text-secondary)',
-              }}
-              className="liquid-glass w-8 h-8 rounded-full inline-flex items-center justify-center cursor-pointer hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors duration-200"
-            >
-              <span className="material-symbols-rounded text-[18px]">
-                filter_list
-              </span>
-            </button>
-          )}
-        </div>
+            )}
+          </div>
 
-        <GlassSegmentedControl<ThreadCollapseMode>
-          size="sm"
-          value={collapseMode}
-          onChange={(nextMode) => {
-            startTransition(() => {
-              setInternalCollapseMode(nextMode);
-              onCollapseModeChange?.(nextMode);
-              setModeVersion((v) => v + 1);
-            });
-          }}
-          items={[
-            {
-              id: 'expanded',
-              icon: 'unfold_more',
-              title: 'Expand All',
-            },
-            {
-              id: 'root-only',
-              icon: 'unfold_less',
-              title: 'Collapse Replies',
-            },
-            {
-              id: 'collapse-all',
-              icon: 'compress',
-              title: 'Collapse All',
-            },
-          ]}
-        />
-      </div>
+          <GlassSegmentedControl<ThreadCollapseMode>
+            size="sm"
+            value={collapseMode}
+            onChange={(nextMode) => {
+              startTransition(() => {
+                setInternalCollapseMode(nextMode);
+                onCollapseModeChange?.(nextMode);
+                setInternalModeVersion((v) => v + 1);
+              });
+            }}
+            items={[
+              {
+                id: 'expanded',
+                icon: 'unfold_more',
+                title: 'Expand All',
+              },
+              {
+                id: 'root-only',
+                icon: 'unfold_less',
+                title: 'Collapse Replies',
+              },
+              {
+                id: 'collapse-all',
+                icon: 'compress',
+                title: 'Collapse All',
+              },
+            ]}
+          />
+        </div>
+      )}
 
       {/* Root Comment Stream */}
       <SafeViewTransition>
