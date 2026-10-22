@@ -464,7 +464,7 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
         backgroundColor: 'var(--bg-surface-1)',
         borderColor: 'var(--border-subtle)',
       }}
-      className="p-5 md:p-6 rounded-2xl border my-1"
+      className="pt-3.5 px-4 md:px-5 pb-5 rounded-2xl border my-1"
     >
       {/* Reader Metadata & Integrated Liquid Glass Audio Reader Bar */}
       <div
@@ -472,7 +472,7 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
           color: 'var(--text-muted)',
           borderColor: 'var(--border-subtle)',
         }}
-        className="flex flex-col gap-3 pb-3.5 mb-5 border-b text-xs"
+        className="flex flex-col gap-2.5 pb-2.5 mb-3.5 border-b text-xs"
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3">
@@ -622,19 +622,6 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
                 )}
               </div>
             )}
-
-            <a
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: 'var(--link-unvisited)' }}
-              className="inline-flex items-center gap-1 font-semibold ml-1"
-            >
-              Original URL
-              <span className="material-symbols-rounded text-[15px]">
-                north_east
-              </span>
-            </a>
           </div>
         </div>
 
