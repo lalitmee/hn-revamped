@@ -235,6 +235,64 @@ body::-webkit-scrollbar-thumb:hover,
   }
 }
 
+@keyframes swipeHintWave {
+  0%,
+  100% {
+    transform: translateX(-2px);
+    opacity: 0.72;
+  }
+  50% {
+    transform: translateX(3px);
+    opacity: 1;
+  }
+}
+
+.swipe-hint-icon {
+  animation: swipeHintWave 1.2s ease-in-out infinite;
+}
+
+@keyframes swipeHintShimmer {
+  from {
+    transform: translateX(-140%) skewX(-18deg);
+  }
+  to {
+    transform: translateX(180%) skewX(-18deg);
+  }
+}
+
+.swipe-hint-pill {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.swipe-hint-pill::after {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgb(255 255 255 / 22%) 50%,
+    transparent 70%
+  );
+  content: '';
+  animation: swipeHintShimmer 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.swipe-hint-pill > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .swipe-hint-icon,
+  .swipe-hint-pill::after {
+    animation: none;
+  }
+}
+
 @keyframes detailTabEnterFromRight {
   from {
     opacity: 0.72;

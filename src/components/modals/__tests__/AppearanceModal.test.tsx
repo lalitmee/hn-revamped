@@ -163,7 +163,7 @@ describe('mobile appearance controls', () => {
 
     fireEvent.click(
       screen.getByRole('button', {
-        name: 'Choose accent color. Current: Theme default',
+        name: 'Choose accent color. Current: HN Orange',
       })
     );
     const sheet = screen.getByRole('dialog', {

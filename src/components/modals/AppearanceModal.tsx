@@ -172,6 +172,7 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
   }, [activeTab, isOpen]);
 
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  const [showSwipeHint, setShowSwipeHint] = useState(true);
 
   if (!isOpen) return null;
 
@@ -327,7 +328,10 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
     const activeIndex = STUDIO_TABS.findIndex((tab) => tab.id === activeTab);
     const nextIndex = activeIndex + (deltaX < 0 ? 1 : -1);
     const nextTab = STUDIO_TABS[nextIndex];
-    if (nextTab) selectTab(nextTab.id, true);
+    if (nextTab) {
+      selectTab(nextTab.id, true);
+      setShowSwipeHint(false);
+    }
   };
 
   const activeLineWidth = LINE_WIDTH_OPTIONS.find(
@@ -397,15 +401,12 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
 
   const lightThemes = Object.values(THEMES).filter((t) => t.mode === 'light');
   const darkThemes = Object.values(THEMES).filter((t) => t.mode === 'dark');
-  const themeAccent = THEMES[preferences.themeId]?.colors.accent ?? '#F97316';
   const activeAccentPreset = ACCENT_PRESETS.find(
     (preset) =>
       preset.color.toLowerCase() === preferences.customAccent?.toLowerCase()
   );
-  const currentAccentLabel = !preferences.customAccent
-    ? 'Theme default'
-    : (activeAccentPreset?.label ?? 'Custom color');
-  const currentAccentColor = preferences.customAccent ?? themeAccent;
+  const currentAccentLabel = activeAccentPreset?.label ?? 'Custom color';
+  const currentAccentColor = preferences.customAccent ?? '#FF6600';
 
   const renderThemeTile = (
     t: (typeof THEMES)[ThemeId],
@@ -430,7 +431,7 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
           borderColor: isSelected ? 'var(--accent)' : t.colors.borderSubtle,
           boxShadow: isSelected ? '0 0 0 1px var(--accent)' : undefined,
         }}
-        className={`w-full ${sheetRow ? 'min-h-12 px-4 gap-3 border' : 'px-3 py-2.5 gap-2 border'} rounded-xl text-left cursor-pointer flex items-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]`}
+        className={`w-full ${sheetRow ? 'min-h-14 px-4 gap-3 border' : 'px-3 py-2.5 gap-2 border'} rounded-xl text-left cursor-pointer flex items-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]`}
       >
         {sheetRow && (
           <span
@@ -441,7 +442,9 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
             palette
           </span>
         )}
-        <span className="min-w-0 flex-1 text-[13px] font-medium truncate">
+        <span
+          className={`min-w-0 flex-1 ${sheetRow ? 'text-sm' : 'text-[13px]'} font-medium truncate`}
+        >
           {t.name}
         </span>
         <span className="flex items-center -space-x-1 shrink-0">
@@ -708,7 +711,6 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
               );
             })}
           </div>
-
           <button
             type="button"
             disabled={!isAnyModified}
@@ -756,35 +758,6 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
         ariaLabel="Choose an accent color"
         triggerRef={accentTriggerRef}
       >
-        <button
-          type="button"
-          aria-current={!preferences.customAccent ? 'true' : undefined}
-          onClick={() => {
-            onUpdate({ ...preferences, customAccent: null });
-            setIsAccentSheetOpen(false);
-          }}
-          className="w-full min-h-12 px-4 rounded-xl flex items-center gap-3 text-left font-medium"
-          style={{
-            backgroundColor: !preferences.customAccent
-              ? 'var(--bg-surface-active)'
-              : undefined,
-            color: !preferences.customAccent
-              ? 'var(--accent)'
-              : 'var(--text-primary)',
-          }}
-        >
-          <span
-            aria-hidden="true"
-            className="w-6 h-6 rounded-full border border-black/15"
-            style={{ backgroundColor: themeAccent }}
-          />
-          <span className="min-w-0 flex-1">Theme default</span>
-          {!preferences.customAccent && (
-            <span aria-hidden="true" className="material-symbols-rounded">
-              check
-            </span>
-          )}
-        </button>
         {ACCENT_PRESETS.map((preset) => {
           const isSelected =
             preferences.customAccent?.toLowerCase() ===
@@ -1001,28 +974,6 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                         Accent color
                       </div>
                       <div className="hidden sm:flex flex-wrap items-center gap-2.5">
-                        <button
-                          type="button"
-                          title="Theme default"
-                          aria-label="Theme default accent"
-                          aria-pressed={!preferences.customAccent}
-                          onClick={() =>
-                            onUpdate({ ...preferences, customAccent: null })
-                          }
-                          style={{
-                            backgroundColor: themeAccent,
-                            boxShadow: !preferences.customAccent
-                              ? `0 0 0 2px var(--bg-canvas), 0 0 0 4px ${themeAccent}`
-                              : undefined,
-                          }}
-                          className="w-7 h-7 rounded-full flex items-center justify-center cursor-pointer transition-transform hover:scale-105 focus:outline-none"
-                        >
-                          <span className="material-symbols-rounded text-white text-[16px]">
-                            {preferences.customAccent
-                              ? 'auto_awesome'
-                              : 'check'}
-                          </span>
-                        </button>
                         {ACCENT_PRESETS.map((preset) => {
                           const isActive =
                             preferences.customAccent?.toLowerCase() ===
@@ -1572,6 +1523,19 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
           </div>
         </div>
       </div>
+      {showSwipeHint && (
+        <div className="pointer-events-none fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] left-1/2 z-40 -translate-x-1/2 sm:hidden">
+          <div className="swipe-hint-pill liquid-glass rounded-full h-8 px-3.5 inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--text-secondary)] shadow-lg whitespace-nowrap">
+            <span
+              aria-hidden="true"
+              className="swipe-hint-icon material-symbols-rounded text-[16px] text-[var(--accent)]"
+            >
+              swipe
+            </span>
+            <span>Swipe to switch sections</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

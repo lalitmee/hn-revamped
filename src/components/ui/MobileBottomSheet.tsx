@@ -21,6 +21,7 @@ export const MobileBottomSheet: React.FC<MobileBottomSheetProps> = ({
   children,
 }) => {
   const sheetRef = useRef<HTMLDivElement>(null);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const [present, setPresent] = useState(isOpen);
 
   useEffect(() => {
@@ -95,12 +96,42 @@ export const MobileBottomSheet: React.FC<MobileBottomSheetProps> = ({
     >
       <div
         ref={sheetRef}
+        onTouchStart={(event) => {
+          touchStartRef.current = null;
+          if (event.touches.length !== 1 || sheetRef.current?.scrollTop !== 0)
+            return;
+          const target = event.target;
+          if (
+            target instanceof Element &&
+            target.closest(
+              'button, a, input, textarea, select, [role="button"]'
+            )
+          )
+            return;
+          const touch = event.touches[0];
+          touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+        }}
+        onTouchEnd={(event) => {
+          const start = touchStartRef.current;
+          touchStartRef.current = null;
+          const touch = event.changedTouches[0];
+          if (!start || !touch || sheetRef.current?.scrollTop !== 0) return;
+          const deltaY = touch.clientY - start.y;
+          const deltaX = touch.clientX - start.x;
+          if (deltaY > 64 && deltaY > Math.abs(deltaX) * 1.25) onClose();
+        }}
+        onTouchCancel={() => {
+          touchStartRef.current = null;
+        }}
         role={isOpen ? 'dialog' : undefined}
         aria-modal={isOpen ? true : undefined}
         aria-label={isOpen ? ariaLabel : undefined}
         className={`liquid-glass-modal w-full rounded-t-3xl p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] max-h-[85dvh] overflow-y-auto ${isOpen ? 'mobile-sheet-enter' : 'mobile-sheet-exit'}`}
         style={{ color: 'var(--text-primary)' }}
       >
+        <div className="flex justify-center -mt-1 mb-2" aria-hidden="true">
+          <span className="h-1 w-9 rounded-full bg-[var(--text-muted)] opacity-50" />
+        </div>
         <div
           className="flex items-center justify-between mb-3 px-2 pb-3 border-b"
           style={{ borderColor: 'var(--border-subtle)' }}

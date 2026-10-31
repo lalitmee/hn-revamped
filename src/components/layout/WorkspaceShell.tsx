@@ -70,6 +70,7 @@ export const WorkspaceShell: React.FC = () => {
     useState<HNStoryWithComments | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const [showDetailSwipeHint, setShowDetailSwipeHint] = useState(true);
   const [activeTab, setActiveTab] = useState<DetailTab>('comments');
   const latestStoryReqRef = useRef(0);
 
@@ -224,6 +225,7 @@ export const WorkspaceShell: React.FC = () => {
       options?: { skipUrlSync?: boolean; isPlaceholder?: boolean }
     ) => {
       const reqId = ++latestStoryReqRef.current;
+      setShowDetailSwipeHint(true);
 
       if (!options?.skipUrlSync) {
         syncStoryQueryParam(story.id);
@@ -464,8 +466,13 @@ export const WorkspaceShell: React.FC = () => {
     const dy = touch.clientY - start.y;
     if (Math.abs(dx) < 80 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
     if (!selectedStory?.url) return;
-    if (dx < 0 && activeTab === 'comments') setActiveTab('reader');
-    else if (dx > 0 && activeTab === 'reader') setActiveTab('comments');
+    if (dx < 0 && activeTab === 'comments') {
+      setActiveTab('reader');
+      setShowDetailSwipeHint(false);
+    } else if (dx > 0 && activeTab === 'reader') {
+      setActiveTab('comments');
+      setShowDetailSwipeHint(false);
+    }
   };
 
   const bookmarkedIds = useMemo(
@@ -695,6 +702,19 @@ export const WorkspaceShell: React.FC = () => {
                     )
                   }
                 />
+                {showDetailSwipeHint && (
+                  <div className="pointer-events-none fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] left-1/2 z-40 -translate-x-1/2 lg:hidden">
+                    <div className="swipe-hint-pill liquid-glass rounded-full h-8 px-3.5 inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--text-secondary)] shadow-lg whitespace-nowrap">
+                      <span
+                        aria-hidden="true"
+                        className="swipe-hint-icon material-symbols-rounded text-[16px] text-[var(--accent)]"
+                      >
+                        swipe
+                      </span>
+                      <span>Swipe to switch discussion and reader</span>
+                    </div>
+                  </div>
+                )}
               </section>
             )}
           </main>
@@ -750,6 +770,19 @@ export const WorkspaceShell: React.FC = () => {
                     })
                   }
                 />
+                {showDetailSwipeHint && (
+                  <div className="pointer-events-none fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] left-1/2 z-40 -translate-x-1/2 lg:hidden">
+                    <div className="swipe-hint-pill liquid-glass rounded-full h-8 px-3.5 inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--text-secondary)] shadow-lg whitespace-nowrap">
+                      <span
+                        aria-hidden="true"
+                        className="swipe-hint-icon material-symbols-rounded text-[16px] text-[var(--accent)]"
+                      >
+                        swipe
+                      </span>
+                      <span>Swipe to switch discussion and reader</span>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <StoryFeedPane

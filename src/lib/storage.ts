@@ -13,6 +13,10 @@ export function loadPreferences(): UserPreferences {
     if (!raw) return DEFAULT_PREFERENCES;
     const parsed = JSON.parse(raw);
     const merged: UserPreferences = { ...DEFAULT_PREFERENCES, ...parsed };
+    if (merged.customAccent == null) {
+      merged.customAccent = DEFAULT_PREFERENCES.customAccent;
+      window.localStorage.setItem(PREFS_KEY, JSON.stringify(merged));
+    }
 
     // One-time migration from legacy 16px / 1.65 default to compact 14px / 1.55 default
     if (
