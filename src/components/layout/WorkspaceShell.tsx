@@ -578,6 +578,9 @@ export const WorkspaceShell: React.FC = () => {
         savedCount={bookmarks.length}
         isStoryOpen={Boolean(selectedStory) && !isAppearanceOpen}
         onBackToFeed={returnToFeed}
+        onBackFromAppearance={() =>
+          startTransition(() => setIsAppearanceOpen(false))
+        }
       />
 
       <SafeViewTransition>

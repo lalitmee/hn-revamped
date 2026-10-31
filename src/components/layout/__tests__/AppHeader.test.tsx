@@ -17,6 +17,7 @@ const props = {
   savedCount: 3,
   isStoryOpen: false,
   onBackToFeed: vi.fn(),
+  onBackFromAppearance: vi.fn(),
 };
 
 describe('mobile feed picker', () => {
@@ -54,10 +55,28 @@ describe('mobile feed picker', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('keeps appearance directly accessible without a More menu on mobile', () => {
+  it('shows a header back action while appearance is open', () => {
+    const onBackFromAppearance = vi.fn();
+    render(
+      <AppHeader
+        {...props}
+        isAppearanceOpen
+        onBackFromAppearance={onBackFromAppearance}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Back from appearance' })
+    );
+    expect(onBackFromAppearance).toHaveBeenCalledOnce();
+  });
+
+  it('keeps appearance settings directly accessible without a More menu on mobile', () => {
     const onOpenAppearance = vi.fn();
     render(<AppHeader {...props} onOpenAppearance={onOpenAppearance} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Appearance' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Appearance settings' })
+    );
     expect(onOpenAppearance).toHaveBeenCalledOnce();
     expect(
       screen.queryByRole('button', { name: 'More options' })

@@ -68,6 +68,12 @@ describe('StoryPillRow Component', () => {
     expect(screen.getAllByText(mockStory.cleanTitle)).toHaveLength(2);
     expect(screen.getAllByText('zed.dev')[0]).toBeInTheDocument();
     expect(screen.getAllByText('+18 new')[0]).toBeInTheDocument();
+    expect(screen.getByText('+18')).toBeInTheDocument();
+    expect(
+      screen.getAllByRole('note', {
+        name: '18 new comments since your last visit',
+      })
+    ).toHaveLength(2);
     expect(screen.getAllByText('214')[0]).toBeInTheDocument();
 
     fireEvent.click(screen.getAllByText(mockStory.cleanTitle)[0]);

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { FeedType, LayoutMode } from '@/types/hn';
 import {
   TimeTravelPopover,
@@ -24,6 +24,7 @@ interface AppHeaderProps {
   savedCount: number;
   isStoryOpen: boolean;
   onBackToFeed: () => void;
+  onBackFromAppearance: () => void;
 }
 
 const FEED_TABS: { id: FeedType; label: string; icon: string }[] = [
@@ -50,10 +51,22 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   savedCount,
   isStoryOpen,
   onBackToFeed,
+  onBackFromAppearance,
 }) => {
   const [isFeedSheetOpen, setIsFeedSheetOpen] = useState(false);
   const feedTriggerRef = useRef<HTMLButtonElement>(null);
+  const backActionVisible = isStoryOpen || isAppearanceOpen;
+  const previousBackActionRef = useRef(backActionVisible);
+  const [logoBackAnimation, setLogoBackAnimation] = useState<
+    'enter' | 'exit' | null
+  >(null);
   const activeFeedTab = FEED_TABS.find((tab) => tab.id === activeFeed)!;
+
+  useLayoutEffect(() => {
+    if (previousBackActionRef.current === backActionVisible) return;
+    previousBackActionRef.current = backActionVisible;
+    setLogoBackAnimation(backActionVisible ? 'enter' : 'exit');
+  }, [backActionVisible]);
 
   return (
     <header
@@ -64,11 +77,11 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       }}
       className="sticky top-0 z-40 backdrop-blur-xl border-b px-2.5 sm:px-4 py-2.5 flex items-center gap-2 shrink-0 min-w-0"
     >
-      {isStoryOpen && (
+      {(isStoryOpen || isAppearanceOpen) && (
         <button
           type="button"
-          onClick={onBackToFeed}
-          aria-label="Back to feed"
+          onClick={isStoryOpen ? onBackToFeed : onBackFromAppearance}
+          aria-label={isStoryOpen ? 'Back to feed' : 'Back from appearance'}
           className="liquid-glass lg:hidden w-10 h-10 rounded-full shrink-0 inline-flex items-center justify-center"
         >
           <span
@@ -81,11 +94,15 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       )}
       <div
         aria-label="HN Revamped"
-        className="liquid-glass-primary lg:hidden w-9 h-9 rounded-xl shrink-0 flex items-center justify-center font-black text-sm"
+        className={`liquid-glass-primary lg:hidden w-9 h-9 rounded-xl shrink-0 flex items-center justify-center font-black text-sm ${
+          logoBackAnimation
+            ? `mobile-header-logo-back-${logoBackAnimation}`
+            : ''
+        }`}
       >
         Y
       </div>
-      {!isStoryOpen && (
+      {!isStoryOpen && !isAppearanceOpen && (
         <button
           ref={feedTriggerRef}
           type="button"
@@ -184,7 +201,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         </div>
         <button
           type="button"
-          aria-label="Appearance"
+          aria-label="Appearance settings"
+          title="Appearance settings"
           onClick={onOpenAppearance}
           className="liquid-glass lg:hidden w-10 h-10 rounded-full shrink-0 inline-flex items-center justify-center"
         >
@@ -193,7 +211,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             className="material-symbols-rounded text-[20px]"
             style={{ color: isAppearanceOpen ? 'var(--accent)' : undefined }}
           >
-            palette
+            settings
           </span>
         </button>
         <div className="hidden lg:block">

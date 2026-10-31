@@ -257,6 +257,73 @@ body::-webkit-scrollbar-thumb:hover,
   }
 }
 
+@keyframes appearanceTabExitToLeft {
+  to {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+
+@keyframes appearanceTabExitToRight {
+  to {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+@keyframes appearanceTabEnterFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes appearanceTabEnterFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.appearance-tab-indicator {
+  left: 0;
+  transition:
+    transform 280ms cubic-bezier(0.2, 0, 0, 1),
+    width 280ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+@media (max-width: 639px) {
+  .appearance-tab-indicator {
+    bottom: 0;
+    height: 2px;
+    border-radius: 9999px;
+    background-color: var(--accent);
+  }
+}
+
+@media (min-width: 640px) {
+  .appearance-tab-indicator {
+    top: 4px;
+    bottom: 4px;
+    border-radius: 9999px;
+    background-color: var(--accent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .appearance-tab-indicator {
+    transition: none;
+  }
+}
+
 @keyframes mobileSheetEnter {
   from {
     transform: translateY(100%);
@@ -293,6 +360,58 @@ body::-webkit-scrollbar-thumb:hover,
   }
 }
 
+@keyframes mobileHeaderLogoBackEnter {
+  from {
+    opacity: 0.75;
+    transform: translateX(-48px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes mobileHeaderLogoBackExit {
+  from {
+    opacity: 0.75;
+    transform: translateX(48px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@media (max-width: 639px) and (prefers-reduced-motion: no-preference) {
+  .appearance-tab-panel {
+    view-transition-name: appearance-tab-panel;
+  }
+
+  :root[data-appearance-tab-direction='forward']::view-transition-old(
+      appearance-tab-panel
+    ) {
+    animation: appearanceTabExitToLeft 220ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+
+  :root[data-appearance-tab-direction='forward']::view-transition-new(
+      appearance-tab-panel
+    ) {
+    animation: appearanceTabEnterFromRight 220ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+
+  :root[data-appearance-tab-direction='backward']::view-transition-old(
+      appearance-tab-panel
+    ) {
+    animation: appearanceTabExitToRight 220ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+
+  :root[data-appearance-tab-direction='backward']::view-transition-new(
+      appearance-tab-panel
+    ) {
+    animation: appearanceTabEnterFromLeft 220ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .detail-tab-enter-from-right {
     animation: detailTabEnterFromRight 260ms cubic-bezier(0.2, 0, 0, 1) both;
@@ -311,6 +430,12 @@ body::-webkit-scrollbar-thumb:hover,
   }
   .mobile-sheet-backdrop-exit {
     animation: mobileBackdropExit 240ms ease-in both;
+  }
+  .mobile-header-logo-back-enter {
+    animation: mobileHeaderLogoBackEnter 240ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+  .mobile-header-logo-back-exit {
+    animation: mobileHeaderLogoBackExit 240ms cubic-bezier(0.2, 0, 0, 1) both;
   }
 }
 
@@ -443,6 +568,12 @@ button.liquid-glass-primary:hover:not(:disabled) {
 
 .animate-story-in {
   animation: storyCardIn 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (min-width: 640px) {
+  .appearance-tab-content {
+    animation: storyCardIn 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
 }
 
 @keyframes commentStateIn {

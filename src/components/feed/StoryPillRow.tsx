@@ -83,6 +83,21 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
 }) => {
   const isHot = story.points >= 250;
   const showInlineSelection = isSelected && !hasFloatingIndicator;
+  const renderNewCommentsBadge = (compact = false) => {
+    if (newCommentsDelta <= 0) return null;
+    const accessibleLabel = `${newCommentsDelta} new comments since your last visit`;
+    return (
+      <span
+        role="note"
+        aria-label={accessibleLabel}
+        title={accessibleLabel}
+        className={`shrink-0 px-1.5 py-0.5 rounded-full font-semibold leading-none bg-emerald-500/15 text-emerald-400 ${compact ? 'text-[10px]' : 'text-[11px]'}`}
+      >
+        +{newCommentsDelta}
+        {compact ? '' : ' new'}
+      </span>
+    );
+  };
 
   return (
     <article
@@ -183,13 +198,8 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
             ))}
             <span className="min-w-0 max-w-[70px] truncate">{story.user}</span>
             <span className="shrink-0">· {formatRelativeTime(story.time)}</span>
-            {newCommentsDelta > 0 && (
-              <span className="inline-flex shrink-0 items-center rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-emerald-400">
-                +{newCommentsDelta} new
-              </span>
-            )}
           </div>
-          <div className="flex items-center gap-0.5 shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             <span
               className="h-7 px-1.5 inline-flex items-center gap-1 text-[11px]"
               aria-label={`${story.commentsCount} comments`}
@@ -199,6 +209,7 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
               </span>
               {story.commentsCount}
             </span>
+            {renderNewCommentsBadge(true)}
           </div>
         </div>
       </div>
@@ -267,11 +278,6 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
                 <span className="shrink-0">
                   · {formatRelativeTime(story.time)}
                 </span>
-                {newCommentsDelta > 0 && (
-                  <span className="shrink-0 px-1.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-400">
-                    +{newCommentsDelta}
-                  </span>
-                )}
               </div>
             </div>
 
@@ -303,6 +309,7 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
                   color: 'var(--text-primary)',
                 }}
                 className="h-8 px-2.5 rounded-lg inline-flex items-center justify-center gap-1 text-[12.5px] font-semibold leading-none"
+                aria-label={`${story.commentsCount} comments`}
               >
                 <span
                   style={{ color: 'var(--text-muted)' }}
@@ -312,6 +319,7 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
                 </span>
                 <span>{story.commentsCount}</span>
               </div>
+              {renderNewCommentsBadge()}
             </div>
           </>
         ) : (
@@ -389,12 +397,6 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
                   </span>
                   {formatRelativeTime(story.time)}
                 </span>
-
-                {newCommentsDelta > 0 && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-400">
-                    +{newCommentsDelta} new
-                  </span>
-                )}
               </div>
             </div>
 
@@ -427,6 +429,7 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
                   color: 'var(--text-primary)',
                 }}
                 className="h-9 px-3.5 rounded-xl inline-flex items-center justify-center gap-1.5 text-[13px] font-semibold leading-none"
+                aria-label={`${story.commentsCount} comments`}
               >
                 <span
                   style={{ color: 'var(--text-muted)' }}
@@ -436,6 +439,7 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
                 </span>
                 <span>{story.commentsCount}</span>
               </div>
+              {renderNewCommentsBadge()}
             </div>
           </>
         )}
