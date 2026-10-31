@@ -224,6 +224,96 @@ body::-webkit-scrollbar-thumb:hover,
   display: none;
 }
 
+/* Keep the touch-scrolling feed flush with the mobile viewport edge. */
+@media (max-width: 1023px) {
+  .mobile-feed-scroll {
+    scrollbar-width: none;
+  }
+
+  .mobile-feed-scroll::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@keyframes detailTabEnterFromRight {
+  from {
+    opacity: 0.72;
+    transform: translateX(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes detailTabEnterFromLeft {
+  from {
+    opacity: 0.72;
+    transform: translateX(-28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes mobileSheetEnter {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes mobileSheetExit {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes mobileBackdropEnter {
+  from {
+    background-color: transparent;
+  }
+  to {
+    background-color: rgb(0 0 0 / 50%);
+  }
+}
+
+@keyframes mobileBackdropExit {
+  from {
+    background-color: rgb(0 0 0 / 50%);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .detail-tab-enter-from-right {
+    animation: detailTabEnterFromRight 260ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+  .detail-tab-enter-from-left {
+    animation: detailTabEnterFromLeft 260ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+  .mobile-sheet-enter {
+    animation: mobileSheetEnter 240ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+  .mobile-sheet-exit {
+    animation: mobileSheetExit 240ms cubic-bezier(0.4, 0, 1, 1) both;
+  }
+  .mobile-sheet-backdrop-enter {
+    animation: mobileBackdropEnter 240ms ease-out both;
+  }
+  .mobile-sheet-backdrop-exit {
+    animation: mobileBackdropExit 240ms ease-in both;
+  }
+}
+
 /* Google Material 3 Tonal Surface & Pill Design System */
 .liquid-glass {
   background-color: var(--bg-surface-2);

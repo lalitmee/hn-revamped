@@ -111,7 +111,9 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
           'background-color 240ms cubic-bezier(0.22, 1, 0.36, 1), border-color 240ms cubic-bezier(0.22, 1, 0.36, 1), transform 200ms cubic-bezier(0.22, 1, 0.36, 1)',
       }}
       className={`group relative z-10 overflow-hidden flex items-center border cursor-pointer hover:brightness-105 active:scale-[0.995] focus:outline-none ${
-        compact ? 'gap-3 rounded-xl px-3 py-2' : 'gap-4 rounded-2xl p-4'
+        compact
+          ? 'gap-3 rounded-xl px-2 py-1.5 sm:px-3 sm:py-2'
+          : 'gap-4 rounded-xl sm:rounded-2xl p-2 sm:p-4'
       }`}
     >
       {/* Fallback Left Selection Indicator Bar (when floating indicator is not yet measured) */}
@@ -126,240 +128,318 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
         }}
         className={`absolute left-0 w-1 rounded-r-full ${compact ? 'top-2 bottom-2' : 'top-3 bottom-3'}`}
       />
-      {/* Left Zone: Score & Heat Pill */}
-      <div
-        style={{
-          backgroundColor: isHot
-            ? 'color-mix(in srgb, var(--accent) 18%, transparent)'
-            : 'var(--bg-surface-2)',
-          color: isRead && !isSelected ? 'var(--text-muted)' : 'var(--accent)',
-        }}
-        className={`flex items-center justify-center font-bold shrink-0 ${
-          compact
-            ? 'flex-row min-w-[48px] h-8 px-2.5 rounded-lg'
-            : 'flex-col min-w-[52px] h-[54px] rounded-xl'
-        }`}
-      >
-        <span
-          className={`material-symbols-rounded ${
-            compact ? 'text-[16px] -ml-1 -mr-0.5' : 'text-[18px]'
+      <div className="sm:hidden w-full min-w-0 flex flex-col gap-1">
+        <div className="flex items-start gap-1.5 min-w-0">
+          <h3
+            style={{ color: 'var(--text-primary)' }}
+            className="min-w-0 flex-1 text-[15px] font-semibold leading-snug break-words line-clamp-2"
+          >
+            {story.cleanTitle}
+          </h3>
+          <button
+            type="button"
+            aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark story'}
+            onClick={(e) => onToggleBookmark(story, e)}
+            className="w-6 h-6 shrink-0 inline-flex items-center justify-center rounded-md hover:bg-[var(--bg-surface-2)]"
+          >
+            <span
+              className={`material-symbols-rounded text-[16px] ${isBookmarked ? 'filled' : ''}`}
+              style={{
+                color: isBookmarked ? 'var(--accent)' : 'var(--text-muted)',
+              }}
+            >
+              bookmark
+            </span>
+          </button>
+        </div>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <div
+            className="flex flex-1 min-w-0 flex-nowrap items-center gap-x-1.5 overflow-hidden text-[11px] leading-tight"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            <span
+              className="font-bold shrink-0"
+              style={{ color: 'var(--accent)' }}
+            >
+              ▲ {story.points}
+            </span>
+            <span
+              title={story.domain}
+              className="min-w-0 max-w-[100px] truncate"
+              style={{
+                color: story.domain ? 'var(--link-unvisited)' : undefined,
+              }}
+            >
+              {story.domain ?? `#${index}`}
+            </span>
+            {story.badges.map((badge) => (
+              <span
+                key={badge.type}
+                title={badge.label}
+                className="material-symbols-rounded text-[13px]"
+              >
+                {badge.icon}
+              </span>
+            ))}
+            <span className="min-w-0 max-w-[70px] truncate">{story.user}</span>
+            <span className="shrink-0">· {formatRelativeTime(story.time)}</span>
+            {newCommentsDelta > 0 && (
+              <span className="inline-flex shrink-0 items-center rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-emerald-400">
+                +{newCommentsDelta} new
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-0.5 shrink-0">
+            <span
+              className="h-7 px-1.5 inline-flex items-center gap-1 text-[11px]"
+              aria-label={`${story.commentsCount} comments`}
+            >
+              <span className="material-symbols-rounded text-[14px]">
+                forum
+              </span>
+              {story.commentsCount}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div className="hidden sm:contents">
+        {/* Left Zone: Score & Heat Pill */}
+        <div
+          style={{
+            backgroundColor: isHot
+              ? 'color-mix(in srgb, var(--accent) 18%, transparent)'
+              : 'var(--bg-surface-2)',
+            color:
+              isRead && !isSelected ? 'var(--text-muted)' : 'var(--accent)',
+          }}
+          className={`flex items-center justify-center font-bold shrink-0 ${
+            compact
+              ? 'flex-row min-w-[48px] h-8 px-2.5 rounded-lg'
+              : 'flex-col min-w-[52px] h-[54px] rounded-xl'
           }`}
         >
-          {isRead && !isSelected ? 'check' : 'keyboard_arrow_up'}
-        </span>
-        <span className="text-[13px] leading-tight tabular-nums">
-          {story.points}
-        </span>
-      </div>
+          <span
+            className={`material-symbols-rounded ${
+              compact ? 'text-[16px] -ml-1 -mr-0.5' : 'text-[18px]'
+            }`}
+          >
+            {isRead && !isSelected ? 'check' : 'keyboard_arrow_up'}
+          </span>
+          <span className="text-[13px] leading-tight tabular-nums">
+            {story.points}
+          </span>
+        </div>
 
-      {compact ? (
-        <>
-          {/* Compact Center Zone: Title + single metadata line */}
-          <div className="flex-1 min-w-0">
-            <h3
-              style={{ color: 'var(--text-primary)' }}
-              className="text-[14.5px] font-semibold leading-snug tracking-tight line-clamp-2"
-            >
-              {story.cleanTitle}
-            </h3>
-            <div
-              style={{ color: 'var(--text-muted)' }}
-              className="flex items-center gap-1.5 mt-0.5 text-[12px] min-w-0"
-            >
-              <span className="font-mono shrink-0">#{index}</span>
-              {story.badges.map((badge) => (
-                <span
-                  key={badge.type}
-                  title={badge.label}
-                  style={{ color: 'var(--link-unvisited)' }}
-                  className="material-symbols-rounded text-[14px] shrink-0"
-                >
-                  {badge.icon}
-                </span>
-              ))}
-              {story.domain && (
-                <span
-                  className="truncate"
-                  style={{ color: 'var(--text-secondary)' }}
-                >
-                  {story.domain}
-                </span>
-              )}
-              <span className="shrink-0">· {story.user}</span>
-              <span className="shrink-0">
-                · {formatRelativeTime(story.time)}
-              </span>
-              {newCommentsDelta > 0 && (
-                <span className="shrink-0 px-1.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-400">
-                  +{newCommentsDelta}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Compact Right Zone */}
-          <div className="flex items-center gap-1 shrink-0">
-            <button
-              type="button"
-              aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark story'}
-              onClick={(e) => onToggleBookmark(story, e)}
-              style={{
-                color: isBookmarked ? 'var(--accent)' : 'var(--text-muted)',
-                backgroundColor: isBookmarked
-                  ? 'color-mix(in srgb, var(--accent) 14%, transparent)'
-                  : undefined,
-              }}
-              className="w-8 h-8 rounded-lg inline-flex items-center justify-center leading-none shrink-0 hover:bg-white/10 active:scale-95 transition-all focus:outline-none"
-            >
-              <span
-                className={`material-symbols-rounded text-[18px] leading-none ${
-                  isBookmarked ? 'filled' : ''
-                }`}
+        {compact ? (
+          <>
+            {/* Compact Center Zone: Title + single metadata line */}
+            <div className="flex-1 min-w-0">
+              <h3
+                style={{ color: 'var(--text-primary)' }}
+                className="text-[14.5px] font-semibold leading-snug tracking-tight line-clamp-2"
               >
-                bookmark
-              </span>
-            </button>
-            <div
-              style={{
-                backgroundColor: 'var(--bg-surface-2)',
-                color: 'var(--text-primary)',
-              }}
-              className="h-8 px-2.5 rounded-lg inline-flex items-center justify-center gap-1 text-[12.5px] font-semibold leading-none"
-            >
-              <span
+                {story.cleanTitle}
+              </h3>
+              <div
                 style={{ color: 'var(--text-muted)' }}
-                className="material-symbols-rounded text-[15px] leading-none"
+                className="flex items-center gap-1.5 mt-0.5 text-[12px] min-w-0"
               >
-                forum
-              </span>
-              <span>{story.commentsCount}</span>
-            </div>
-          </div>
-        </>
-      ) : (
-        <>
-          {/* Center Zone: Badges, Clean Title & Thoughtful Metadata */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center flex-wrap gap-2 mb-1">
-              <span
-                style={{ color: 'var(--text-muted)' }}
-                className="text-[11px] font-mono font-semibold"
-              >
-                #{index}
-              </span>
-
-              {story.badges.map((badge) => (
-                <span
-                  key={badge.type}
-                  style={{
-                    backgroundColor:
-                      'color-mix(in srgb, var(--link-unvisited) 15%, transparent)',
-                    color: 'var(--link-unvisited)',
-                  }}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold tracking-wide uppercase"
-                >
-                  <span className="material-symbols-rounded text-[13px]">
+                <span className="font-mono shrink-0">#{index}</span>
+                {story.badges.map((badge) => (
+                  <span
+                    key={badge.type}
+                    title={badge.label}
+                    style={{ color: 'var(--link-unvisited)' }}
+                    className="material-symbols-rounded text-[14px] shrink-0"
+                  >
                     {badge.icon}
                   </span>
-                  {badge.label}
-                </span>
-              ))}
-
-              {story.domain && (
-                <span
-                  style={{ color: 'var(--text-secondary)' }}
-                  className="inline-flex items-center gap-1 text-[12.5px] font-medium truncate"
-                >
+                ))}
+                {story.domain && (
                   <span
                     style={{ color: 'var(--link-unvisited)' }}
-                    className="material-symbols-rounded text-[14px]"
+                    title={story.domain}
                   >
-                    language
+                    {story.domain}
                   </span>
-                  {story.domain}
+                )}
+                <span className="shrink-0">· {story.user}</span>
+                <span className="shrink-0">
+                  · {formatRelativeTime(story.time)}
                 </span>
-              )}
+                {newCommentsDelta > 0 && (
+                  <span className="shrink-0 px-1.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-400">
+                    +{newCommentsDelta}
+                  </span>
+                )}
+              </div>
             </div>
 
-            <h3
-              style={{ color: 'var(--text-primary)' }}
-              className="text-[17px] font-semibold leading-snug tracking-tight"
-            >
-              {story.cleanTitle}
-            </h3>
-
-            <div
-              style={{ color: 'var(--text-muted)' }}
-              className="flex items-center flex-wrap gap-3 mt-2 text-[12.5px]"
-            >
-              <span className="inline-flex items-center gap-1">
-                <span className="material-symbols-rounded text-[14px]">
-                  person
-                </span>
-                <strong
-                  style={{ color: 'var(--text-secondary)' }}
-                  className="font-medium"
+            {/* Compact Right Zone */}
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark story'}
+                onClick={(e) => onToggleBookmark(story, e)}
+                style={{
+                  color: isBookmarked ? 'var(--accent)' : 'var(--text-muted)',
+                  backgroundColor: isBookmarked
+                    ? 'color-mix(in srgb, var(--accent) 14%, transparent)'
+                    : undefined,
+                }}
+                className="w-8 h-8 rounded-lg inline-flex items-center justify-center leading-none shrink-0 hover:bg-white/10 active:scale-95 transition-all focus:outline-none"
+              >
+                <span
+                  className={`material-symbols-rounded text-[18px] leading-none ${
+                    isBookmarked ? 'filled' : ''
+                  }`}
                 >
-                  {story.user}
-                </strong>
-              </span>
-
-              <span className="inline-flex items-center gap-1">
-                <span className="material-symbols-rounded text-[14px]">
-                  schedule
+                  bookmark
                 </span>
-                {formatRelativeTime(story.time)}
-              </span>
-
-              {newCommentsDelta > 0 && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-400">
-                  +{newCommentsDelta} new
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Right Zone: Bookmark & Comment Count Pill */}
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark story'}
-              onClick={(e) => onToggleBookmark(story, e)}
-              style={{
-                color: isBookmarked ? 'var(--accent)' : 'var(--text-muted)',
-                backgroundColor: isBookmarked
-                  ? 'color-mix(in srgb, var(--accent) 14%, transparent)'
-                  : undefined,
-              }}
-              className="w-9 h-9 rounded-xl inline-flex items-center justify-center leading-none shrink-0 hover:bg-white/10 active:scale-95 transition-all focus:outline-none"
-            >
-              <span
-                className={`material-symbols-rounded text-[19px] leading-none ${
-                  isBookmarked ? 'filled' : ''
-                }`}
+              </button>
+              <div
+                style={{
+                  backgroundColor: 'var(--bg-surface-2)',
+                  color: 'var(--text-primary)',
+                }}
+                className="h-8 px-2.5 rounded-lg inline-flex items-center justify-center gap-1 text-[12.5px] font-semibold leading-none"
               >
-                bookmark
-              </span>
-            </button>
+                <span
+                  style={{ color: 'var(--text-muted)' }}
+                  className="material-symbols-rounded text-[15px] leading-none"
+                >
+                  forum
+                </span>
+                <span>{story.commentsCount}</span>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Center Zone: Badges, Clean Title & Thoughtful Metadata */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center flex-wrap gap-2 mb-1">
+                <span
+                  style={{ color: 'var(--text-muted)' }}
+                  className="text-[11px] font-mono font-semibold"
+                >
+                  #{index}
+                </span>
 
-            <div
-              style={{
-                backgroundColor: 'var(--bg-surface-2)',
-                color: 'var(--text-primary)',
-              }}
-              className="h-9 px-3.5 rounded-xl inline-flex items-center justify-center gap-1.5 text-[13px] font-semibold leading-none"
-            >
-              <span
+                {story.badges.map((badge) => (
+                  <span
+                    key={badge.type}
+                    style={{
+                      backgroundColor:
+                        'color-mix(in srgb, var(--link-unvisited) 15%, transparent)',
+                      color: 'var(--link-unvisited)',
+                    }}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold tracking-wide uppercase"
+                  >
+                    <span className="material-symbols-rounded text-[13px]">
+                      {badge.icon}
+                    </span>
+                    {badge.label}
+                  </span>
+                ))}
+
+                {story.domain && (
+                  <span
+                    style={{ color: 'var(--link-unvisited)' }}
+                    title={story.domain}
+                    className="inline-flex items-center gap-1 text-[12.5px] font-medium"
+                  >
+                    <span
+                      style={{ color: 'var(--link-unvisited)' }}
+                      className="material-symbols-rounded text-[14px]"
+                    >
+                      language
+                    </span>
+                    {story.domain}
+                  </span>
+                )}
+              </div>
+
+              <h3
+                style={{ color: 'var(--text-primary)' }}
+                className="text-[17px] font-semibold leading-snug tracking-tight"
+              >
+                {story.cleanTitle}
+              </h3>
+
+              <div
                 style={{ color: 'var(--text-muted)' }}
-                className="material-symbols-rounded text-[17px] leading-none"
+                className="flex items-center flex-wrap gap-3 mt-2 text-[12.5px]"
               >
-                forum
-              </span>
-              <span>{story.commentsCount}</span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="material-symbols-rounded text-[14px]">
+                    person
+                  </span>
+                  <strong
+                    style={{ color: 'var(--text-secondary)' }}
+                    className="font-medium"
+                  >
+                    {story.user}
+                  </strong>
+                </span>
+
+                <span className="inline-flex items-center gap-1">
+                  <span className="material-symbols-rounded text-[14px]">
+                    schedule
+                  </span>
+                  {formatRelativeTime(story.time)}
+                </span>
+
+                {newCommentsDelta > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-400">
+                    +{newCommentsDelta} new
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
-        </>
-      )}
+
+            {/* Right Zone: Bookmark & Comment Count Pill */}
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark story'}
+                onClick={(e) => onToggleBookmark(story, e)}
+                style={{
+                  color: isBookmarked ? 'var(--accent)' : 'var(--text-muted)',
+                  backgroundColor: isBookmarked
+                    ? 'color-mix(in srgb, var(--accent) 14%, transparent)'
+                    : undefined,
+                }}
+                className="w-9 h-9 rounded-xl inline-flex items-center justify-center leading-none shrink-0 hover:bg-white/10 active:scale-95 transition-all focus:outline-none"
+              >
+                <span
+                  className={`material-symbols-rounded text-[19px] leading-none ${
+                    isBookmarked ? 'filled' : ''
+                  }`}
+                >
+                  bookmark
+                </span>
+              </button>
+
+              <div
+                style={{
+                  backgroundColor: 'var(--bg-surface-2)',
+                  color: 'var(--text-primary)',
+                }}
+                className="h-9 px-3.5 rounded-xl inline-flex items-center justify-center gap-1.5 text-[13px] font-semibold leading-none"
+              >
+                <span
+                  style={{ color: 'var(--text-muted)' }}
+                  className="material-symbols-rounded text-[17px] leading-none"
+                >
+                  forum
+                </span>
+                <span>{story.commentsCount}</span>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
     </article>
   );
 };

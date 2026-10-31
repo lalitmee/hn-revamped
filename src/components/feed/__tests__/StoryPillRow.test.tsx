@@ -39,11 +39,11 @@ describe('StoryPillRow Component', () => {
       />
     );
 
-    expect(screen.getByText(mockStory.cleanTitle)).toBeInTheDocument();
-    expect(screen.getByText('428')).toBeInTheDocument();
-    expect(screen.getByText('214')).toBeInTheDocument();
+    expect(screen.getAllByText(mockStory.cleanTitle)).toHaveLength(2);
+    expect(screen.getAllByText('428')[0]).toBeInTheDocument();
+    expect(screen.getAllByText('214')[0]).toBeInTheDocument();
     expect(screen.getByText('#3')).toBeInTheDocument();
-    expect(screen.getByText('zed.dev')).toBeInTheDocument();
+    expect(screen.getAllByText('zed.dev')[0]).toBeInTheDocument();
   });
 
   it('renders score pill, smart badges, clean title, domain, and +N new comments badge', () => {
@@ -63,22 +63,14 @@ describe('StoryPillRow Component', () => {
       />
     );
 
-    expect(screen.getByText('428')).toBeInTheDocument();
+    expect(screen.getAllByText('428')[0]).toBeInTheDocument();
     expect(screen.getByText('Show HN')).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        'Zed 1.0 – High-performance multiplayer code editor in Rust'
-      )
-    ).toBeInTheDocument();
-    expect(screen.getByText('zed.dev')).toBeInTheDocument();
-    expect(screen.getByText('+18 new')).toBeInTheDocument();
-    expect(screen.getByText('214')).toBeInTheDocument();
+    expect(screen.getAllByText(mockStory.cleanTitle)).toHaveLength(2);
+    expect(screen.getAllByText('zed.dev')[0]).toBeInTheDocument();
+    expect(screen.getAllByText('+18 new')[0]).toBeInTheDocument();
+    expect(screen.getAllByText('214')[0]).toBeInTheDocument();
 
-    fireEvent.click(
-      screen.getByText(
-        'Zed 1.0 – High-performance multiplayer code editor in Rust'
-      )
-    );
+    fireEvent.click(screen.getAllByText(mockStory.cleanTitle)[0]);
     expect(onSelect).toHaveBeenCalledWith(mockStory);
   });
 

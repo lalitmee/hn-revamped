@@ -69,6 +69,7 @@ export const WorkspaceShell: React.FC = () => {
   const [selectedStory, setSelectedStory] =
     useState<HNStoryWithComments | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const [activeTab, setActiveTab] = useState<DetailTab>('comments');
   const latestStoryReqRef = useRef(0);
 
@@ -273,6 +274,11 @@ export const WorkspaceShell: React.FC = () => {
     [syncStoryQueryParam]
   );
 
+  const returnToFeed = useCallback(() => {
+    setSelectedStory(null);
+    syncStoryQueryParam(null, true);
+  }, [syncStoryQueryParam]);
+
   // Deep-link support for ?story=<id> on initial page load and browser Back/Forward
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -431,6 +437,37 @@ export const WorkspaceShell: React.FC = () => {
     return list;
   }, [stories, preferences, readHistory, selectedStory]);
 
+  const onDetailTouchStart = (event: React.TouchEvent) => {
+    touchStartRef.current = null;
+    if (event.touches.length !== 1) return;
+    const target = event.target as HTMLElement;
+    if (
+      target.closest(
+        'button, a, input, textarea, select, pre, [role="button"], [data-no-story-swipe]'
+      )
+    )
+      return;
+    const touch = event.touches[0];
+    // Leave the screen edge to the browser's back gesture.
+    touchStartRef.current =
+      touch.clientX < 28 || touch.clientX > window.innerWidth - 28
+        ? null
+        : { x: touch.clientX, y: touch.clientY };
+  };
+
+  const onDetailTouchEnd = (event: React.TouchEvent) => {
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+    if (!start || event.changedTouches.length !== 1) return;
+    const touch = event.changedTouches[0];
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    if (Math.abs(dx) < 80 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (!selectedStory?.url) return;
+    if (dx < 0 && activeTab === 'comments') setActiveTab('reader');
+    else if (dx > 0 && activeTab === 'reader') setActiveTab('comments');
+  };
+
   const bookmarkedIds = useMemo(
     () => new Set(bookmarks.map((b) => b.id)),
     [bookmarks]
@@ -514,8 +551,8 @@ export const WorkspaceShell: React.FC = () => {
       style={inlineRootStyle}
       className={`${
         preferences.layoutMode === 'split' || isAppearanceOpen
-          ? 'min-h-screen lg:h-screen lg:overflow-hidden flex flex-col'
-          : 'min-h-screen flex flex-col'
+          ? 'h-dvh overflow-hidden flex flex-col'
+          : 'h-dvh overflow-hidden lg:min-h-screen lg:h-auto lg:overflow-visible flex flex-col'
       } transition-colors duration-200`}
     >
       <AppHeader
@@ -539,6 +576,8 @@ export const WorkspaceShell: React.FC = () => {
         }
         onOpenShortcuts={() => startTransition(() => setIsShortcutsOpen(true))}
         savedCount={bookmarks.length}
+        isStoryOpen={Boolean(selectedStory) && !isAppearanceOpen}
+        onBackToFeed={returnToFeed}
       />
 
       <SafeViewTransition>
@@ -554,7 +593,7 @@ export const WorkspaceShell: React.FC = () => {
             {/* Sticky / Independently Contained Left Feed Pane */}
             <section
               style={{ borderColor: 'var(--border-subtle)' }}
-              className="custom-scrollbar lg:col-span-5 xl:col-span-5 border-r h-full overflow-y-auto overscroll-contain"
+              className={`custom-scrollbar mobile-feed-scroll lg:col-span-5 xl:col-span-5 lg:border-r h-full overflow-y-auto overscroll-contain ${selectedStory ? 'hidden lg:block' : ''}`}
             >
               <StoryFeedPane
                 stories={visibleStories}
@@ -613,18 +652,65 @@ export const WorkspaceShell: React.FC = () => {
                 }
               />
             </section>
+            {selectedStory && (
+              <section
+                onTouchStart={onDetailTouchStart}
+                onTouchEnd={onDetailTouchEnd}
+                className="lg:hidden relative flex flex-col min-h-0 overflow-hidden min-w-0"
+              >
+                <StoryDetailPane
+                  story={selectedStory}
+                  loading={loadingDetail}
+                  activeTab={activeTab}
+                  onTabChange={setActiveTab}
+                  collapseMode={preferences.defaultCollapseMode ?? 'root-only'}
+                  compact={preferences.cardDensity === 'compact'}
+                  onCollapseModeChange={(mode) =>
+                    handleUpdatePreferences({
+                      ...preferences,
+                      defaultCollapseMode: mode,
+                    })
+                  }
+                  isBookmarked={bookmarkedIds.has(selectedStory.id)}
+                  onToggleBookmark={() =>
+                    setBookmarks(toggleBookmarkStory(selectedStory).bookmarks)
+                  }
+                  onInternalHnLinkClick={(id) =>
+                    handleSelectStory(
+                      {
+                        id,
+                        title: `Story #${id}`,
+                        cleanTitle: `Story #${id}`,
+                        points: 0,
+                        user: '',
+                        time: Math.floor(Date.now() / 1000),
+                        commentsCount: 0,
+                        badges: [],
+                        type: 'story',
+                      },
+                      { isPlaceholder: true }
+                    )
+                  }
+                />
+              </section>
+            )}
           </main>
         ) : (
-          <main className="flex-1 max-w-4xl w-full mx-auto py-4 px-2 sm:px-6">
+          <main
+            className={`custom-scrollbar mobile-feed-scroll flex-1 min-h-0 ${selectedStory ? 'max-lg:overflow-hidden max-lg:py-0 max-lg:px-0' : 'overflow-y-auto'} lg:overflow-visible max-w-4xl w-full mx-auto py-2 sm:py-4 px-1.5 sm:px-6`}
+          >
             {selectedStory ? (
-              <div>
-                <div className="ml-5 mb-2">
+              <div
+                onTouchStart={onDetailTouchStart}
+                onTouchEnd={onDetailTouchEnd}
+                className="relative h-full min-h-0 flex flex-col"
+              >
+                <div className="hidden lg:block ml-5 mb-2">
                   <GlassButton
                     icon="arrow_back"
                     iconAccent
                     onClick={() => {
-                      setSelectedStory(null);
-                      syncStoryQueryParam(null);
+                      returnToFeed();
                     }}
                   >
                     Back to Story Feed

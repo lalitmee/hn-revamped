@@ -9,6 +9,7 @@ import React, {
 } from 'react';
 import { ReaderArticle } from '@/types/hn';
 import { GlassDropdown } from '@/components/ui/GlassDropdown';
+import { MobileBottomSheet } from '@/components/ui/MobileBottomSheet';
 
 interface ArticleReaderViewProps {
   url?: string;
@@ -101,6 +102,10 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
   const [ttsNotice, setTtsNotice] = useState<string | null>(null);
 
   const articleBodyRef = useRef<HTMLDivElement>(null);
+  const speedTriggerRef = useRef<HTMLButtonElement>(null);
+  const voiceTriggerRef = useRef<HTMLButtonElement>(null);
+  const [isSpeedSheetOpen, setIsSpeedSheetOpen] = useState(false);
+  const [isVoiceSheetOpen, setIsVoiceSheetOpen] = useState(false);
   const activeSegmentRef = useRef<number>(0);
   const playbackRateRef = useRef<number>(1);
   const selectedVoiceRef = useRef<string>('');
@@ -354,17 +359,34 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
     speakSegmentAt(nextIdx);
   };
 
-  const handleCycleSpeed = () => {
-    const currIdx = SPEED_OPTIONS.indexOf(
-      playbackRate as (typeof SPEED_OPTIONS)[number]
-    );
-    const nextSpeed = SPEED_OPTIONS[(currIdx + 1) % SPEED_OPTIONS.length];
+  const handleSelectSpeed = (nextSpeed: number) => {
     setPlaybackRate(nextSpeed);
     playbackRateRef.current = nextSpeed;
     if (playbackState === 'playing') {
       speakSegmentAt(activeSegmentRef.current);
     }
   };
+
+  const handleCycleSpeed = () => {
+    const currIdx = SPEED_OPTIONS.indexOf(
+      playbackRate as (typeof SPEED_OPTIONS)[number]
+    );
+    handleSelectSpeed(SPEED_OPTIONS[(currIdx + 1) % SPEED_OPTIONS.length]);
+  };
+
+  const handleSelectVoice = (uri: string) => {
+    setSelectedVoiceURI(uri);
+    selectedVoiceRef.current = uri;
+    if (playbackState === 'playing') {
+      speakSegmentAt(activeSegmentRef.current);
+    }
+  };
+
+  const voiceOptions = voices.map((voice) => ({
+    id: voice.voiceURI,
+    label: voice.name.replace(/Microsoft |Google |Apple /g, ''),
+    icon: 'graphic_eq',
+  }));
 
   if (!url) {
     return (
@@ -474,24 +496,62 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
         }}
         className="flex flex-col gap-2.5 pb-2.5 mb-3.5 border-b text-xs"
       >
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="inline-flex items-center gap-1">
-              <span className="material-symbols-rounded text-[15px]">
-                schedule
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-3">
+          <div className="flex flex-wrap items-center justify-between sm:justify-start gap-3 min-h-8">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="inline-flex items-center gap-1">
+                <span className="material-symbols-rounded text-[15px]">
+                  schedule
+                </span>
+                {article.readingTimeMinutes} min read
               </span>
-              {article.readingTimeMinutes} min read
-            </span>
-            {article.byline && <span>• By {article.byline}</span>}
+              {article.byline && <span>• By {article.byline}</span>}
+            </div>
+            {ttsSupported && segments.length > 0 && !isAudioActive && (
+              <button
+                type="button"
+                onClick={handleTogglePlayPause}
+                aria-label="Listen to article"
+                title="Listen to article"
+                className="sm:hidden w-9 h-9 rounded-full inline-flex items-center justify-center shrink-0"
+                style={{
+                  backgroundColor: 'var(--bg-surface-2)',
+                  color: 'var(--accent)',
+                }}
+              >
+                <span
+                  aria-hidden="true"
+                  className="material-symbols-rounded text-[19px]"
+                >
+                  play_arrow
+                </span>
+              </button>
+            )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 ml-auto">
+          <div
+            className={`${!isAudioActive ? 'max-sm:hidden' : ''} w-full sm:w-auto flex items-center justify-start sm:justify-end`}
+          >
             {ttsSupported && segments.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="w-full sm:w-auto flex flex-wrap items-center justify-between sm:justify-end gap-1.5 sm:gap-2">
                 {/* Play / Pause / Resume Button with Filled Media Icons */}
                 <button
                   type="button"
                   onClick={handleTogglePlayPause}
+                  aria-label={
+                    playbackState === 'playing'
+                      ? 'Pause reading aloud'
+                      : playbackState === 'paused'
+                        ? 'Resume reading aloud'
+                        : 'Listen to article'
+                  }
+                  title={
+                    playbackState === 'playing'
+                      ? 'Pause'
+                      : playbackState === 'paused'
+                        ? 'Resume'
+                        : 'Listen'
+                  }
                   style={{
                     backgroundColor: isAudioActive
                       ? 'var(--accent)'
@@ -499,7 +559,7 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
                     color: isAudioActive ? '#ffffff' : 'var(--text-primary)',
                     border: '1px solid transparent',
                   }}
-                  className="h-8 px-3.5 rounded-full inline-flex items-center justify-center gap-1.5 text-xs font-semibold leading-none cursor-pointer hover:brightness-110 active:scale-95 transition-all"
+                  className="h-9 w-9 sm:w-auto sm:px-3.5 rounded-full inline-flex items-center justify-center gap-1.5 text-xs font-semibold leading-none cursor-pointer hover:brightness-110 active:scale-95 transition-all"
                 >
                   <span
                     style={{
@@ -513,9 +573,9 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
                       ? 'pause'
                       : playbackState === 'paused'
                         ? 'play_arrow'
-                        : 'headphones'}
+                        : 'play_arrow'}
                   </span>
-                  <span className="leading-none">
+                  <span className="hidden sm:inline leading-none">
                     {playbackState === 'playing'
                       ? 'Pause'
                       : playbackState === 'paused'
@@ -566,9 +626,17 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
                     </div>
 
                     <button
+                      ref={speedTriggerRef}
                       type="button"
-                      title="Cycle playback speed"
-                      onClick={handleCycleSpeed}
+                      title="Playback speed"
+                      aria-label={`Playback speed: ${playbackRate} times`}
+                      aria-haspopup="dialog"
+                      aria-expanded={isSpeedSheetOpen}
+                      onClick={() => {
+                        if (window.matchMedia('(max-width: 639px)').matches)
+                          setIsSpeedSheetOpen(true);
+                        else handleCycleSpeed();
+                      }}
                       style={{ color: 'var(--accent)' }}
                       className="liquid-glass h-8 px-3 rounded-full inline-flex items-center justify-center gap-1.5 text-xs font-bold tabular-nums leading-none cursor-pointer active:scale-95"
                     >
@@ -579,27 +647,34 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
                     </button>
 
                     {voices.length > 1 && (
-                      <GlassDropdown<string>
-                        size="sm"
-                        leadingIcon="record_voice_over"
-                        ariaLabel="Select speech synthesis voice"
-                        value={selectedVoiceURI}
-                        options={voices.map((v) => ({
-                          id: v.voiceURI,
-                          label: v.name.replace(
-                            /Microsoft |Google |Apple /g,
-                            ''
-                          ),
-                          icon: 'graphic_eq',
-                        }))}
-                        onChange={(uri) => {
-                          setSelectedVoiceURI(uri);
-                          selectedVoiceRef.current = uri;
-                          if (playbackState === 'playing') {
-                            speakSegmentAt(activeSegmentRef.current);
-                          }
-                        }}
-                      />
+                      <>
+                        <div className="hidden sm:block">
+                          <GlassDropdown<string>
+                            size="sm"
+                            leadingIcon="record_voice_over"
+                            ariaLabel="Select speech synthesis voice"
+                            value={selectedVoiceURI}
+                            options={voiceOptions}
+                            onChange={handleSelectVoice}
+                          />
+                        </div>
+                        <button
+                          ref={voiceTriggerRef}
+                          type="button"
+                          aria-label={`Voice: ${voiceOptions.find((option) => option.id === selectedVoiceURI)?.label ?? 'Select voice'}`}
+                          aria-haspopup="dialog"
+                          aria-expanded={isVoiceSheetOpen}
+                          onClick={() => setIsVoiceSheetOpen(true)}
+                          className="liquid-glass sm:hidden w-8 h-8 rounded-full inline-flex items-center justify-center"
+                        >
+                          <span
+                            aria-hidden="true"
+                            className="material-symbols-rounded text-[16px]"
+                          >
+                            record_voice_over
+                          </span>
+                        </button>
+                      </>
                     )}
 
                     <button
@@ -663,6 +738,90 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
         )}
       </div>
 
+      <MobileBottomSheet
+        isOpen={isSpeedSheetOpen}
+        onClose={() => setIsSpeedSheetOpen(false)}
+        title="Playback speed"
+        ariaLabel="Choose playback speed"
+        triggerRef={speedTriggerRef}
+      >
+        {SPEED_OPTIONS.map((speed) => (
+          <button
+            key={speed}
+            type="button"
+            aria-current={playbackRate === speed ? 'true' : undefined}
+            onClick={() => {
+              handleSelectSpeed(speed);
+              setIsSpeedSheetOpen(false);
+            }}
+            className="w-full min-h-12 px-4 rounded-xl flex items-center gap-3 text-left font-medium"
+            style={{
+              backgroundColor:
+                playbackRate === speed ? 'var(--bg-surface-active)' : undefined,
+              color:
+                playbackRate === speed
+                  ? 'var(--accent)'
+                  : 'var(--text-primary)',
+            }}
+          >
+            <span aria-hidden="true" className="material-symbols-rounded">
+              speed
+            </span>
+            <span>{speed}×</span>
+            {playbackRate === speed && (
+              <span
+                aria-hidden="true"
+                className="material-symbols-rounded ml-auto"
+              >
+                check
+              </span>
+            )}
+          </button>
+        ))}
+      </MobileBottomSheet>
+      <MobileBottomSheet
+        isOpen={isVoiceSheetOpen}
+        onClose={() => setIsVoiceSheetOpen(false)}
+        title="Choose a voice"
+        ariaLabel="Choose speech synthesis voice"
+        triggerRef={voiceTriggerRef}
+      >
+        {voiceOptions.map((voice) => (
+          <button
+            key={voice.id}
+            type="button"
+            aria-current={selectedVoiceURI === voice.id ? 'true' : undefined}
+            onClick={() => {
+              handleSelectVoice(voice.id);
+              setIsVoiceSheetOpen(false);
+            }}
+            className="w-full min-h-12 px-4 rounded-xl flex items-center gap-3 text-left font-medium"
+            style={{
+              backgroundColor:
+                selectedVoiceURI === voice.id
+                  ? 'var(--bg-surface-active)'
+                  : undefined,
+              color:
+                selectedVoiceURI === voice.id
+                  ? 'var(--accent)'
+                  : 'var(--text-primary)',
+            }}
+          >
+            <span aria-hidden="true" className="material-symbols-rounded">
+              {voice.icon}
+            </span>
+            <span className="truncate">{voice.label}</span>
+            {selectedVoiceURI === voice.id && (
+              <span
+                aria-hidden="true"
+                className="material-symbols-rounded ml-auto"
+              >
+                check
+              </span>
+            )}
+          </button>
+        ))}
+      </MobileBottomSheet>
       <div
         ref={articleBodyRef}
         onClick={(e) => {

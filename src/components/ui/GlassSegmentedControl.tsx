@@ -16,6 +16,7 @@ interface GlassSegmentedControlProps<T extends string> {
   onChange: (value: T) => void;
   size?: 'sm' | 'md';
   fullWidth?: boolean;
+  compactLabelsOnMobile?: boolean;
 }
 
 export function GlassSegmentedControl<T extends string>({
@@ -24,6 +25,7 @@ export function GlassSegmentedControl<T extends string>({
   onChange,
   size = 'md',
   fullWidth = false,
+  compactLabelsOnMobile = false,
 }: GlassSegmentedControlProps<T>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -118,7 +120,13 @@ export function GlassSegmentedControl<T extends string>({
                 {item.icon}
               </span>
             )}
-            {item.label && <span>{item.label}</span>}
+            {item.label && (
+              <span
+                className={compactLabelsOnMobile ? 'max-[380px]:hidden' : ''}
+              >
+                {item.label}
+              </span>
+            )}
             {item.badge !== undefined && (
               <span
                 style={{

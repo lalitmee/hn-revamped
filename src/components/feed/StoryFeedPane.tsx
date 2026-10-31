@@ -105,7 +105,7 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
 
     const scrollSelectedToCenter = () => {
       const container = containerRef.current;
-      if (!container) return;
+      if (!container || !container.getClientRects().length) return;
       const activeEl = container.querySelector<HTMLElement>(
         `[data-story-id="${selectedStoryId}"]`
       );
@@ -141,7 +141,7 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
     return (
       <div
         className={`min-h-full flex flex-col ${
-          compact ? 'gap-1.5 p-3' : 'gap-3 p-4'
+          compact ? 'gap-1.5 p-2.5 sm:p-3' : 'gap-2.5 p-2.5 sm:gap-3 sm:p-4'
         }`}
       >
         {Array.from({ length: compact ? 20 : 12 }).map((_, i) => (
@@ -179,7 +179,7 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
   return (
     <div
       ref={containerRef}
-      className={`relative flex flex-col ${compact ? 'gap-1.5 p-3' : 'gap-3 p-4'}`}
+      className={`relative flex flex-col ${compact ? 'gap-1.5 p-2.5 sm:p-3' : 'gap-2.5 p-2.5 sm:gap-3 sm:p-4'}`}
     >
       {/* Shared Traveling Selection Backdrop & Left Accent Indicator */}
       {hasFloatingIndicator && indicatorRect && (

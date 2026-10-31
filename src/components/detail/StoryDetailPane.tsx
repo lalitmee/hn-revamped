@@ -17,6 +17,7 @@ import {
   SegmentedItem,
 } from '@/components/ui/GlassSegmentedControl';
 import { SafeViewTransition } from '@/components/ui/ViewTransitionWrapper';
+import { MobileBottomSheet } from '@/components/ui/MobileBottomSheet';
 
 interface StoryDetailPaneProps {
   story: HNStoryWithComments | null;
@@ -50,12 +51,19 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isStoryTextExpanded, setIsStoryTextExpanded] = useState(false);
+  const [isThreadSheetOpen, setIsThreadSheetOpen] = useState(false);
+  const threadTriggerRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const mobileSearchInputRef = useRef<HTMLInputElement>(null);
 
   // Focus search input when filter is expanded in top bar
   useEffect(() => {
     if (isSearchOpen) {
-      searchInputRef.current?.focus();
+      if (window.matchMedia('(max-width: 639px)').matches) {
+        mobileSearchInputRef.current?.focus({ preventScroll: true });
+      } else {
+        searchInputRef.current?.focus();
+      }
     }
   }, [isSearchOpen]);
 
@@ -145,19 +153,95 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
             'color-mix(in srgb, var(--bg-canvas) 92%, transparent)',
           borderColor: 'var(--border-subtle)',
         }}
-        className="shrink-0 sticky top-0 z-20 backdrop-blur-xl px-5 md:px-6 py-2.5 border-b flex flex-wrap items-center justify-between gap-3"
+        className="shrink-0 sticky top-0 z-20 backdrop-blur-xl px-2 sm:px-5 md:px-6 py-2 border-b flex flex-wrap items-center justify-between gap-1.5 max-sm:h-[53px] max-sm:flex-nowrap"
       >
-        <GlassSegmentedControl<DetailTab>
-          items={tabItems}
-          value={activeTab}
-          onChange={(nextTab) => startTransition(() => onTabChange(nextTab))}
-        />
+        {activeTab === 'comments' && isSearchOpen && (
+          <div className="sm:hidden w-full liquid-glass rounded-full px-3 h-9 flex items-center gap-2">
+            <span
+              aria-hidden="true"
+              className="material-symbols-rounded text-[18px]"
+            >
+              filter_list
+            </span>
+            <input
+              ref={mobileSearchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Filter comments..."
+              aria-label="Filter comments"
+              className="bg-transparent text-xs focus:outline-none flex-1 min-w-0"
+            />
+            <button
+              type="button"
+              aria-label="Close comment filter"
+              onClick={() => {
+                setSearchQuery('');
+                setIsSearchOpen(false);
+              }}
+              className="w-8 h-8 inline-flex items-center justify-center"
+            >
+              <span
+                aria-hidden="true"
+                className="material-symbols-rounded text-[18px]"
+              >
+                close
+              </span>
+            </button>
+          </div>
+        )}
+        <div
+          className={`sm:hidden ${activeTab === 'comments' && isSearchOpen ? 'max-sm:hidden' : ''} liquid-glass relative rounded-full p-0.5 inline-flex shrink-0`}
+        >
+          <span
+            aria-hidden="true"
+            className="liquid-glass-primary pointer-events-none absolute top-0.5 bottom-0.5 left-0.5 rounded-full transition-[transform,width] duration-300 ease-out motion-reduce:transition-none"
+            style={{
+              width: activeTab === 'comments' ? 64 : 40,
+              transform:
+                activeTab === 'comments' ? 'translateX(0)' : 'translateX(64px)',
+            }}
+          />
+          {tabItems.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              aria-label={
+                item.id === 'comments'
+                  ? `Discussion, ${story.commentsCount} comments`
+                  : 'Reader View'
+              }
+              aria-pressed={activeTab === item.id}
+              onClick={() => startTransition(() => onTabChange(item.id))}
+              className={`${item.id === 'comments' ? 'w-16' : 'w-10'} relative z-10 h-8 shrink-0 rounded-full inline-flex items-center justify-center gap-1 text-[11px] font-semibold transition-colors duration-300 ${activeTab === item.id ? 'text-white' : ''}`}
+            >
+              <span
+                aria-hidden="true"
+                className="material-symbols-rounded text-[18px]"
+              >
+                {item.icon}
+              </span>
+              {item.id === 'comments' && (
+                <span aria-hidden="true">{story.commentsCount}</span>
+              )}
+            </button>
+          ))}
+        </div>
+        <div className="hidden sm:block">
+          <GlassSegmentedControl<DetailTab>
+            items={tabItems}
+            value={activeTab}
+            onChange={(nextTab) => startTransition(() => onTabChange(nextTab))}
+          />
+        </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-2">
+        <div
+          className={`${activeTab === 'comments' && isSearchOpen ? 'max-sm:hidden' : ''} flex items-center gap-0.5 sm:gap-2`}
+        >
           {activeTab === 'comments' && (
             <>
               {isSearchOpen || searchQuery ? (
-                <div className="liquid-glass h-8 px-2.5 rounded-full flex items-center gap-1.5 w-44 sm:w-56 transition-all duration-200">
+                <div className="liquid-glass hidden sm:flex h-8 px-2.5 rounded-full items-center gap-1.5 w-56 transition-all duration-200">
                   <span
                     style={{ color: 'var(--text-muted)' }}
                     className="material-symbols-rounded text-[15px] shrink-0"
@@ -216,41 +300,59 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
                 </button>
               )}
 
-              <GlassSegmentedControl<ThreadCollapseMode>
-                size="sm"
-                value={activeCollapseMode}
-                onChange={(nextMode) => {
-                  startTransition(() => {
-                    setInternalCollapseMode(nextMode);
-                    onCollapseModeChange?.(nextMode);
-                    setModeVersion((v) => v + 1);
-                  });
-                }}
-                items={[
-                  {
-                    id: 'expanded',
-                    icon: 'unfold_more',
-                    title: 'Expand All',
-                  },
-                  {
-                    id: 'root-only',
-                    icon: 'unfold_less',
-                    title: 'Collapse Replies',
-                  },
-                  {
-                    id: 'collapse-all',
-                    icon: 'compress',
-                    title: 'Collapse All',
-                  },
-                ]}
-              />
+              <button
+                ref={threadTriggerRef}
+                type="button"
+                aria-label="Thread display options"
+                aria-haspopup="dialog"
+                aria-expanded={isThreadSheetOpen}
+                onClick={() => setIsThreadSheetOpen(true)}
+                className="liquid-glass sm:hidden w-8 h-8 rounded-full inline-flex items-center justify-center"
+              >
+                <span
+                  aria-hidden="true"
+                  className="material-symbols-rounded text-[17px]"
+                >
+                  tune
+                </span>
+              </button>
+              <div className="hidden sm:block">
+                <GlassSegmentedControl<ThreadCollapseMode>
+                  size="sm"
+                  value={activeCollapseMode}
+                  onChange={(nextMode) => {
+                    startTransition(() => {
+                      setInternalCollapseMode(nextMode);
+                      onCollapseModeChange?.(nextMode);
+                      setModeVersion((v) => v + 1);
+                    });
+                  }}
+                  items={[
+                    {
+                      id: 'expanded',
+                      icon: 'unfold_more',
+                      title: 'Expand All',
+                    },
+                    {
+                      id: 'root-only',
+                      icon: 'unfold_less',
+                      title: 'Collapse Replies',
+                    },
+                    {
+                      id: 'collapse-all',
+                      icon: 'compress',
+                      title: 'Collapse All',
+                    },
+                  ]}
+                />
+              </div>
 
               <div
                 style={{
                   backgroundColor:
                     'color-mix(in srgb, var(--border-subtle) 90%, transparent)',
                 }}
-                className="h-4 w-[1px] mx-0.5 shrink-0"
+                className="hidden sm:block h-4 w-[1px] mx-0.5 shrink-0"
               />
             </>
           )}
@@ -295,10 +397,63 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
           )}
         </div>
       </div>
+      <MobileBottomSheet
+        isOpen={isThreadSheetOpen}
+        onClose={() => setIsThreadSheetOpen(false)}
+        title="Thread display"
+        ariaLabel="Thread display options"
+        triggerRef={threadTriggerRef}
+      >
+        {(
+          [
+            { id: 'expanded', label: 'Expand all', icon: 'unfold_more' },
+            { id: 'root-only', label: 'Collapse replies', icon: 'unfold_less' },
+            { id: 'collapse-all', label: 'Collapse all', icon: 'compress' },
+          ] as const
+        ).map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            aria-current={activeCollapseMode === option.id ? 'true' : undefined}
+            onClick={() => {
+              startTransition(() => {
+                setInternalCollapseMode(option.id);
+                onCollapseModeChange?.(option.id);
+                setModeVersion((v) => v + 1);
+              });
+              setIsThreadSheetOpen(false);
+            }}
+            className="w-full min-h-12 px-4 rounded-xl flex items-center gap-3 text-left font-medium"
+            style={{
+              backgroundColor:
+                activeCollapseMode === option.id
+                  ? 'var(--bg-surface-active)'
+                  : undefined,
+              color:
+                activeCollapseMode === option.id
+                  ? 'var(--accent)'
+                  : 'var(--text-primary)',
+            }}
+          >
+            <span aria-hidden="true" className="material-symbols-rounded">
+              {option.icon}
+            </span>
+            {option.label}
+            {activeCollapseMode === option.id && (
+              <span
+                aria-hidden="true"
+                className="material-symbols-rounded ml-auto"
+              >
+                check
+              </span>
+            )}
+          </button>
+        ))}
+      </MobileBottomSheet>
 
       {/* Independently Scrollable Story Content & Comments/Reader Body */}
       <div
-        className={`custom-scrollbar px-5 md:px-6 pb-6 flex-1 min-h-0 overflow-y-auto overscroll-contain ${
+        className={`custom-scrollbar px-3 sm:px-5 md:px-6 pb-6 flex-1 min-h-0 overflow-y-auto overscroll-contain ${
           compact ? 'pt-2' : 'pt-3.5'
         }`}
       >
@@ -405,110 +560,122 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
         </header>
 
         <SafeViewTransition>
-          {activeTab === 'reader' ? (
-            <ArticleReaderView url={story.url} storyTitle={story.cleanTitle} />
-          ) : loading && story.comments.length === 0 ? (
-            <div
-              className={`min-h-full flex flex-col ${
-                compact ? 'space-y-2.5' : 'space-y-3.5'
-              }`}
-              role="status"
-              aria-live="polite"
-            >
+          <div
+            key={activeTab}
+            className={
+              activeTab === 'reader'
+                ? 'detail-tab-enter-from-right'
+                : 'detail-tab-enter-from-left'
+            }
+          >
+            {activeTab === 'reader' ? (
+              <ArticleReaderView
+                url={story.url}
+                storyTitle={story.cleanTitle}
+              />
+            ) : loading && story.comments.length === 0 ? (
               <div
-                style={{ color: 'var(--text-muted)' }}
-                className="flex items-center gap-2 text-xs font-medium py-1"
+                className={`min-h-full flex flex-col ${
+                  compact ? 'space-y-2.5' : 'space-y-3.5'
+                }`}
+                role="status"
+                aria-live="polite"
               >
-                <span
-                  style={{ color: 'var(--accent)' }}
-                  className="material-symbols-rounded text-[16px] animate-spin"
-                >
-                  progress_activity
-                </span>
-                <span>
-                  Loading{' '}
-                  {story.commentsCount > 0 ? `${story.commentsCount} ` : ''}
-                  comments...
-                </span>
-              </div>
-
-              {Array.from({ length: compact ? 12 : 8 }).map((_, i) => (
                 <div
-                  key={`comment-skeleton-${i}`}
-                  style={{ animationDelay: `${i * 30}ms` }}
-                  className={`liquid-glass liquid-shimmer animate-story-in shrink-0 ${
-                    compact
-                      ? 'p-2.5 rounded-xl space-y-2'
-                      : 'p-4 rounded-2xl space-y-3'
-                  }`}
+                  style={{ color: 'var(--text-muted)' }}
+                  className="flex items-center gap-2 text-xs font-medium py-1"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                  <span
+                    style={{ color: 'var(--accent)' }}
+                    className="material-symbols-rounded text-[16px] animate-spin"
+                  >
+                    progress_activity
+                  </span>
+                  <span>
+                    Loading{' '}
+                    {story.commentsCount > 0 ? `${story.commentsCount} ` : ''}
+                    comments...
+                  </span>
+                </div>
+
+                {Array.from({ length: compact ? 12 : 8 }).map((_, i) => (
+                  <div
+                    key={`comment-skeleton-${i}`}
+                    style={{ animationDelay: `${i * 30}ms` }}
+                    className={`liquid-glass liquid-shimmer animate-story-in shrink-0 ${
+                      compact
+                        ? 'p-2.5 rounded-xl space-y-2'
+                        : 'p-4 rounded-2xl space-y-3'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div
+                          style={{
+                            backgroundColor:
+                              'color-mix(in srgb, var(--accent) 28%, transparent)',
+                          }}
+                          className={`rounded-full ${
+                            compact ? 'h-3 w-20' : 'h-3.5 w-24'
+                          }`}
+                        />
+                        <div
+                          style={{
+                            backgroundColor:
+                              'color-mix(in srgb, var(--text-muted) 18%, transparent)',
+                          }}
+                          className={`rounded-full ${
+                            compact ? 'h-2.5 w-12' : 'h-3 w-14'
+                          }`}
+                        />
+                      </div>
                       <div
                         style={{
                           backgroundColor:
-                            'color-mix(in srgb, var(--accent) 28%, transparent)',
+                            'color-mix(in srgb, var(--text-primary) 10%, transparent)',
                         }}
                         className={`rounded-full ${
-                          compact ? 'h-3 w-20' : 'h-3.5 w-24'
-                        }`}
-                      />
-                      <div
-                        style={{
-                          backgroundColor:
-                            'color-mix(in srgb, var(--text-muted) 18%, transparent)',
-                        }}
-                        className={`rounded-full ${
-                          compact ? 'h-2.5 w-12' : 'h-3 w-14'
+                          compact ? 'h-5 w-10' : 'h-6 w-12'
                         }`}
                       />
                     </div>
-                    <div
-                      style={{
-                        backgroundColor:
-                          'color-mix(in srgb, var(--text-primary) 10%, transparent)',
-                      }}
-                      className={`rounded-full ${
-                        compact ? 'h-5 w-10' : 'h-6 w-12'
-                      }`}
-                    />
+                    <div className={compact ? 'space-y-1.5' : 'space-y-2'}>
+                      <div
+                        style={{
+                          backgroundColor:
+                            'color-mix(in srgb, var(--text-primary) 12%, transparent)',
+                        }}
+                        className={`rounded-full ${
+                          compact ? 'h-3 w-full' : 'h-3.5 w-full'
+                        }`}
+                      />
+                      <div
+                        style={{
+                          backgroundColor:
+                            'color-mix(in srgb, var(--text-primary) 10%, transparent)',
+                        }}
+                        className={`rounded-full ${
+                          compact ? 'h-3' : 'h-3.5'
+                        } ${i % 2 === 0 ? 'w-4/5' : 'w-2/3'}`}
+                      />
+                    </div>
                   </div>
-                  <div className={compact ? 'space-y-1.5' : 'space-y-2'}>
-                    <div
-                      style={{
-                        backgroundColor:
-                          'color-mix(in srgb, var(--text-primary) 12%, transparent)',
-                      }}
-                      className={`rounded-full ${
-                        compact ? 'h-3 w-full' : 'h-3.5 w-full'
-                      }`}
-                    />
-                    <div
-                      style={{
-                        backgroundColor:
-                          'color-mix(in srgb, var(--text-primary) 10%, transparent)',
-                      }}
-                      className={`rounded-full ${
-                        compact ? 'h-3' : 'h-3.5'
-                      } ${i % 2 === 0 ? 'w-4/5' : 'w-2/3'}`}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <CommentTree
-              comments={story.comments}
-              storyAuthor={story.user}
-              collapseMode={activeCollapseMode}
-              compact={compact}
-              onCollapseModeChange={onCollapseModeChange}
-              onInternalHnLinkClick={onInternalHnLinkClick}
-              externalSearchQuery={searchQuery}
-              modeVersion={modeVersion}
-              hideToolbar={true}
-            />
-          )}
+                ))}
+              </div>
+            ) : (
+              <CommentTree
+                comments={story.comments}
+                storyAuthor={story.user}
+                collapseMode={activeCollapseMode}
+                compact={compact}
+                onCollapseModeChange={onCollapseModeChange}
+                onInternalHnLinkClick={onInternalHnLinkClick}
+                externalSearchQuery={searchQuery}
+                modeVersion={modeVersion}
+                hideToolbar={true}
+              />
+            )}
+          </div>
         </SafeViewTransition>
       </div>
     </div>

@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, startTransition } from 'react';
+import React, { useState, useEffect, useRef, startTransition } from 'react';
 import { HNStory } from '@/types/hn';
 import { searchHN } from '@/lib/hn-api';
 import { GlassModal } from '@/components/ui/GlassModal';
+import { MobileBottomSheet } from '@/components/ui/MobileBottomSheet';
 import { GlassSegmentedControl } from '@/components/ui/GlassSegmentedControl';
 import { SafeViewTransition } from '@/components/ui/ViewTransitionWrapper';
 import { formatRelativeTimeConcise } from '@/components/feed/StoryPillRow';
@@ -29,6 +30,12 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
   const [sortBy, setSortBy] = useState<'relevance' | 'date'>('relevance');
   const [results, setResults] = useState<HNStory[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isSortOpen, setIsSortOpen] = useState(false);
+  const sortTriggerRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) setIsSortOpen(false);
+  }, [isOpen]);
 
   useEffect(() => {
     const trimmed = query.trim();
@@ -69,54 +76,131 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
       onClose={onClose}
       maxWidthClass="max-w-2xl"
       topAligned
+      mobileFullscreen
+      bodyScrollable={false}
     >
       <div
         style={{
           borderColor:
             'color-mix(in srgb, var(--text-primary) 10%, transparent)',
         }}
-        className="flex flex-wrap items-center gap-3 p-4 border-b"
+        className="flex flex-wrap items-center gap-3 p-3 sm:p-4 border-b shrink-0"
       >
-        <span
-          style={{ color: 'var(--accent)' }}
-          className={`material-symbols-rounded text-[22px] transition-transform ${
-            loading ? 'animate-spin' : ''
-          }`}
-        >
-          {loading ? 'progress_activity' : 'search'}
-        </span>
-        <input
-          type="text"
-          autoFocus
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search all Hacker News stories via Algolia..."
-          className="flex-1 bg-transparent text-base focus:outline-none min-w-[180px]"
-        />
-        {query && (
+        <div className="flex w-full sm:w-auto sm:flex-1 items-center gap-2 min-w-0">
           <button
             type="button"
-            onClick={() => setQuery('')}
-            aria-label="Clear search query"
-            style={{ color: 'var(--text-muted)' }}
-            className="w-7 h-7 rounded-full inline-flex items-center justify-center hover:brightness-125 cursor-pointer"
+            aria-label="Back from search"
+            onClick={onClose}
+            className="sm:hidden w-9 h-9 shrink-0 inline-flex items-center justify-center"
           >
-            <span className="material-symbols-rounded text-[16px]">close</span>
+            <span className="material-symbols-rounded">arrow_back</span>
           </button>
-        )}
-        <GlassSegmentedControl<'relevance' | 'date'>
-          size="sm"
-          value={sortBy}
-          onChange={(nextSort) => startTransition(() => setSortBy(nextSort))}
-          items={[
+          <span
+            style={{ color: 'var(--accent)' }}
+            className={`material-symbols-rounded text-[22px] max-sm:hidden transition-transform ${
+              loading ? 'animate-spin' : ''
+            }`}
+          >
+            {loading ? 'progress_activity' : 'search'}
+          </span>
+          <input
+            type="text"
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search Hacker News"
+            aria-label="Search Hacker News"
+            className="flex-1 bg-transparent text-base focus:outline-none min-w-0"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery('')}
+              aria-label="Clear search query"
+              style={{ color: 'var(--text-muted)' }}
+              className="w-7 h-7 rounded-full inline-flex items-center justify-center hover:brightness-125 cursor-pointer"
+            >
+              <span className="material-symbols-rounded text-[16px]">
+                close
+              </span>
+            </button>
+          )}
+          <button
+            ref={sortTriggerRef}
+            type="button"
+            aria-label={`Sort results: ${sortBy === 'relevance' ? 'Top Relevance' : 'Newest'}`}
+            aria-haspopup="dialog"
+            aria-expanded={isSortOpen}
+            onClick={() => setIsSortOpen(true)}
+            className="liquid-glass sm:hidden w-9 h-9 rounded-full inline-flex items-center justify-center shrink-0"
+          >
+            <span
+              aria-hidden="true"
+              className="material-symbols-rounded text-[20px]"
+            >
+              sort
+            </span>
+          </button>
+        </div>
+        <div className="max-sm:hidden">
+          <GlassSegmentedControl<'relevance' | 'date'>
+            size="sm"
+            value={sortBy}
+            onChange={(nextSort) => startTransition(() => setSortBy(nextSort))}
+            items={[
+              { id: 'relevance', label: 'Top Relevance', icon: 'trending_up' },
+              { id: 'date', label: 'Newest', icon: 'schedule' },
+            ]}
+          />
+        </div>
+      </div>
+      <MobileBottomSheet
+        isOpen={isSortOpen && isOpen}
+        onClose={() => setIsSortOpen(false)}
+        title="Sort results"
+        ariaLabel="Sort search results"
+        triggerRef={sortTriggerRef}
+      >
+        {(
+          [
             { id: 'relevance', label: 'Top Relevance', icon: 'trending_up' },
             { id: 'date', label: 'Newest', icon: 'schedule' },
-          ]}
-        />
-      </div>
+          ] as const
+        ).map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            aria-current={sortBy === option.id ? 'true' : undefined}
+            onClick={() => {
+              startTransition(() => setSortBy(option.id));
+              setIsSortOpen(false);
+            }}
+            className="w-full min-h-12 px-4 rounded-xl flex items-center gap-3 text-left font-medium"
+            style={{
+              backgroundColor:
+                sortBy === option.id ? 'var(--bg-surface-active)' : undefined,
+              color:
+                sortBy === option.id ? 'var(--accent)' : 'var(--text-primary)',
+            }}
+          >
+            <span aria-hidden="true" className="material-symbols-rounded">
+              {option.icon}
+            </span>
+            {option.label}
+            {sortBy === option.id && (
+              <span
+                aria-hidden="true"
+                className="material-symbols-rounded ml-auto"
+              >
+                check
+              </span>
+            )}
+          </button>
+        ))}
+      </MobileBottomSheet>
 
       <SafeViewTransition>
-        <div className="custom-scrollbar max-h-[58vh] min-h-[260px] overflow-y-auto p-3.5 space-y-2">
+        <div className="custom-scrollbar flex-1 min-h-0 sm:max-h-[58vh] sm:min-h-[260px] overflow-y-auto p-3 sm:p-3.5 space-y-2">
           {loading && (
             <div className="space-y-2.5 py-1" role="status" aria-live="polite">
               <div
@@ -241,15 +325,15 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                   onClose();
                 }}
                 style={{ animationDelay: `${Math.min(idx * 35, 280)}ms` }}
-                className="liquid-glass animate-story-in w-full text-left p-3.5 rounded-2xl flex items-center justify-between gap-4 cursor-pointer"
+                className="liquid-glass animate-story-in w-full text-left p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl block sm:flex sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4 cursor-pointer"
               >
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-semibold truncate">
+                <div className="hidden sm:block min-w-0 flex-1">
+                  <div className="text-sm font-semibold leading-snug line-clamp-2 sm:line-clamp-1">
                     {story.cleanTitle}
                   </div>
                   <div
                     style={{ color: 'var(--text-muted)' }}
-                    className="flex items-center flex-wrap gap-2.5 text-xs mt-1.5"
+                    className="hidden sm:flex items-center flex-wrap gap-2.5 text-xs mt-1.5"
                   >
                     <span
                       style={{ color: 'var(--accent)' }}
@@ -279,7 +363,73 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                   </div>
                 </div>
 
-                <div className="shrink-0 flex flex-col items-end gap-1.5 pl-2">
+                <div className="sm:hidden grid grid-cols-[minmax(0,1fr)_76px] grid-rows-[auto_auto] items-start gap-x-2 gap-y-1">
+                  <div className="col-start-1 row-start-1 min-w-0 text-sm font-semibold leading-snug line-clamp-2">
+                    {story.cleanTitle}
+                  </div>
+                  <span
+                    className="col-start-2 row-start-1 inline-flex items-center justify-end gap-1 whitespace-nowrap text-[10px] font-semibold"
+                    aria-label={`${story.commentsCount} comments`}
+                    style={{ color: 'var(--text-muted)' }}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="material-symbols-rounded text-[13px]"
+                    >
+                      forum
+                    </span>
+                    {story.commentsCount}
+                  </span>
+                  <div
+                    className="col-start-1 row-start-2 min-w-0 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] leading-none"
+                    style={{ color: 'var(--text-muted)' }}
+                  >
+                    <span
+                      style={{ color: 'var(--accent)' }}
+                      className="shrink-0 font-semibold inline-flex items-center gap-0.5"
+                    >
+                      <span aria-hidden="true">▲</span>
+                      {story.points}
+                    </span>
+                    <span className="min-w-0 max-w-[72px] truncate inline-flex items-center gap-0.5">
+                      <span
+                        aria-hidden="true"
+                        className="material-symbols-rounded text-[12px]"
+                      >
+                        person
+                      </span>
+                      {story.user}
+                    </span>
+                    {story.domain && (
+                      <span className="min-w-0 max-w-[92px] truncate inline-flex items-center gap-0.5">
+                        <span
+                          aria-hidden="true"
+                          className="material-symbols-rounded text-[12px]"
+                          style={{ color: 'var(--link-unvisited)' }}
+                        >
+                          language
+                        </span>
+                        {story.domain}
+                      </span>
+                    )}
+                  </div>
+                  <time
+                    dateTime={new Date(story.time * 1000).toISOString()}
+                    title={`Published ${publishedDateFormatter.format(new Date(story.time * 1000))} (${new Date(story.time * 1000).toLocaleString()})`}
+                    className="col-start-2 row-start-2 inline-flex items-center justify-end gap-1 whitespace-nowrap text-[10px]"
+                    style={{ color: 'var(--text-muted)' }}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="material-symbols-rounded text-[11px]"
+                    >
+                      schedule
+                    </span>
+                    {formatRelativeTimeConcise(story.time)}
+                  </time>
+                </div>
+
+                <div className="hidden sm:flex w-full sm:w-auto shrink-0 flex-row sm:flex-col items-center sm:items-end justify-between gap-1.5 sm:pl-2">
                   <span className="liquid-glass px-2.5 py-1 rounded-xl text-xs font-semibold inline-flex items-center gap-1">
                     <span className="material-symbols-rounded text-[14px]">
                       forum

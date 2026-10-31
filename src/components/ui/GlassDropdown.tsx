@@ -75,9 +75,7 @@ export function GlassDropdown<T extends string>({
         </span>
         <span
           style={{ color: 'var(--text-muted)' }}
-          className={`material-symbols-rounded text-[15px] transition-transform duration-200 ${
-            isOpen ? 'rotate-180' : ''
-          }`}
+          className={`material-symbols-rounded text-[15px] transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
         >
           expand_more
         </span>
