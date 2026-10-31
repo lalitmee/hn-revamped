@@ -5,6 +5,52 @@ import { HNStory, ReadHistoryEntry } from '@/types/hn';
 import { getNewCommentsDelta } from '@/lib/storage';
 import { StoryPillRow } from './StoryPillRow';
 
+function StoryShimmer({ compact, index }: { compact: boolean; index: number }) {
+  const placeholder = (className: string) => (
+    <div
+      aria-hidden="true"
+      className={`rounded-full bg-[color-mix(in_srgb,var(--text-primary)_12%,transparent)] ${className}`}
+    />
+  );
+
+  return (
+    <div
+      aria-hidden="true"
+      style={{ animationDelay: `${index * 35}ms` }}
+      className={`liquid-glass liquid-shimmer animate-story-in flex shrink-0 items-center ${
+        compact
+          ? 'h-[4.25rem] gap-3 rounded-xl px-2 py-1.5 sm:h-[4.5rem] sm:px-3 sm:py-2 sm:gap-3'
+          : 'h-[4.75rem] gap-3 rounded-xl p-2 sm:h-[6.25rem] sm:gap-4 sm:rounded-2xl sm:p-4'
+      }`}
+    >
+      <div
+        className={`hidden shrink-0 rounded-lg bg-[color-mix(in_srgb,var(--accent)_20%,transparent)] sm:block ${
+          compact ? 'h-8 w-12' : 'h-[3.375rem] w-[3.25rem] rounded-xl'
+        }`}
+      />
+      <div className="min-w-0 flex-1 space-y-2">
+        <div className="space-y-1.5">
+          {placeholder(`h-3.5 ${index % 2 === 0 ? 'w-4/5' : 'w-3/5'}`)}
+          {placeholder(`h-3.5 ${index % 2 === 0 ? 'w-2/5' : 'w-1/2'}`)}
+        </div>
+        <div className="flex items-center gap-2">
+          {placeholder(
+            'h-2.5 w-8 bg-[color-mix(in_srgb,var(--accent)_20%,transparent)]'
+          )}
+          {placeholder(
+            'h-2.5 w-12 bg-[color-mix(in_srgb,var(--link-unvisited)_18%,transparent)]'
+          )}
+          {placeholder('hidden h-2.5 w-16 sm:block')}
+        </div>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <div className="hidden h-7 w-7 rounded-lg bg-[color-mix(in_srgb,var(--text-muted)_15%,transparent)] sm:block" />
+        <div className="h-7 w-12 rounded-lg bg-[color-mix(in_srgb,var(--text-muted)_15%,transparent)]" />
+      </div>
+    </div>
+  );
+}
+
 interface StoryFeedPaneProps {
   stories: HNStory[];
   loading: boolean;
@@ -145,13 +191,7 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
         }`}
       >
         {Array.from({ length: compact ? 20 : 12 }).map((_, i) => (
-          <div
-            key={i}
-            style={{ animationDelay: `${i * 30}ms` }}
-            className={`liquid-glass liquid-shimmer animate-story-in shrink-0 ${
-              compact ? 'h-14 rounded-xl' : 'h-24 rounded-2xl'
-            }`}
-          />
+          <StoryShimmer key={i} compact={compact} index={i} />
         ))}
       </div>
     );
@@ -244,12 +284,10 @@ export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
           aria-live="polite"
         >
           {Array.from({ length: compact ? 4 : 3 }).map((_, i) => (
-            <div
+            <StoryShimmer
               key={`more-skeleton-${i}`}
-              style={{ animationDelay: `${i * 45}ms` }}
-              className={`liquid-glass liquid-shimmer animate-story-in ${
-                compact ? 'h-14 rounded-xl' : 'h-24 rounded-2xl'
-              }`}
+              compact={compact}
+              index={i}
             />
           ))}
         </div>

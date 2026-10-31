@@ -6,8 +6,8 @@ Welcome to **HN Revamped**. This document defines the operating rules, technical
 
 ## 1. Tooling & Environment Constraints
 
-- **Package Manager:** Always use **`yarn`** (never `npm` or `pnpm`).
-- **Lockfile Integrity:** `yarn.lock` is the canonical lockfile. Run `yarn install --frozen-lockfile` to install dependencies; never generate or restore `package-lock.json`.
+- **Package Manager:** Always use **`pnpm`** (never `npm` or `yarn`).
+- **Lockfile Integrity:** `pnpm-lock.yaml` is the canonical lockfile. Run `pnpm install --frozen-lockfile` to install dependencies; never generate or restore other lockfiles.
 - **Node.js Runtime:** Requires Node.js 20.x or newer.
 - **Git Approvals:** Never commit, push, or tag changes without explicit user approval.
 - **Commit Format:** Strictly use the **Conventional Commits** standard (e.g., `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`, `style:`).
@@ -20,19 +20,19 @@ Before submitting or asking to commit changes, agents must run and pass the foll
 
 ```bash
 # 1. Format Check (Prettier)
-yarn format:check
+pnpm format:check
 
 # 2. TypeScript Validation
-yarn typecheck
+pnpm typecheck
 
 # 3. Test Suite (Vitest)
-yarn test
+pnpm test
 
 # 4. Production Build Verification
-yarn build
+pnpm build
 ```
 
-- Run `yarn format` to automatically apply formatting to `src/` and Markdown files.
+- Run `pnpm format` to automatically apply formatting to `src/` and Markdown files.
 - All 21+ unit and integration tests must pass without regressions before committing.
 
 ---

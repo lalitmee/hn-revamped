@@ -32,10 +32,12 @@ import {
 } from '@/lib/hn-api';
 import {
   filterStories,
+  hasUsedSwipe,
   loadBookmarks,
   loadPreferences,
   loadReadHistory,
   markStoryAsRead,
+  recordSwipe,
   savePreferences,
   toggleBookmarkStory,
 } from '@/lib/storage';
@@ -225,7 +227,7 @@ export const WorkspaceShell: React.FC = () => {
       options?: { skipUrlSync?: boolean; isPlaceholder?: boolean }
     ) => {
       const reqId = ++latestStoryReqRef.current;
-      setShowDetailSwipeHint(true);
+      setShowDetailSwipeHint(!hasUsedSwipe('detail'));
 
       if (!options?.skipUrlSync) {
         syncStoryQueryParam(story.id);
@@ -468,9 +470,11 @@ export const WorkspaceShell: React.FC = () => {
     if (!selectedStory?.url) return;
     if (dx < 0 && activeTab === 'comments') {
       setActiveTab('reader');
+      recordSwipe('detail');
       setShowDetailSwipeHint(false);
     } else if (dx > 0 && activeTab === 'reader') {
       setActiveTab('comments');
+      recordSwipe('detail');
       setShowDetailSwipeHint(false);
     }
   };

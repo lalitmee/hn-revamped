@@ -118,7 +118,7 @@ flowchart LR
 ### Prerequisites
 
 - Node.js 20.x or newer
-- Yarn 1.22+
+- pnpm 11+
 
 ### Installation
 
@@ -128,10 +128,10 @@ git clone https://github.com/lalitmee/hn-revamped.git
 cd hn-revamped
 
 # Install dependencies
-yarn install --frozen-lockfile
+pnpm install --frozen-lockfile
 
 # Start development server
-yarn dev
+pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
@@ -144,16 +144,16 @@ Always verify tests, types, and production builds before committing changes:
 
 ```bash
 # Run unit and integration tests (Vitest)
-yarn test
+pnpm test
 
 # Validate TypeScript types
-yarn typecheck
+pnpm typecheck
 
 # Verify optimized production build
-yarn build
+pnpm build
 
 # Run local production server
-yarn start
+pnpm start
 ```
 
 ---

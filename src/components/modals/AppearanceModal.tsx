@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import {
   CardDensity,
@@ -25,6 +25,7 @@ import { GlassButton } from '@/components/ui/GlassButton';
 import { StoryPillRow } from '@/components/feed/StoryPillRow';
 import { CommentNode } from '@/components/detail/CommentNode';
 import { MobileBottomSheet } from '@/components/ui/MobileBottomSheet';
+import { hasUsedSwipe, recordSwipe } from '@/lib/storage';
 interface AppearanceModalProps {
   isOpen: boolean;
   preferences: UserPreferences;
@@ -172,7 +173,11 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
   }, [activeTab, isOpen]);
 
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
-  const [showSwipeHint, setShowSwipeHint] = useState(true);
+  const [showSwipeHint, setShowSwipeHint] = useState(false);
+
+  useEffect(() => {
+    setShowSwipeHint(!hasUsedSwipe('appearance'));
+  }, []);
 
   if (!isOpen) return null;
 
@@ -330,6 +335,7 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
     const nextTab = STUDIO_TABS[nextIndex];
     if (nextTab) {
       selectTab(nextTab.id, true);
+      recordSwipe('appearance');
       setShowSwipeHint(false);
     }
   };
