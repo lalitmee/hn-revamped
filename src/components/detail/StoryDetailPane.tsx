@@ -118,6 +118,11 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
     );
   }
 
+  // Reader View is not a valid tab for text-only stories, even if the parent
+  // still carries the previous story's selection for one render.
+  const visibleTab =
+    activeTab === 'reader' && !story.url ? 'comments' : activeTab;
+
   const tabItems: SegmentedItem<DetailTab>[] = [
     {
       id: 'comments',
@@ -149,12 +154,12 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
       >
         <GlassSegmentedControl<DetailTab>
           items={tabItems}
-          value={activeTab}
+          value={visibleTab}
           onChange={(nextTab) => startTransition(() => onTabChange(nextTab))}
         />
 
         <div className="flex items-center gap-1.5 sm:gap-2">
-          {activeTab === 'comments' && (
+          {visibleTab === 'comments' && (
             <>
               {isSearchOpen || searchQuery ? (
                 <div className="liquid-glass h-8 px-2.5 rounded-full flex items-center gap-1.5 w-44 sm:w-56 transition-all duration-200">
@@ -405,7 +410,7 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
         </header>
 
         <SafeViewTransition>
-          {activeTab === 'reader' ? (
+          {visibleTab === 'reader' ? (
             <ArticleReaderView url={story.url} storyTitle={story.cleanTitle} />
           ) : loading && story.comments.length === 0 ? (
             <div

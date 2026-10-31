@@ -17,6 +17,13 @@ interface ArticleReaderViewProps {
 
 const SPEED_OPTIONS = [1, 1.25, 1.5, 1.75, 2] as const;
 
+const KOKORO_VOICES = [
+  { id: 'kokoro:af_heart', label: 'Kokoro · Heart (local)' },
+  { id: 'kokoro:af_bella', label: 'Kokoro · Bella (local)' },
+  { id: 'kokoro:af_nova', label: 'Kokoro · Nova (local)' },
+  { id: 'kokoro:am_michael', label: 'Kokoro · Michael (local)' },
+];
+
 export interface SpokenSegment {
   index: number;
   text: string;
@@ -106,14 +113,68 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
   const selectedVoiceRef = useRef<string>('');
   const speechSeqRef = useRef<number>(0);
   const speakTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const audioSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const workerRef = useRef<Worker | null>(null);
+  const workerReadyRef = useRef(false);
+  const workerErrorRef = useRef<string | null>(null);
+  type GeneratedAudio = { audio: Float32Array; sampleRate: number };
+  const requestsRef = useRef(
+    new Map<
+      number,
+      {
+        resolve: (result: GeneratedAudio) => void;
+        reject: (error: Error) => void;
+      }
+    >()
+  );
+  const nextRequestIdRef = useRef(0);
+  const prefetchedRef = useRef<{
+    key: string;
+    promise: Promise<GeneratedAudio>;
+  } | null>(null);
 
-  // Detect Web Speech API & load OS/browser voices
+  const requestAudio = useCallback(
+    (
+      text: string,
+      voice: string,
+      speed: number,
+      priority: 'play' | 'prefetch'
+    ) => {
+      const worker = workerRef.current;
+      if (!worker || workerErrorRef.current) {
+        return Promise.reject(
+          new Error(
+            workerErrorRef.current ?? 'Local voice worker is unavailable.'
+          )
+        );
+      }
+      const id = ++nextRequestIdRef.current;
+      return new Promise<GeneratedAudio>((resolve, reject) => {
+        requestsRef.current.set(id, { resolve, reject });
+        worker.postMessage({
+          type: 'generate',
+          id,
+          text,
+          voice,
+          speed,
+          priority,
+        });
+      });
+    },
+    []
+  );
+
+  // Load native voices when available; local Kokoro only needs Web Audio.
   useEffect(() => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-      setTtsSupported(false);
+    if (typeof window === 'undefined') return;
+    const hasNativeTts = 'speechSynthesis' in window;
+    setTtsSupported(hasNativeTts || 'AudioContext' in window);
+    if (!hasNativeTts) {
+      setSelectedVoiceURI('kokoro:af_heart');
+      selectedVoiceRef.current = 'kokoro:af_heart';
       return;
     }
-    setTtsSupported(true);
 
     const updateVoices = () => {
       const available = window.speechSynthesis.getVoices() || [];
@@ -148,14 +209,93 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
     };
   }, []);
 
+  // Reader View is mounted only for the active reader tab. Prewarm the model
+  // here, not on site load; the worker keeps downloads and WASM off the UI thread.
+  useEffect(() => {
+    if (
+      typeof Worker === 'undefined' ||
+      typeof window.AudioContext === 'undefined'
+    )
+      return;
+    let worker: Worker;
+    try {
+      worker = new Worker(
+        new URL('../../lib/kokoro-worker.ts', import.meta.url),
+        {
+          type: 'module',
+        }
+      );
+    } catch {
+      workerErrorRef.current = 'Could not start the local voice worker.';
+      return;
+    }
+    workerRef.current = worker;
+    worker.onmessage = (
+      event: MessageEvent<{
+        type: 'ready' | 'audio' | 'error';
+        id: number;
+        audio?: Float32Array;
+        samplingRate?: number;
+        message?: string;
+      }>
+    ) => {
+      const response = event.data;
+      if (response.type === 'ready') {
+        workerReadyRef.current = true;
+        return;
+      }
+      if (response.type === 'error' && response.id === 0) {
+        workerErrorRef.current =
+          response.message ?? 'Local voice failed to load.';
+        return;
+      }
+      const request = requestsRef.current.get(response.id);
+      if (!request) return;
+      requestsRef.current.delete(response.id);
+      if (response.type === 'error')
+        request.reject(new Error(response.message ?? 'Local voice failed.'));
+      else if (response.audio && response.samplingRate)
+        request.resolve({
+          audio: response.audio,
+          sampleRate: response.samplingRate,
+        });
+    };
+    worker.onerror = () => {
+      workerErrorRef.current = 'The local voice worker stopped unexpectedly.';
+      requestsRef.current.forEach(({ reject }) =>
+        reject(new Error(workerErrorRef.current!))
+      );
+      requestsRef.current.clear();
+    };
+    worker.postMessage({ type: 'load', id: 0 });
+    return () => {
+      requestsRef.current.forEach(({ reject }) =>
+        reject(new Error('Local voice worker closed.'))
+      );
+      requestsRef.current.clear();
+      prefetchedRef.current = null;
+      worker.terminate();
+      workerRef.current = null;
+      workerReadyRef.current = false;
+      audioSourceRef.current?.stop();
+      void audioContextRef.current?.close();
+    };
+  }, []);
+
   const stopSpeech = useCallback(() => {
     speechSeqRef.current += 1;
+    prefetchedRef.current = null;
     if (speakTimerRef.current) {
       clearTimeout(speakTimerRef.current);
       speakTimerRef.current = null;
     }
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
+    }
+    if (audioSourceRef.current) {
+      audioSourceRef.current.onended = null;
+      audioSourceRef.current.stop();
+      audioSourceRef.current = null;
     }
     setPlaybackState('idle');
     setActiveSegmentIdx(0);
@@ -217,6 +357,11 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         window.speechSynthesis.cancel();
       }
+      if (audioSourceRef.current) {
+        audioSourceRef.current.onended = null;
+        audioSourceRef.current.stop();
+        audioSourceRef.current = null;
+      }
     };
   }, [url, storyTitle, stopSpeech]);
 
@@ -265,8 +410,7 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
 
   const speakSegmentAt = useCallback(
     (index: number) => {
-      if (typeof window === 'undefined' || !('speechSynthesis' in window))
-        return;
+      if (typeof window === 'undefined') return;
       if (index < 0 || index >= segments.length) {
         setPlaybackState('idle');
         setActiveSegmentIdx(0);
@@ -279,26 +423,130 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
         clearTimeout(speakTimerRef.current);
         speakTimerRef.current = null;
       }
-      window.speechSynthesis.cancel();
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      if (audioSourceRef.current) {
+        audioSourceRef.current.onended = null;
+        audioSourceRef.current.stop();
+        audioSourceRef.current = null;
+      }
 
       setActiveSegmentIdx(index);
       activeSegmentRef.current = index;
       setPlaybackState('playing');
       setTtsNotice(null);
 
+      const seg = segments[index];
+      const selectedVoice = selectedVoiceRef.current;
+      const kokoroVoice = selectedVoice.startsWith('kokoro:')
+        ? selectedVoice.slice('kokoro:'.length)
+        : null;
+
+      if (kokoroVoice) {
+        // Resume the audio context synchronously inside the click gesture, before
+        // model loading/inference awaits, so browser autoplay policies allow playback.
+        const AudioContextConstructor = window.AudioContext;
+        if (!AudioContextConstructor) {
+          setPlaybackState('idle');
+          setTtsNotice(
+            'Local voice playback is not supported in this browser.'
+          );
+          return;
+        }
+        const context =
+          audioContextRef.current ??
+          (audioContextRef.current = new AudioContextConstructor());
+        void context.resume();
+        setTtsNotice(
+          'Loading the local voice model (first use requires a download)…'
+        );
+
+        const speed = playbackRateRef.current;
+        const key = JSON.stringify([index, seg.text, kokoroVoice, speed]);
+        const cached = prefetchedRef.current;
+        const audioPromise =
+          cached?.key === key
+            ? cached.promise
+            : requestAudio(seg.text, kokoroVoice, speed, 'play');
+        prefetchedRef.current = null;
+        setTtsNotice(
+          cached?.key === key
+            ? 'Preparing local speech…'
+            : workerReadyRef.current
+              ? 'Generating local speech…'
+              : 'Loading the local voice model (first use requires a download)…'
+        );
+        void audioPromise
+          .then(({ audio, sampleRate }) => {
+            if (speechSeqRef.current !== seq) return;
+            const buffer = context.createBuffer(1, audio.length, sampleRate);
+            buffer.copyToChannel(new Float32Array(audio), 0);
+            setTtsNotice(null);
+            const source = context.createBufferSource();
+            source.buffer = buffer;
+            source.playbackRate.value = playbackRateRef.current;
+            source.onended = () => {
+              if (speechSeqRef.current !== seq) return;
+              audioSourceRef.current = null;
+              const nextIdx = activeSegmentRef.current + 1;
+              if (nextIdx < segments.length) speakSegmentAt(nextIdx);
+              else {
+                setPlaybackState('idle');
+                setActiveSegmentIdx(0);
+                activeSegmentRef.current = 0;
+              }
+            };
+            audioSourceRef.current = source;
+            source.connect(context.destination);
+            source.start();
+
+            // Keep only one lookahead; don't synthesize the whole article.
+            const next = segments[index + 1];
+            if (next) {
+              const nextKey = JSON.stringify([
+                index + 1,
+                next.text,
+                kokoroVoice,
+                speed,
+              ]);
+              const promise = requestAudio(
+                next.text,
+                kokoroVoice,
+                speed,
+                'prefetch'
+              );
+              // A speculative failure must not produce an unhandled rejection.
+              void promise.catch(() => {});
+              prefetchedRef.current = { key: nextKey, promise };
+            }
+          })
+          .catch((error: unknown) => {
+            if (speechSeqRef.current !== seq) return;
+            setPlaybackState('idle');
+            setTtsNotice(
+              `Could not load the local voice: ${error instanceof Error ? error.message : 'Unknown error.'}`
+            );
+          });
+        return;
+      }
+
+      if (!('speechSynthesis' in window)) {
+        setPlaybackState('idle');
+        setTtsNotice('No system speech voice is available in this browser.');
+        return;
+      }
+
       // Delay speak() by 20ms after cancel() so Chromium/Linux speechSynthesis
       // does not cancel or drop the newly queued utterance when changing speed/voice.
       speakTimerRef.current = setTimeout(() => {
         if (speechSeqRef.current !== seq) return;
 
-        const seg = segments[index];
         const utterance = new SpeechSynthesisUtterance(seg.text);
         utterance.rate = playbackRateRef.current;
 
         const availableVoices = window.speechSynthesis.getVoices() || [];
-        if (selectedVoiceRef.current) {
+        if (selectedVoice) {
           const matched = availableVoices.find(
-            (v) => v.voiceURI === selectedVoiceRef.current
+            (v) => v.voiceURI === selectedVoice
           );
           if (matched) utterance.voice = matched;
         }
@@ -328,17 +576,26 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
         window.speechSynthesis.speak(utterance);
       }, 20);
     },
-    [segments]
+    [segments, requestAudio]
   );
 
   const handleTogglePlayPause = () => {
     if (!ttsSupported || segments.length === 0) return;
 
+    const usingKokoro = selectedVoiceRef.current.startsWith('kokoro:');
     if (playbackState === 'playing') {
-      window.speechSynthesis.pause();
+      if (usingKokoro) {
+        void audioContextRef.current?.suspend();
+      } else if ('speechSynthesis' in window) {
+        window.speechSynthesis.pause();
+      }
       setPlaybackState('paused');
     } else if (playbackState === 'paused') {
-      window.speechSynthesis.resume();
+      if (usingKokoro) {
+        void audioContextRef.current?.resume();
+      } else if ('speechSynthesis' in window) {
+        window.speechSynthesis.resume();
+      }
       setPlaybackState('playing');
     } else {
       speakSegmentAt(activeSegmentIdx || 0);
@@ -578,29 +835,34 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
                       <span className="leading-none">{playbackRate}×</span>
                     </button>
 
-                    {voices.length > 1 && (
-                      <GlassDropdown<string>
-                        size="sm"
-                        leadingIcon="record_voice_over"
-                        ariaLabel="Select speech synthesis voice"
-                        value={selectedVoiceURI}
-                        options={voices.map((v) => ({
+                    <GlassDropdown<string>
+                      size="sm"
+                      leadingIcon="record_voice_over"
+                      ariaLabel="Select speech synthesis voice"
+                      value={selectedVoiceURI}
+                      options={[
+                        { id: '', label: 'System default', icon: 'devices' },
+                        ...voices.map((v) => ({
                           id: v.voiceURI,
                           label: v.name.replace(
                             /Microsoft |Google |Apple /g,
                             ''
                           ),
                           icon: 'graphic_eq',
-                        }))}
-                        onChange={(uri) => {
-                          setSelectedVoiceURI(uri);
-                          selectedVoiceRef.current = uri;
-                          if (playbackState === 'playing') {
-                            speakSegmentAt(activeSegmentRef.current);
-                          }
-                        }}
-                      />
-                    )}
+                        })),
+                        ...KOKORO_VOICES.map((voice) => ({
+                          ...voice,
+                          icon: 'graphic_eq',
+                        })),
+                      ]}
+                      onChange={(voiceId) => {
+                        setSelectedVoiceURI(voiceId);
+                        selectedVoiceRef.current = voiceId;
+                        if (playbackState === 'playing') {
+                          speakSegmentAt(activeSegmentRef.current);
+                        }
+                      }}
+                    />
 
                     <button
                       type="button"

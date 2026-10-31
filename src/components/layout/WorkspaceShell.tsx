@@ -224,6 +224,9 @@ export const WorkspaceShell: React.FC = () => {
     ) => {
       const reqId = ++latestStoryReqRef.current;
 
+      // A text-only story has no Reader View; don't carry that selection over.
+      if (!story.url) setActiveTab('comments');
+
       if (!options?.skipUrlSync) {
         syncStoryQueryParam(story.id);
       }
