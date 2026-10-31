@@ -24,6 +24,30 @@ const mockStory: HNStory = {
 };
 
 describe('StoryPillRow Component', () => {
+  it.each([false, true])(
+    'includes metadata icons in mobile and desktop markup (compact=%s)',
+    (compact) => {
+      render(
+        <StoryPillRow
+          story={mockStory}
+          index={1}
+          isSelected={false}
+          compact={compact}
+          isRead={false}
+          newCommentsDelta={0}
+          isBookmarked={false}
+          onSelect={vi.fn()}
+          onToggleBookmark={vi.fn()}
+        />
+      );
+      for (const icon of ['language', 'person', 'schedule']) {
+        expect(screen.getAllByText(icon)).toHaveLength(2);
+        for (const element of screen.getAllByText(icon)) {
+          expect(element).toHaveClass('material-symbols-rounded');
+        }
+      }
+    }
+  );
   it('renders compact variant with title, points, comments and metadata on one line', () => {
     render(
       <StoryPillRow

@@ -180,12 +180,20 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
             </span>
             <span
               title={story.domain}
-              className="min-w-0 max-w-[100px] truncate"
+              className="inline-flex items-center gap-0.5 min-w-0 max-w-[100px]"
               style={{
                 color: story.domain ? 'var(--link-unvisited)' : undefined,
               }}
             >
-              {story.domain ?? `#${index}`}
+              {story.domain && (
+                <span
+                  aria-hidden="true"
+                  className="material-symbols-rounded text-[13px] shrink-0"
+                >
+                  language
+                </span>
+              )}
+              <span className="truncate">{story.domain ?? `#${index}`}</span>
             </span>
             {story.badges.map((badge) => (
               <span
@@ -196,8 +204,24 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
                 {badge.icon}
               </span>
             ))}
-            <span className="min-w-0 max-w-[70px] truncate">{story.user}</span>
-            <span className="shrink-0">· {formatRelativeTime(story.time)}</span>
+            <span className="inline-flex items-center gap-0.5 min-w-0 max-w-[70px]">
+              <span
+                aria-hidden="true"
+                className="material-symbols-rounded text-[13px] shrink-0"
+              >
+                person
+              </span>
+              <span className="truncate">{story.user}</span>
+            </span>
+            <span className="inline-flex items-center gap-0.5 shrink-0">
+              <span
+                aria-hidden="true"
+                className="material-symbols-rounded text-[13px]"
+              >
+                schedule
+              </span>
+              {formatRelativeTime(story.time)}
+            </span>
           </div>
           <div className="flex items-center gap-1 shrink-0">
             <span
@@ -253,7 +277,7 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
               </h3>
               <div
                 style={{ color: 'var(--text-muted)' }}
-                className="flex items-center gap-1.5 mt-0.5 text-[12px] min-w-0"
+                className="flex flex-wrap items-center gap-1.5 mt-0.5 text-[12px] min-w-0"
               >
                 <span className="font-mono shrink-0">#{index}</span>
                 {story.badges.map((badge) => (
@@ -270,13 +294,34 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
                   <span
                     style={{ color: 'var(--link-unvisited)' }}
                     title={story.domain}
+                    className="inline-flex items-center gap-1 min-w-0 max-w-[160px]"
                   >
-                    {story.domain}
+                    <span
+                      aria-hidden="true"
+                      className="material-symbols-rounded text-[14px] shrink-0"
+                    >
+                      language
+                    </span>
+                    <span className="truncate">{story.domain}</span>
                   </span>
                 )}
-                <span className="shrink-0">· {story.user}</span>
-                <span className="shrink-0">
-                  · {formatRelativeTime(story.time)}
+                <span className="inline-flex items-center gap-1 min-w-0 max-w-[120px]">
+                  <span
+                    aria-hidden="true"
+                    className="material-symbols-rounded text-[14px] shrink-0"
+                  >
+                    person
+                  </span>
+                  <span className="truncate">{story.user}</span>
+                </span>
+                <span className="inline-flex items-center gap-1 shrink-0">
+                  <span
+                    aria-hidden="true"
+                    className="material-symbols-rounded text-[14px]"
+                  >
+                    schedule
+                  </span>
+                  {formatRelativeTime(story.time)}
                 </span>
               </div>
             </div>

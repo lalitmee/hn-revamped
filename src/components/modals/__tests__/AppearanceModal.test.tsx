@@ -106,6 +106,32 @@ describe('mobile appearance controls', () => {
     expect(themeTab).toHaveAttribute('aria-selected', 'true');
   });
 
+  it('swipes between tabs from empty space below the panel content', () => {
+    render(
+      <AppearanceModal
+        isOpen
+        preferences={{ ...DEFAULT_PREFERENCES }}
+        onUpdate={vi.fn()}
+        onClose={vi.fn()}
+      />
+    );
+
+    const scrollArea = screen
+      .getByRole('tabpanel')
+      .closest('.custom-scrollbar');
+    expect(scrollArea).not.toBeNull();
+    fireEvent.touchStart(scrollArea!, {
+      touches: [{ clientX: 280, clientY: 700 }],
+    });
+    fireEvent.touchEnd(scrollArea!, {
+      changedTouches: [{ clientX: 210, clientY: 705 }],
+    });
+    expect(screen.getByRole('tab', { name: 'Text' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    );
+  });
+
   it('clears muted keyword and domain lists with labeled actions', () => {
     const onUpdate = vi.fn();
     render(

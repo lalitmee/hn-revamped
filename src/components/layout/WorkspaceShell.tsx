@@ -72,6 +72,7 @@ export const WorkspaceShell: React.FC = () => {
     useState<HNStoryWithComments | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const feedTouchStartRef = useRef<{ x: number; y: number } | null>(null);
   const [showDetailSwipeHint, setShowDetailSwipeHint] = useState(true);
   const [activeTab, setActiveTab] = useState<DetailTab>('comments');
   const latestStoryReqRef = useRef(0);
@@ -567,6 +568,44 @@ export const WorkspaceShell: React.FC = () => {
     return list;
   }, [stories, preferences, readHistory, selectedStory]);
 
+  const onFeedTouchStart = (event: React.TouchEvent) => {
+    feedTouchStartRef.current = null;
+    if (selectedStory || event.touches.length !== 1) return;
+    const target = event.target as HTMLElement;
+    if (
+      target.closest(
+        'button, a, input, textarea, select, [role="button"], [role="slider"], [role="switch"], [contenteditable="true"]'
+      )
+    )
+      return;
+    const touch = event.touches[0];
+    if (touch.clientX < 28 || touch.clientX > window.innerWidth - 28) return;
+    feedTouchStartRef.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const onFeedTouchEnd = (event: React.TouchEvent) => {
+    const start = feedTouchStartRef.current;
+    feedTouchStartRef.current = null;
+    if (!start || selectedStory || event.changedTouches.length !== 1) return;
+    const touch = event.changedTouches[0];
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    if (Math.abs(dx) < 80 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    const feeds: FeedType[] = [
+      'top',
+      'new',
+      'best',
+      'ask',
+      'show',
+      'jobs',
+      'saved',
+    ];
+    const nextIndex =
+      (feeds.indexOf(activeFeed) + (dx < 0 ? 1 : -1) + feeds.length) %
+      feeds.length;
+    handleSelectFeed(feeds[nextIndex]);
+  };
+
   const onDetailTouchStart = (event: React.TouchEvent) => {
     touchStartRef.current = null;
     if (event.touches.length !== 1) return;
@@ -739,7 +778,12 @@ export const WorkspaceShell: React.FC = () => {
             {/* Sticky / Independently Contained Left Feed Pane */}
             <section
               style={{ borderColor: 'var(--border-subtle)' }}
-              className={`custom-scrollbar mobile-feed-scroll lg:col-span-5 xl:col-span-5 lg:border-r h-full overflow-y-auto overscroll-contain ${selectedStory ? 'hidden lg:block' : ''}`}
+              onTouchStart={onFeedTouchStart}
+              onTouchEnd={onFeedTouchEnd}
+              onTouchCancel={() => {
+                feedTouchStartRef.current = null;
+              }}
+              className={`touch-pan-y custom-scrollbar mobile-feed-scroll lg:col-span-5 xl:col-span-5 lg:border-r h-full overflow-y-auto overscroll-contain ${selectedStory ? 'hidden lg:block' : ''}`}
             >
               <StoryFeedPane
                 stories={visibleStories}
@@ -856,7 +900,12 @@ export const WorkspaceShell: React.FC = () => {
           </main>
         ) : (
           <main
-            className={`custom-scrollbar mobile-feed-scroll flex-1 min-h-0 ${selectedStory ? 'max-lg:overflow-hidden max-lg:py-0 max-lg:px-0' : 'overflow-y-auto'} lg:overflow-visible max-w-4xl w-full mx-auto py-2 sm:py-4 px-1.5 sm:px-6`}
+            onTouchStart={onFeedTouchStart}
+            onTouchEnd={onFeedTouchEnd}
+            onTouchCancel={() => {
+              feedTouchStartRef.current = null;
+            }}
+            className={`touch-pan-y custom-scrollbar mobile-feed-scroll flex-1 min-h-0 ${selectedStory ? 'max-lg:overflow-hidden max-lg:py-0 max-lg:px-0' : 'overflow-y-auto'} lg:overflow-visible max-w-4xl w-full mx-auto py-2 sm:py-4 px-1.5 sm:px-6`}
           >
             {selectedStory ? (
               <div

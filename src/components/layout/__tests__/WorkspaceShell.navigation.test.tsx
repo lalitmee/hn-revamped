@@ -122,6 +122,32 @@ describe('workspace navigation history', () => {
     );
   });
 
+  it('swipes feeds across the feed area without intercepting vertical or edge gestures', () => {
+    render(<WorkspaceShell />);
+    const area = screen.getByText('Open story').closest('.mobile-feed-scroll')!;
+    const swipe = (x: number, y: number, endX: number, endY: number) => {
+      fireEvent.touchStart(area, { touches: [{ clientX: x, clientY: y }] });
+      fireEvent.touchEnd(area, {
+        changedTouches: [{ clientX: endX, clientY: endY }],
+      });
+    };
+    swipe(250, 600, 120, 605);
+    expect(screen.getByTestId('feed').textContent).toBe('new');
+    expect(window.location.search).toBe('?feed=new');
+    swipe(250, 600, 245, 740);
+    expect(screen.getByTestId('feed').textContent).toBe('new');
+    swipe(10, 600, 150, 605);
+    expect(screen.getByTestId('feed').textContent).toBe('new');
+    swipe(120, 600, 250, 605);
+    expect(screen.getByTestId('feed').textContent).toBe('top');
+    swipe(120, 600, 250, 605);
+    expect(screen.getByTestId('feed').textContent).toBe('saved');
+    expect(window.location.search).toBe('?feed=saved');
+    swipe(250, 600, 120, 605);
+    expect(screen.getByTestId('feed').textContent).toBe('top');
+    expect(window.location.search).toBe('');
+  });
+
   it('opens appearance as a URL-backed view and restores it on navigation', async () => {
     render(<WorkspaceShell />);
     fireEvent.click(screen.getByText('Appearance'));

@@ -892,7 +892,14 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
       </MobileBottomSheet>
 
       {/* Scrollable Body */}
-      <div className="custom-scrollbar flex-1 min-h-0 overflow-y-auto overscroll-contain">
+      <div
+        onTouchStart={handlePanelTouchStart}
+        onTouchEnd={handlePanelTouchEnd}
+        onTouchCancel={() => {
+          swipeStartRef.current = null;
+        }}
+        className="custom-scrollbar flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y"
+      >
         <div className="max-w-[1400px] w-full mx-auto px-3 sm:px-8 xl:px-10 py-4 sm:py-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-14 items-start">
             {/* Controls */}
@@ -902,12 +909,7 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                 role="tabpanel"
                 aria-labelledby={`appearance-tab-${activeTab}`}
                 tabIndex={0}
-                onTouchStart={handlePanelTouchStart}
-                onTouchEnd={handlePanelTouchEnd}
-                onTouchCancel={() => {
-                  swipeStartRef.current = null;
-                }}
-                className="appearance-tab-panel touch-pan-y outline-none"
+                className="appearance-tab-panel outline-none"
               >
                 {activeTab === 'themes' && (
                   <div className="appearance-tab-content">
