@@ -75,6 +75,7 @@ export const WorkspaceShell: React.FC = () => {
   const [showDetailSwipeHint, setShowDetailSwipeHint] = useState(true);
   const [activeTab, setActiveTab] = useState<DetailTab>('comments');
   const latestStoryReqRef = useRef(0);
+  const navigationDepthRef = useRef(0);
 
   const [readHistory, setReadHistory] = useState<
     Record<number, ReadHistoryEntry>
@@ -85,6 +86,48 @@ export const WorkspaceShell: React.FC = () => {
   const [isAppearanceOpen, setIsAppearanceOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [systemPrefersDark, setSystemPrefersDark] = useState(true);
+  const overlayRef = useRef<'search' | 'shortcuts' | null>(null);
+
+  const closeOverlay = useCallback(() => {
+    if (
+      new URLSearchParams(window.location.search).get('view') === 'appearance'
+    ) {
+      if (navigationDepthRef.current > 0) window.history.back();
+      else {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('view');
+        window.history.replaceState(
+          window.history.state,
+          '',
+          `${url.pathname}${url.search}${url.hash}`
+        );
+        setIsAppearanceOpen(false);
+      }
+      return;
+    }
+    if (
+      overlayRef.current &&
+      window.history.state?.hnOverlay === overlayRef.current
+    ) {
+      window.history.back();
+    } else {
+      overlayRef.current = null;
+      setIsSearchOpen(false);
+      setIsAppearanceOpen(false);
+      setIsShortcutsOpen(false);
+    }
+  }, []);
+
+  const openOverlay = useCallback((overlay: 'search' | 'shortcuts') => {
+    if (overlayRef.current === overlay) return;
+    window.history.pushState(
+      { ...window.history.state, hnOverlay: overlay },
+      ''
+    );
+    overlayRef.current = overlay;
+    setIsSearchOpen(overlay === 'search');
+    setIsShortcutsOpen(overlay === 'shortcuts');
+  }, []);
 
   // Hydrate local preferences, read history, bookmarks, and OS color scheme
   useEffect(() => {
@@ -189,37 +232,56 @@ export const WorkspaceShell: React.FC = () => {
     savePreferences(next);
   }, []);
 
-  const syncStoryQueryParam = useCallback(
-    (storyId: number | null, replace = false) => {
-      if (typeof window === 'undefined') return;
+  const syncNavigation = useCallback(
+    (
+      next: {
+        story?: number | null;
+        feed?: FeedType;
+        time?: TimeTravelPreset;
+        view?: 'appearance' | null;
+      },
+      replace = false
+    ) => {
       const url = new URL(window.location.href);
-      const currentParam = url.searchParams.get('story');
-      const nextParam = storyId ? String(storyId) : null;
-
-      if (currentParam === nextParam) return;
-
-      if (nextParam) {
-        url.searchParams.set('story', nextParam);
-      } else {
-        url.searchParams.delete('story');
+      if (next.story !== undefined) {
+        if (next.story) url.searchParams.set('story', String(next.story));
+        else url.searchParams.delete('story');
       }
-
-      if (replace) {
-        window.history.replaceState(
-          {},
-          '',
-          `${url.pathname}${url.search}${url.hash}`
-        );
-      } else {
-        window.history.pushState(
-          {},
-          '',
-          `${url.pathname}${url.search}${url.hash}`
-        );
+      if (next.feed !== undefined) {
+        if (next.feed === 'top') url.searchParams.delete('feed');
+        else url.searchParams.set('feed', next.feed);
       }
+      if (next.time !== undefined) {
+        if (next.time === 'live') url.searchParams.delete('time');
+        else url.searchParams.set('time', next.time);
+      }
+      if (next.view !== undefined) {
+        if (next.view) url.searchParams.set('view', next.view);
+        else url.searchParams.delete('view');
+      }
+      const target = `${url.pathname}${url.search}${url.hash}`;
+      if (
+        target ===
+        `${window.location.pathname}${window.location.search}${window.location.hash}`
+      )
+        return;
+      const depth = navigationDepthRef.current + (replace ? 0 : 1);
+      const state = {
+        ...window.history.state,
+        hnNavigationDepth: depth,
+        hnOverlay: null,
+      };
+      if (replace) window.history.replaceState(state, '', target);
+      else window.history.pushState(state, '', target);
+      navigationDepthRef.current = depth;
     },
     []
   );
+
+  const openAppearance = useCallback(() => {
+    syncNavigation({ view: 'appearance' });
+    setIsAppearanceOpen(true);
+  }, [syncNavigation]);
 
   const handleSelectStory = useCallback(
     (
@@ -230,7 +292,7 @@ export const WorkspaceShell: React.FC = () => {
       setShowDetailSwipeHint(!hasUsedSwipe('detail'));
 
       if (!options?.skipUrlSync) {
-        syncStoryQueryParam(story.id);
+        syncNavigation({ story: story.id, view: null });
       }
 
       // Immediately update selectedStory so the feed highlight and detail header switch in 0ms
@@ -266,7 +328,7 @@ export const WorkspaceShell: React.FC = () => {
           );
           setReadHistory(updatedHistory);
           if (!options?.skipUrlSync && fullStory.id !== story.id) {
-            syncStoryQueryParam(fullStory.id, true);
+            syncNavigation({ story: fullStory.id }, true);
           }
         })
         .catch(() => {
@@ -275,20 +337,58 @@ export const WorkspaceShell: React.FC = () => {
           setLoadingDetail(false);
         });
     },
-    [syncStoryQueryParam]
+    [syncNavigation]
   );
 
   const returnToFeed = useCallback(() => {
-    setSelectedStory(null);
-    syncStoryQueryParam(null, true);
-  }, [syncStoryQueryParam]);
+    if (navigationDepthRef.current > 0) {
+      window.history.back();
+    } else {
+      ++latestStoryReqRef.current;
+      setSelectedStory(null);
+      syncNavigation({ story: null }, true);
+    }
+  }, [syncNavigation]);
 
   // Deep-link support for ?story=<id> on initial page load and browser Back/Forward
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const loadStoryFromUrl = () => {
+      navigationDepthRef.current = window.history.state?.hnNavigationDepth ?? 0;
+      overlayRef.current = window.history.state?.hnOverlay ?? null;
       const params = new URLSearchParams(window.location.search);
+      setIsSearchOpen(overlayRef.current === 'search');
+      setIsAppearanceOpen(params.get('view') === 'appearance');
+      setIsShortcutsOpen(overlayRef.current === 'shortcuts');
+      const feed = params.get('feed');
+      const time = params.get('time');
+      const validFeeds: FeedType[] = [
+        'top',
+        'new',
+        'best',
+        'ask',
+        'show',
+        'jobs',
+        'saved',
+      ];
+      const validTimes: TimeTravelPreset[] = [
+        'live',
+        'yesterday',
+        'last-week',
+        'last-month',
+        'one-year-ago',
+      ];
+      setActiveFeed(
+        validFeeds.includes(feed as FeedType) ? (feed as FeedType) : 'top'
+      );
+      setTimeTravel(
+        validTimes.includes(time as TimeTravelPreset)
+          ? (time as TimeTravelPreset)
+          : 'live'
+      );
+      setActiveTab('comments');
+      ++latestStoryReqRef.current;
       const rawId = params.get('story');
       const parsedId = rawId ? Number(rawId) : NaN;
 
@@ -309,9 +409,16 @@ export const WorkspaceShell: React.FC = () => {
         );
       } else {
         setSelectedStory(null);
+        setLoadingDetail(false);
       }
     };
 
+    if (window.history.state?.hnNavigationDepth === undefined) {
+      window.history.replaceState(
+        { ...window.history.state, hnNavigationDepth: 0 },
+        ''
+      );
+    }
     loadStoryFromUrl();
     window.addEventListener('popstate', loadStoryFromUrl);
     return () => window.removeEventListener('popstate', loadStoryFromUrl);
@@ -320,7 +427,17 @@ export const WorkspaceShell: React.FC = () => {
   // Switch Feed Category: Clear current stories & reset selection immediately
   const handleSelectFeed = useCallback(
     (nextFeed: FeedType) => {
-      syncStoryQueryParam(null);
+      if (nextFeed === activeFeed && timeTravel === 'live' && !selectedStory)
+        return;
+      ++latestStoryReqRef.current;
+      if (overlayRef.current) {
+        window.history.replaceState(
+          { ...window.history.state, hnOverlay: null },
+          ''
+        );
+        overlayRef.current = null;
+      }
+      syncNavigation({ story: null, feed: nextFeed, time: 'live', view: null });
       setIsAppearanceOpen(false);
       setActiveFeed(nextFeed);
       setTimeTravel('live');
@@ -329,13 +446,22 @@ export const WorkspaceShell: React.FC = () => {
       setStories([]);
       setLoadingFeed(true);
     },
-    [syncStoryQueryParam]
+    [activeFeed, timeTravel, selectedStory, syncNavigation]
   );
 
   // Switch Time Travel Range: Clear current stories & reset selection immediately
   const handleSelectTimeTravel = useCallback(
     (preset: TimeTravelPreset) => {
-      syncStoryQueryParam(null);
+      if (preset === timeTravel && !selectedStory) return;
+      ++latestStoryReqRef.current;
+      if (overlayRef.current) {
+        window.history.replaceState(
+          { ...window.history.state, hnOverlay: null },
+          ''
+        );
+        overlayRef.current = null;
+      }
+      syncNavigation({ story: null, time: preset, view: null });
       setIsAppearanceOpen(false);
       setTimeTravel(preset);
       setSelectedStory(null);
@@ -343,7 +469,7 @@ export const WorkspaceShell: React.FC = () => {
       setStories([]);
       setLoadingFeed(true);
     },
-    [syncStoryQueryParam]
+    [timeTravel, selectedStory, syncNavigation]
   );
 
   // Load feed or time-travel stories
@@ -492,23 +618,26 @@ export const WorkspaceShell: React.FC = () => {
 
       if (e.key === 'Escape' && isAppearanceOpen) {
         e.preventDefault();
-        setIsAppearanceOpen(false);
+        closeOverlay();
         return;
       }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
-        setIsSearchOpen((prev) => !prev);
+        if (isSearchOpen) closeOverlay();
+        else openOverlay('search');
         return;
       }
       if (e.key === '/') {
         e.preventDefault();
-        setIsSearchOpen(true);
+        openOverlay('search');
       } else if (e.key === '?') {
         e.preventDefault();
-        setIsShortcutsOpen((prev) => !prev);
+        if (isShortcutsOpen) closeOverlay();
+        else openOverlay('shortcuts');
       } else if (e.key === 't') {
         e.preventDefault();
-        setIsAppearanceOpen((prev) => !prev);
+        if (isAppearanceOpen) closeOverlay();
+        else openAppearance();
       } else if (e.key === 'z') {
         e.preventDefault();
         handleUpdatePreferences({
@@ -544,6 +673,11 @@ export const WorkspaceShell: React.FC = () => {
     selectedStory,
     visibleStories,
     isAppearanceOpen,
+    isSearchOpen,
+    isShortcutsOpen,
+    openOverlay,
+    openAppearance,
+    closeOverlay,
     handleSelectStory,
     handleUpdatePreferences,
   ]);
@@ -580,18 +714,16 @@ export const WorkspaceShell: React.FC = () => {
         }
         timeTravelPreset={timeTravel}
         onSelectTimeTravel={handleSelectTimeTravel}
-        onOpenSearch={() => startTransition(() => setIsSearchOpen(true))}
+        onOpenSearch={() => openOverlay('search')}
         isAppearanceOpen={isAppearanceOpen}
         onOpenAppearance={() =>
-          startTransition(() => setIsAppearanceOpen((prev) => !prev))
+          isAppearanceOpen ? closeOverlay() : openAppearance()
         }
-        onOpenShortcuts={() => startTransition(() => setIsShortcutsOpen(true))}
+        onOpenShortcuts={() => openOverlay('shortcuts')}
         savedCount={bookmarks.length}
         isStoryOpen={Boolean(selectedStory) && !isAppearanceOpen}
         onBackToFeed={returnToFeed}
-        onBackFromAppearance={() =>
-          startTransition(() => setIsAppearanceOpen(false))
-        }
+        onBackFromAppearance={closeOverlay}
       />
 
       <SafeViewTransition>
@@ -600,7 +732,7 @@ export const WorkspaceShell: React.FC = () => {
             isOpen={isAppearanceOpen}
             preferences={{ ...preferences, themeId: resolvedThemeId }}
             onUpdate={handleUpdatePreferences}
-            onClose={() => startTransition(() => setIsAppearanceOpen(false))}
+            onClose={closeOverlay}
           />
         ) : preferences.layoutMode === 'split' ? (
           <main className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
@@ -811,17 +943,22 @@ export const WorkspaceShell: React.FC = () => {
 
       <CommandPaletteModal
         isOpen={isSearchOpen}
-        onClose={() => setIsSearchOpen(false)}
+        onClose={closeOverlay}
         onSelectStory={(story) => {
-          setIsAppearanceOpen(false);
+          // Replace the overlay entry with the destination so Back returns to its origin.
+          if (overlayRef.current) {
+            window.history.replaceState(
+              { ...window.history.state, hnOverlay: null },
+              ''
+            );
+            overlayRef.current = null;
+          }
+          setIsSearchOpen(false);
           handleSelectStory(story);
         }}
       />
 
-      <ShortcutsModal
-        isOpen={isShortcutsOpen}
-        onClose={() => setIsShortcutsOpen(false)}
-      />
+      <ShortcutsModal isOpen={isShortcutsOpen} onClose={closeOverlay} />
     </div>
   );
 };

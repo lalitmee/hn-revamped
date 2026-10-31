@@ -10,11 +10,11 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: '/icon.svg', type: 'image/svg+xml' },
-      { url: '/icons/icon-192.png', type: 'image/png', sizes: '192x192' },
+      { url: '/icons/icon-192.png?v=2', type: 'image/png', sizes: '192x192' },
     ],
     shortcut: ['/icon.svg'],
     apple: [
-      { url: '/icons/icon-192.png', type: 'image/png', sizes: '192x192' },
+      { url: '/icons/icon-192.png?v=2', type: 'image/png', sizes: '192x192' },
     ],
   },
 };
