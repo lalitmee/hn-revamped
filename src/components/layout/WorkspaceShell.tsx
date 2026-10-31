@@ -73,6 +73,8 @@ export const WorkspaceShell: React.FC = () => {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const feedTouchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const suppressFeedClickUntilRef = useRef(0);
+  const [showFeedSwipeHint, setShowFeedSwipeHint] = useState(false);
   const [showDetailSwipeHint, setShowDetailSwipeHint] = useState(true);
   const [activeTab, setActiveTab] = useState<DetailTab>('comments');
   const latestStoryReqRef = useRef(0);
@@ -132,6 +134,7 @@ export const WorkspaceShell: React.FC = () => {
 
   // Hydrate local preferences, read history, bookmarks, and OS color scheme
   useEffect(() => {
+    setShowFeedSwipeHint(!hasUsedSwipe('feed'));
     setPreferences(loadPreferences());
     setPrefsHydrated(true);
     setReadHistory(loadReadHistory());
@@ -570,11 +573,12 @@ export const WorkspaceShell: React.FC = () => {
 
   const onFeedTouchStart = (event: React.TouchEvent) => {
     feedTouchStartRef.current = null;
+    suppressFeedClickUntilRef.current = 0;
     if (selectedStory || event.touches.length !== 1) return;
     const target = event.target as HTMLElement;
     if (
       target.closest(
-        'button, a, input, textarea, select, [role="button"], [role="slider"], [role="switch"], [contenteditable="true"]'
+        'button, a, input, textarea, select, [role="button"]:not(article), [role="slider"], [role="switch"], [contenteditable="true"]'
       )
     )
       return;
@@ -603,7 +607,18 @@ export const WorkspaceShell: React.FC = () => {
     const nextIndex =
       (feeds.indexOf(activeFeed) + (dx < 0 ? 1 : -1) + feeds.length) %
       feeds.length;
+    suppressFeedClickUntilRef.current = Date.now() + 500;
     handleSelectFeed(feeds[nextIndex]);
+    recordSwipe('feed');
+    setShowFeedSwipeHint(false);
+  };
+
+  const onFeedClickCapture = (event: React.MouseEvent) => {
+    if (event.detail !== 0 && Date.now() < suppressFeedClickUntilRef.current) {
+      event.preventDefault();
+      event.stopPropagation();
+      suppressFeedClickUntilRef.current = 0;
+    }
   };
 
   const onDetailTouchStart = (event: React.TouchEvent) => {
@@ -780,6 +795,7 @@ export const WorkspaceShell: React.FC = () => {
               style={{ borderColor: 'var(--border-subtle)' }}
               onTouchStart={onFeedTouchStart}
               onTouchEnd={onFeedTouchEnd}
+              onClickCapture={onFeedClickCapture}
               onTouchCancel={() => {
                 feedTouchStartRef.current = null;
               }}
@@ -902,6 +918,7 @@ export const WorkspaceShell: React.FC = () => {
           <main
             onTouchStart={onFeedTouchStart}
             onTouchEnd={onFeedTouchEnd}
+            onClickCapture={onFeedClickCapture}
             onTouchCancel={() => {
               feedTouchStartRef.current = null;
             }}
@@ -989,6 +1006,24 @@ export const WorkspaceShell: React.FC = () => {
           </main>
         )}
       </SafeViewTransition>
+
+      {showFeedSwipeHint &&
+        !selectedStory &&
+        !isAppearanceOpen &&
+        !isSearchOpen &&
+        !isShortcutsOpen && (
+          <div className="pointer-events-none fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] left-1/2 z-40 -translate-x-1/2 lg:hidden">
+            <div className="swipe-hint-pill liquid-glass rounded-full h-8 px-3.5 inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--text-secondary)] shadow-lg whitespace-nowrap">
+              <span
+                aria-hidden="true"
+                className="swipe-hint-icon material-symbols-rounded text-[16px] text-[var(--accent)]"
+              >
+                swipe
+              </span>
+              <span>Swipe to switch feeds</span>
+            </div>
+          </div>
+        )}
 
       <CommandPaletteModal
         isOpen={isSearchOpen}

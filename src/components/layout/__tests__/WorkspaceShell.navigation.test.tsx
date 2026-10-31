@@ -55,7 +55,9 @@ vi.mock('@/components/feed/StoryFeedPane', () => ({
   }: {
     onSelectStory: (story: object) => void;
   }) => (
-    <button
+    <article
+      role="button"
+      tabIndex={0}
       onClick={() =>
         onSelectStory({
           id: 123,
@@ -70,8 +72,9 @@ vi.mock('@/components/feed/StoryFeedPane', () => ({
         })
       }
     >
-      Open story
-    </button>
+      <span>Open story</span>
+      <button onClick={(event) => event.stopPropagation()}>Bookmark</button>
+    </article>
   ),
 }));
 vi.mock('@/components/detail/StoryDetailPane', () => ({
@@ -146,6 +149,38 @@ describe('workspace navigation history', () => {
     swipe(250, 600, 120, 605);
     expect(screen.getByTestId('feed').textContent).toBe('top');
     expect(window.location.search).toBe('');
+  });
+
+  it('swipes over cards, suppresses the follow-up click, and remembers hint dismissal', async () => {
+    const view = render(<WorkspaceShell />);
+    expect(screen.getByText('Swipe to switch feeds')).toBeTruthy();
+    const title = screen.getByText('Open story');
+    await act(async () => {
+      fireEvent.touchStart(title, {
+        touches: [{ clientX: 250, clientY: 300 }],
+      });
+      fireEvent.touchEnd(title, {
+        changedTouches: [{ clientX: 120, clientY: 305 }],
+      });
+      fireEvent.click(title, { detail: 1 });
+    });
+    expect(window.location.search).toBe('?feed=new');
+    expect(screen.queryByText('Swipe to switch feeds')).toBeNull();
+    view.unmount();
+    render(<WorkspaceShell />);
+    expect(screen.queryByText('Swipe to switch feeds')).toBeNull();
+    const bookmark = screen.getByText('Bookmark');
+    await act(async () => {
+      fireEvent.touchStart(bookmark, {
+        touches: [{ clientX: 250, clientY: 300 }],
+      });
+      fireEvent.touchEnd(bookmark, {
+        changedTouches: [{ clientX: 120, clientY: 305 }],
+      });
+    });
+    expect(window.location.search).toBe('?feed=new');
+    fireEvent.click(screen.getByText('Open story'));
+    expect(window.location.search).toBe('?feed=new&story=123');
   });
 
   it('opens appearance as a URL-backed view and restores it on navigation', async () => {

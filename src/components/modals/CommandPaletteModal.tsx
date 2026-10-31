@@ -325,131 +325,76 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                   onClose();
                 }}
                 style={{ animationDelay: `${Math.min(idx * 35, 280)}ms` }}
-                className="liquid-glass animate-story-in w-full text-left p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl block sm:flex sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4 cursor-pointer"
+                className="liquid-glass animate-story-in w-full text-left p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl flex flex-row items-start justify-between gap-2 sm:gap-4 cursor-pointer"
               >
-                <div className="hidden sm:block min-w-0 flex-1">
-                  <div className="text-sm font-semibold leading-snug line-clamp-2 sm:line-clamp-1">
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-semibold leading-snug line-clamp-2">
                     {story.cleanTitle}
                   </div>
                   <div
                     style={{ color: 'var(--text-muted)' }}
-                    className="hidden sm:flex items-center flex-wrap gap-2.5 text-xs mt-1.5"
+                    className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] sm:text-xs mt-1.5"
                   >
                     <span
                       style={{ color: 'var(--accent)' }}
-                      className="font-semibold inline-flex items-center gap-0.5"
+                      className="shrink-0 font-semibold"
                     >
-                      <span>▲</span> {story.points}
+                      ▲ {story.points}
                     </span>
-
-                    <span className="inline-flex items-center gap-1">
-                      <span className="material-symbols-rounded text-[13px]">
-                        person
-                      </span>
-                      <span>{story.user}</span>
-                    </span>
-
                     {story.domain && (
-                      <span className="inline-flex items-center gap-1 truncate max-w-[200px]">
+                      <span
+                        className="inline-flex items-center gap-1 min-w-0 max-w-[140px] sm:max-w-[200px]"
+                        style={{ color: 'var(--link-unvisited)' }}
+                        title={story.domain}
+                      >
                         <span
-                          style={{ color: 'var(--link-unvisited)' }}
-                          className="material-symbols-rounded text-[13px]"
+                          aria-hidden="true"
+                          className="material-symbols-rounded text-[13px] shrink-0"
                         >
                           language
                         </span>
                         <span className="truncate">{story.domain}</span>
                       </span>
                     )}
-                  </div>
-                </div>
-
-                <div className="sm:hidden grid grid-cols-[minmax(0,1fr)_76px] grid-rows-[auto_auto] items-start gap-x-2 gap-y-1">
-                  <div className="col-start-1 row-start-1 min-w-0 text-sm font-semibold leading-snug line-clamp-2">
-                    {story.cleanTitle}
-                  </div>
-                  <span
-                    className="col-start-2 row-start-1 inline-flex items-center justify-end gap-1 whitespace-nowrap text-[10px] font-semibold"
-                    aria-label={`${story.commentsCount} comments`}
-                    style={{ color: 'var(--text-muted)' }}
-                  >
                     <span
-                      aria-hidden="true"
-                      className="material-symbols-rounded text-[13px]"
+                      className="inline-flex items-center gap-1 min-w-0 max-w-[120px]"
+                      title={story.user}
                     >
-                      forum
-                    </span>
-                    {story.commentsCount}
-                  </span>
-                  <div
-                    className="col-start-1 row-start-2 min-w-0 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] leading-none"
-                    style={{ color: 'var(--text-muted)' }}
-                  >
-                    <span
-                      style={{ color: 'var(--accent)' }}
-                      className="shrink-0 font-semibold inline-flex items-center gap-0.5"
-                    >
-                      <span aria-hidden="true">▲</span>
-                      {story.points}
-                    </span>
-                    <span className="min-w-0 max-w-[72px] truncate inline-flex items-center gap-0.5">
                       <span
                         aria-hidden="true"
-                        className="material-symbols-rounded text-[12px]"
+                        className="material-symbols-rounded text-[13px] shrink-0"
                       >
                         person
                       </span>
-                      {story.user}
+                      <span className="truncate">{story.user}</span>
                     </span>
-                    {story.domain && (
-                      <span className="min-w-0 max-w-[92px] truncate inline-flex items-center gap-0.5">
-                        <span
-                          aria-hidden="true"
-                          className="material-symbols-rounded text-[12px]"
-                          style={{ color: 'var(--link-unvisited)' }}
-                        >
-                          language
-                        </span>
-                        {story.domain}
-                      </span>
-                    )}
-                  </div>
-                  <time
-                    dateTime={new Date(story.time * 1000).toISOString()}
-                    title={`Published ${publishedDateFormatter.format(new Date(story.time * 1000))} (${new Date(story.time * 1000).toLocaleString()})`}
-                    className="col-start-2 row-start-2 inline-flex items-center justify-end gap-1 whitespace-nowrap text-[10px]"
-                    style={{ color: 'var(--text-muted)' }}
-                  >
-                    <span
-                      aria-hidden="true"
-                      className="material-symbols-rounded text-[11px]"
+                    <time
+                      dateTime={new Date(story.time * 1000).toISOString()}
+                      title={`Published ${publishedDateFormatter.format(new Date(story.time * 1000))} (${new Date(story.time * 1000).toLocaleString()})`}
+                      className="inline-flex items-center gap-1 shrink-0"
                     >
-                      schedule
-                    </span>
-                    {formatRelativeTimeConcise(story.time)}
-                  </time>
+                      <span
+                        aria-hidden="true"
+                        className="material-symbols-rounded text-[13px]"
+                      >
+                        schedule
+                      </span>
+                      {formatRelativeTimeConcise(story.time)}
+                    </time>
+                  </div>
                 </div>
-
-                <div className="hidden sm:flex w-full sm:w-auto shrink-0 flex-row sm:flex-col items-center sm:items-end justify-between gap-1.5 sm:pl-2">
-                  <span className="liquid-glass px-2.5 py-1 rounded-xl text-xs font-semibold inline-flex items-center gap-1">
-                    <span className="material-symbols-rounded text-[14px]">
-                      forum
-                    </span>
-                    {story.commentsCount}
-                  </span>
-                  <time
-                    dateTime={new Date(story.time * 1000).toISOString()}
-                    title={`Published ${publishedDateFormatter.format(
-                      new Date(story.time * 1000)
-                    )} (${new Date(story.time * 1000).toLocaleString()})`}
-                    style={{ color: 'var(--text-muted)' }}
-                    className="text-[11px] font-medium tracking-tight hover:underline inline-flex items-center gap-1"
+                <span
+                  className="shrink-0 inline-flex items-center gap-1 text-xs font-semibold"
+                  aria-label={`${story.commentsCount} comments`}
+                >
+                  <span
+                    aria-hidden="true"
+                    className="material-symbols-rounded text-[14px]"
                   >
-                    <span className="material-symbols-rounded text-[12px] opacity-70">
-                      schedule
-                    </span>
-                    {formatRelativeTimeConcise(story.time)}
-                  </time>
-                </div>
+                    forum
+                  </span>
+                  {story.commentsCount}
+                </span>
               </button>
             ))}
         </div>

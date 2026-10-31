@@ -6,6 +6,7 @@ const TYPOGRAPHY_MIGRATED_KEY = 'hn_revamped_typo_v2';
 const HISTORY_KEY = 'hn_revamped_history_v1';
 const BOOKMARKS_KEY = 'hn_revamped_bookmarks_v1';
 const SWIPE_HINT_KEYS = {
+  feed: 'hn_revamped_swipe_used_feed_v1',
   appearance: 'hn_revamped_swipe_used_appearance_v1',
   detail: 'hn_revamped_swipe_used_detail_v1',
 } as const;

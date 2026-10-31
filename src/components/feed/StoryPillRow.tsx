@@ -150,6 +150,15 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
             className="min-w-0 flex-1 text-[15px] font-semibold leading-snug break-words line-clamp-2"
           >
             {story.cleanTitle}
+            {story.badges.map((badge) => (
+              <span
+                key={badge.type}
+                title={badge.label}
+                className="material-symbols-rounded ml-1.5 align-middle text-[13px]"
+              >
+                {badge.icon}
+              </span>
+            ))}
           </h3>
           <button
             type="button"
@@ -195,15 +204,6 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
               )}
               <span className="truncate">{story.domain ?? `#${index}`}</span>
             </span>
-            {story.badges.map((badge) => (
-              <span
-                key={badge.type}
-                title={badge.label}
-                className="material-symbols-rounded text-[13px]"
-              >
-                {badge.icon}
-              </span>
-            ))}
             <span className="inline-flex items-center gap-0.5 min-w-0 max-w-[70px]">
               <span
                 aria-hidden="true"
@@ -274,22 +274,22 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
                 className="text-[14.5px] font-semibold leading-snug tracking-tight line-clamp-2"
               >
                 {story.cleanTitle}
+                {story.badges.map((badge) => (
+                  <span
+                    key={badge.type}
+                    title={badge.label}
+                    style={{ color: 'var(--link-unvisited)' }}
+                    className="material-symbols-rounded ml-1.5 align-middle text-[14px] shrink-0"
+                  >
+                    {badge.icon}
+                  </span>
+                ))}
               </h3>
               <div
                 style={{ color: 'var(--text-muted)' }}
                 className="flex flex-wrap items-center gap-1.5 mt-0.5 text-[12px] min-w-0"
               >
                 <span className="font-mono shrink-0">#{index}</span>
-                {story.badges.map((badge) => (
-                  <span
-                    key={badge.type}
-                    title={badge.label}
-                    style={{ color: 'var(--link-unvisited)' }}
-                    className="material-symbols-rounded text-[14px] shrink-0"
-                  >
-                    {badge.icon}
-                  </span>
-                ))}
                 {story.domain && (
                   <span
                     style={{ color: 'var(--link-unvisited)' }}
@@ -395,7 +395,19 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
                     {badge.label}
                   </span>
                 ))}
+              </div>
 
+              <h3
+                style={{ color: 'var(--text-primary)' }}
+                className="text-[17px] font-semibold leading-snug tracking-tight"
+              >
+                {story.cleanTitle}
+              </h3>
+
+              <div
+                style={{ color: 'var(--text-muted)' }}
+                className="flex items-center flex-wrap gap-3 mt-2 text-[12.5px]"
+              >
                 {story.domain && (
                   <span
                     style={{ color: 'var(--link-unvisited)' }}
@@ -411,19 +423,6 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
                     {story.domain}
                   </span>
                 )}
-              </div>
-
-              <h3
-                style={{ color: 'var(--text-primary)' }}
-                className="text-[17px] font-semibold leading-snug tracking-tight"
-              >
-                {story.cleanTitle}
-              </h3>
-
-              <div
-                style={{ color: 'var(--text-muted)' }}
-                className="flex items-center flex-wrap gap-3 mt-2 text-[12.5px]"
-              >
                 <span className="inline-flex items-center gap-1">
                   <span className="material-symbols-rounded text-[14px]">
                     person
