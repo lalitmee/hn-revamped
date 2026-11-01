@@ -100,13 +100,13 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       )}
       <div
         aria-label="HN Revamped"
-        className={`liquid-glass-primary lg:hidden w-9 h-9 rounded-xl shrink-0 flex items-center justify-center font-black text-sm ${
+        className={`lg:hidden w-9 h-9 rounded-xl shrink-0 ${
           logoBackAnimation
             ? `mobile-header-logo-back-${logoBackAnimation}`
             : ''
         }`}
       >
-        Y
+        <img src="/icon.svg" alt="" className="w-full h-full rounded-xl" />
       </div>
       {!isStoryOpen && !isAppearanceOpen && (
         <button
@@ -176,7 +176,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               }
               feedTriggerRef.current?.click();
             }}
-            className="liquid-glass fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] right-4 z-40 lg:hidden w-12 h-12 rounded-full shadow-lg flex items-center justify-center"
+            className="liquid-glass fixed bottom-[calc(env(safe-area-inset-bottom)+3rem)] right-6 z-40 lg:hidden w-14 h-14 rounded-full shadow-lg flex items-center justify-center"
           >
             <span
               aria-hidden="true"
@@ -189,9 +189,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         )}
       <div className="hidden lg:flex items-center gap-3 min-w-0">
         <div className="flex items-center gap-2.5 pr-1 shrink-0">
-          <div className="liquid-glass-primary w-8 h-8 rounded-xl flex items-center justify-center text-white font-black text-sm">
-            Y
-          </div>
+          <img src="/icon.svg" alt="" className="w-8 h-8 rounded-xl" />
           <span className="font-bold text-base tracking-tight">
             HN Revamped
           </span>
