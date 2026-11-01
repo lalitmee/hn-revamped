@@ -39,6 +39,23 @@ describe('mobile feed picker', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('keeps the floating control icon-only with an accessible feed label', () => {
+    const { rerender } = render(<AppHeader {...props} />);
+    const trigger = screen.getByRole('button', {
+      name: /Swipe up or down to switch feeds/,
+    });
+    expect(within(trigger).getByText('local_fire_department')).toHaveAttribute(
+      'aria-hidden',
+      'true'
+    );
+    expect(within(trigger).queryByText('Top')).toBeNull();
+    expect(within(trigger).queryByText('swap_vert')).toBeNull();
+    expect(trigger).toHaveClass('w-14', 'h-14', 'rounded-full', 'border');
+    rerender(<AppHeader {...props} activeFeed="saved" />);
+    expect(within(trigger).getByText('bookmark')).toBeInTheDocument();
+    expect(trigger).toHaveAccessibleName(/Current feed: Saved/);
+  });
+
   it('opens the existing feed picker from the floating button', () => {
     render(<AppHeader {...props} />);
     fireEvent.click(

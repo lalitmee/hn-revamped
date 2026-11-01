@@ -21,6 +21,7 @@ export const MobileBottomSheet: React.FC<MobileBottomSheetProps> = ({
   children,
 }) => {
   const sheetRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const [present, setPresent] = useState(isOpen);
 
@@ -98,7 +99,11 @@ export const MobileBottomSheet: React.FC<MobileBottomSheetProps> = ({
         ref={sheetRef}
         onTouchStart={(event) => {
           touchStartRef.current = null;
-          if (event.touches.length !== 1 || sheetRef.current?.scrollTop !== 0)
+          if (event.touches.length !== 1) return;
+          if (
+            contentRef.current?.contains(event.target as Node) &&
+            contentRef.current.scrollTop !== 0
+          )
             return;
           const target = event.target;
           if (
@@ -115,7 +120,12 @@ export const MobileBottomSheet: React.FC<MobileBottomSheetProps> = ({
           const start = touchStartRef.current;
           touchStartRef.current = null;
           const touch = event.changedTouches[0];
-          if (!start || !touch || sheetRef.current?.scrollTop !== 0) return;
+          if (!start || !touch) return;
+          if (
+            contentRef.current?.contains(event.target as Node) &&
+            contentRef.current.scrollTop !== 0
+          )
+            return;
           const deltaY = touch.clientY - start.y;
           const deltaX = touch.clientX - start.x;
           if (deltaY > 64 && deltaY > Math.abs(deltaX) * 1.25) onClose();
@@ -126,29 +136,36 @@ export const MobileBottomSheet: React.FC<MobileBottomSheetProps> = ({
         role={isOpen ? 'dialog' : undefined}
         aria-modal={isOpen ? true : undefined}
         aria-label={isOpen ? ariaLabel : undefined}
-        className={`liquid-glass-modal w-full rounded-t-3xl p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] max-h-[85dvh] overflow-y-auto ${isOpen ? 'mobile-sheet-enter' : 'mobile-sheet-exit'}`}
+        className={`liquid-glass-modal w-full rounded-t-3xl max-h-[85dvh] flex flex-col overflow-hidden ${isOpen ? 'mobile-sheet-enter' : 'mobile-sheet-exit'}`}
         style={{ color: 'var(--text-primary)' }}
       >
-        <div className="flex justify-center -mt-1 mb-2" aria-hidden="true">
-          <span className="h-1 w-9 rounded-full bg-[var(--text-muted)] opacity-50" />
+        <div className="shrink-0 px-4 pt-4">
+          <div className="flex justify-center -mt-1 mb-2" aria-hidden="true">
+            <span className="h-1 w-9 rounded-full bg-[var(--text-muted)] opacity-50" />
+          </div>
+          <div
+            className="flex items-center justify-between px-2 pb-3 border-b"
+            style={{ borderColor: 'var(--border-subtle)' }}
+          >
+            <h2 className="font-bold text-base">{title}</h2>
+            <button
+              type="button"
+              aria-label={`Close ${title.toLowerCase()}`}
+              onClick={onClose}
+              className="liquid-glass rounded-full w-10 h-10 inline-flex items-center justify-center"
+            >
+              <span aria-hidden="true" className="material-symbols-rounded">
+                close
+              </span>
+            </button>
+          </div>
         </div>
         <div
-          className="flex items-center justify-between mb-3 px-2 pb-3 border-b"
-          style={{ borderColor: 'var(--border-subtle)' }}
+          ref={contentRef}
+          className="custom-scrollbar min-h-0 overflow-y-auto overscroll-contain grid grid-cols-1 gap-1 px-4 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))]"
         >
-          <h2 className="font-bold text-base">{title}</h2>
-          <button
-            type="button"
-            aria-label={`Close ${title.toLowerCase()}`}
-            onClick={onClose}
-            className="liquid-glass rounded-full w-10 h-10 inline-flex items-center justify-center"
-          >
-            <span aria-hidden="true" className="material-symbols-rounded">
-              close
-            </span>
-          </button>
+          {children}
         </div>
-        <div className="grid grid-cols-1 gap-1">{children}</div>
       </div>
     </div>,
     document.body

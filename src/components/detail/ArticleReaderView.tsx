@@ -10,6 +10,11 @@ import React, {
 } from 'react';
 import { ReaderArticle } from '@/types/hn';
 import playbackStyles from './ReaderPlayback.module.css';
+import { ReaderVoicePreferences } from './ReaderVoicePreferences';
+import {
+  loadReaderVoicePreferences,
+  saveReaderVoicePreferences,
+} from '@/lib/reader-voice-preferences';
 import { GlassDropdown } from '@/components/ui/GlassDropdown';
 import { MobileBottomSheet } from '@/components/ui/MobileBottomSheet';
 import {
@@ -128,6 +133,8 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
   const [ttsSupported, setTtsSupported] = useState(false);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoiceURI, setSelectedVoiceURI] = useState<string>('');
+  const [preloadPreferredVoice, setPreloadPreferredVoice] = useState(false);
+  const [voicePreferencesLoaded, setVoicePreferencesLoaded] = useState(false);
   const [playbackState, setPlaybackState] = useState<
     'idle' | 'playing' | 'paused'
   >('idle');
@@ -206,11 +213,13 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
   const [isReaderToolbarSticky, setIsReaderToolbarSticky] = useState(false);
   const speedTriggerRef = useRef<HTMLButtonElement>(null);
   const voiceTriggerRef = useRef<HTMLButtonElement>(null);
+  const voiceSettingsTriggerRef = useRef<HTMLButtonElement>(null);
   const [isSpeedSheetOpen, setIsSpeedSheetOpen] = useState(false);
   const [isVoiceSheetOpen, setIsVoiceSheetOpen] = useState(false);
   const activeSegmentRef = useRef<number>(0);
   const playbackRateRef = useRef<number>(1);
   const selectedVoiceRef = useRef<string>('');
+  const preferredVoiceRef = useRef<string | null>(null);
   const speechSeqRef = useRef<number>(0);
   const speakTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -242,6 +251,20 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
   // Load native voices when available; optional local voices only need Web Audio.
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    const savedPreferences = loadReaderVoicePreferences();
+    setPreloadPreferredVoice(savedPreferences?.preload ?? false);
+    const savedVoice = savedPreferences?.voice;
+    preferredVoiceRef.current = savedVoice ?? null;
+    const savedLocalVoice = [
+      ...PIPER_VOICES,
+      ...KOKORO_VOICES,
+      ...SUPERTONIC_VOICES,
+    ].some((voice) => voice.id === savedVoice && enabledLocalVoice(voice.id));
+    if (savedLocalVoice && 'AudioContext' in window) {
+      selectedVoiceRef.current = savedVoice!;
+      setSelectedVoiceURI(savedVoice!);
+    }
+    setVoicePreferencesLoaded(true);
     const hasNativeTts = 'speechSynthesis' in window;
     setTtsSupported(
       hasNativeTts ||
@@ -256,8 +279,15 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
         0
           ? available.filter((v) => v.lang.toLowerCase().startsWith('en'))
           : available;
-      setVoices(englishOrAll);
-      if (englishOrAll.length > 0 && !selectedVoiceRef.current) {
+      setVoices(available);
+      const desiredVoice = preferredVoiceRef.current;
+      const savedSystemVoice = available.find(
+        (voice) => voice.voiceURI === desiredVoice
+      );
+      if (desiredVoice === '' || savedSystemVoice) {
+        selectedVoiceRef.current = desiredVoice ?? '';
+        setSelectedVoiceURI(desiredVoice ?? '');
+      } else if (englishOrAll.length > 0 && !selectedVoiceRef.current) {
         const preferred =
           englishOrAll.find((v) =>
             /natural|google|siri|premium/i.test(v.name)
@@ -321,6 +351,9 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
       }
       workerRef.current = worker;
       workerEngineRef.current = workerKey;
+      updateTtsNotice(
+        `Loading ${LOCAL_ENGINE_LABELS[engine]} voice (first use may download the model)…`
+      );
       worker.onmessage = (
         event: MessageEvent<{
           type: 'ready' | 'audio' | 'error';
@@ -375,10 +408,22 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
   );
 
   useEffect(() => {
+    if (!voicePreferencesLoaded) return;
     const engine = enabledLocalVoice(selectedVoiceURI);
-    if (engine) startWorker(engine, selectedVoiceURI);
-    else stopLocalWorker();
-  }, [selectedVoiceURI, startWorker, stopLocalWorker]);
+    if (engine && url && (preloadPreferredVoice || isAudioActive)) {
+      startWorker(engine, selectedVoiceURI);
+    } else {
+      stopLocalWorker();
+    }
+  }, [
+    selectedVoiceURI,
+    preloadPreferredVoice,
+    voicePreferencesLoaded,
+    isAudioActive,
+    url,
+    startWorker,
+    stopLocalWorker,
+  ]);
 
   useEffect(() => {
     return () => {
@@ -808,10 +853,9 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
   const handleSelectVoice = (uri: string) => {
     setSelectedVoiceURI(uri);
     selectedVoiceRef.current = uri;
-    const engine = enabledLocalVoice(uri);
-    setTtsNotice(
-      engine ? `Loading ${LOCAL_ENGINE_LABELS[engine]} voice…` : null
-    );
+    preferredVoiceRef.current = uri;
+    saveReaderVoicePreferences({ voice: uri, preload: preloadPreferredVoice });
+    setTtsNotice(null);
     if (playbackState === 'playing') {
       speakSegmentAt(activeSegmentRef.current);
     }
@@ -970,8 +1014,28 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
               </span>
               {article.byline && <span>• By {article.byline}</span>}
             </div>
+            {!showPlaybackControls && (
+              <button
+                ref={voiceSettingsTriggerRef}
+                type="button"
+                aria-label="Voice preferences"
+                title="Voice preferences"
+                aria-haspopup="dialog"
+                aria-expanded={isVoiceSheetOpen}
+                onClick={() => setIsVoiceSheetOpen(true)}
+                className="liquid-glass ml-auto w-8 h-8 shrink-0 rounded-full inline-flex items-center justify-center"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                <span
+                  aria-hidden="true"
+                  className="material-symbols-rounded text-[18px]"
+                >
+                  record_voice_over
+                </span>
+              </button>
+            )}
             <div
-              className={`${showPlaybackControls ? 'w-full sm:w-auto' : ''} ml-auto shrink-0 flex items-center justify-end gap-1.5 sm:gap-2`}
+              className={`${showPlaybackControls ? 'w-full sm:w-auto ml-auto' : ''} shrink-0 flex items-center justify-end gap-1.5 sm:gap-2`}
             >
               {ttsSupported && segments.length > 0 && (
                 <div
@@ -1129,7 +1193,7 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
                             aria-haspopup="dialog"
                             aria-expanded={isVoiceSheetOpen}
                             onClick={() => setIsVoiceSheetOpen(true)}
-                            className="liquid-glass sm:hidden w-8 h-8 rounded-full inline-flex items-center justify-center"
+                            className="liquid-glass w-8 h-8 rounded-full inline-flex items-center justify-center"
                           >
                             <span
                               aria-hidden="true"
@@ -1271,49 +1335,20 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
           </button>
         ))}
       </MobileBottomSheet>
-      <MobileBottomSheet
+      <ReaderVoicePreferences
         isOpen={isVoiceSheetOpen}
         onClose={() => setIsVoiceSheetOpen(false)}
-        title="Choose a voice"
-        ariaLabel="Choose speech synthesis voice"
-        triggerRef={voiceTriggerRef}
-      >
-        {voiceOptions.map((voice) => (
-          <button
-            key={voice.id}
-            type="button"
-            aria-current={selectedVoiceURI === voice.id ? 'true' : undefined}
-            onClick={() => {
-              handleSelectVoice(voice.id);
-              setIsVoiceSheetOpen(false);
-            }}
-            className="w-full min-h-12 px-4 rounded-xl flex items-center gap-3 text-left font-medium"
-            style={{
-              backgroundColor:
-                selectedVoiceURI === voice.id
-                  ? 'var(--bg-surface-active)'
-                  : undefined,
-              color:
-                selectedVoiceURI === voice.id
-                  ? 'var(--accent)'
-                  : 'var(--text-primary)',
-            }}
-          >
-            <span aria-hidden="true" className="material-symbols-rounded">
-              {voice.icon}
-            </span>
-            <span className="truncate">{voice.label}</span>
-            {selectedVoiceURI === voice.id && (
-              <span
-                aria-hidden="true"
-                className="material-symbols-rounded ml-auto"
-              >
-                check
-              </span>
-            )}
-          </button>
-        ))}
-      </MobileBottomSheet>
+        triggerRef={isAudioActive ? voiceTriggerRef : voiceSettingsTriggerRef}
+        voices={voiceOptions}
+        selectedVoice={selectedVoiceURI}
+        onSelectVoice={handleSelectVoice}
+        preload={preloadPreferredVoice}
+        onPreloadChange={(preload) => {
+          setPreloadPreferredVoice(preload);
+          saveReaderVoicePreferences({ voice: selectedVoiceURI, preload });
+          if (!preload && !isAudioActive) setTtsNotice(null);
+        }}
+      />
       <div
         ref={articleBodyRef}
         onClick={(e) => {

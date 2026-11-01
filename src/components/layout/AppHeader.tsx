@@ -141,7 +141,14 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             type="button"
             aria-label={`Swipe up or down to switch feeds. Current feed: ${activeFeedTab.label}`}
             title="Swipe up or down to switch feeds"
-            style={{ touchAction: 'none', color: 'var(--accent)' }}
+            style={{
+              touchAction: 'none',
+              color: 'var(--text-primary)',
+              backgroundColor:
+                'color-mix(in srgb, var(--accent) 9%, var(--bg-surface-1))',
+              borderColor:
+                'color-mix(in srgb, var(--accent) 30%, var(--border-subtle))',
+            }}
             onTouchStart={(event) => {
               if (event.touches.length !== 1) return;
               const touch = event.touches[0];
@@ -176,11 +183,12 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               }
               feedTriggerRef.current?.click();
             }}
-            className="liquid-glass fixed bottom-[calc(env(safe-area-inset-bottom)+3rem)] right-6 z-40 lg:hidden w-14 h-14 rounded-full shadow-lg flex items-center justify-center"
+            className="liquid-glass fixed bottom-[calc(env(safe-area-inset-bottom)+3rem)] right-6 z-40 lg:hidden w-14 h-14 rounded-full border shadow-[0_6px_20px_rgba(0,0,0,0.3),0_2px_6px_rgba(0,0,0,0.18)] flex items-center justify-center select-none transition-colors motion-reduce:transition-none"
           >
             <span
               aria-hidden="true"
-              className="material-symbols-rounded text-[24px]"
+              className="material-symbols-rounded text-[28px]"
+              style={{ color: 'var(--accent)' }}
             >
               {activeFeedTab.icon}
             </span>
