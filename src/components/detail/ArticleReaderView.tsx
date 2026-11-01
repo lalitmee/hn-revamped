@@ -2,12 +2,14 @@
 
 import React, {
   useEffect,
+  useLayoutEffect,
   useState,
   useMemo,
   useRef,
   useCallback,
 } from 'react';
 import { ReaderArticle } from '@/types/hn';
+import playbackStyles from './ReaderPlayback.module.css';
 import { GlassDropdown } from '@/components/ui/GlassDropdown';
 import { MobileBottomSheet } from '@/components/ui/MobileBottomSheet';
 import {
@@ -129,6 +131,68 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
   const [playbackState, setPlaybackState] = useState<
     'idle' | 'playing' | 'paused'
   >('idle');
+  const [controlsRetained, setControlsRetained] = useState(false);
+  const playbackButtonRef = useRef<HTMLButtonElement>(null);
+  const playbackControlsRef = useRef<HTMLDivElement>(null);
+  const isAudioActive = playbackState !== 'idle';
+  const showPlaybackControls = isAudioActive || controlsRetained;
+
+  useEffect(() => {
+    if (isAudioActive) {
+      setControlsRetained(true);
+      return;
+    }
+    if (!controlsRetained) return;
+    setIsSpeedSheetOpen(false);
+    setIsVoiceSheetOpen(false);
+    playbackButtonRef.current?.focus({ preventScroll: true });
+    const reducedMotion = window.matchMedia?.(
+      '(prefers-reduced-motion: reduce)'
+    ).matches;
+    if (reducedMotion) {
+      setControlsRetained(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setControlsRetained(false), 240);
+    return () => window.clearTimeout(timer);
+  }, [isAudioActive, controlsRetained]);
+
+  useLayoutEffect(() => {
+    const controls = playbackControlsRef.current;
+    const button = playbackButtonRef.current;
+    if (!controls || !button || !showPlaybackControls) return;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    if (typeof button.animate !== 'function') return;
+
+    // Measure final layout, then move the actual controls from/to Listen's
+    // right-hand anchor. Pause/resume leaves isAudioActive unchanged.
+    const right = controls.getBoundingClientRect().right;
+    const elements = [
+      button,
+      ...controls.querySelectorAll<HTMLElement>('[data-playback-item]'),
+    ].filter((element) => element.getBoundingClientRect().width > 0);
+    const animations = elements.map((element) => {
+      const bounds = element.getBoundingClientRect();
+      const distance = right - bounds.right;
+      const atAnchor = {
+        transform: `translateX(${distance}px)`,
+        opacity: element === button ? 1 : 0,
+      };
+      const expanded = { transform: 'translateX(0)', opacity: 1 };
+      return element.animate(
+        isAudioActive ? [atAnchor, expanded] : [expanded, atAnchor],
+        {
+          duration: 240,
+          easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+          fill: 'both',
+        }
+      );
+    });
+    return () => {
+      animations.forEach((animation) => animation.cancel());
+    };
+  }, [isAudioActive, showPlaybackControls]);
+
   const [activeSegmentIdx, setActiveSegmentIdx] = useState<number>(0);
   const [playbackRate, setPlaybackRate] = useState<number>(1);
   const [ttsNotice, setTtsNotice] = useState<string | null>(null);
@@ -853,7 +917,6 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
     );
   }
 
-  const isAudioActive = playbackState !== 'idle';
   const localVoiceActive =
     Boolean(enabledLocalVoice(selectedVoiceURI)) && isAudioActive;
   const displayedTtsNotice =
@@ -897,7 +960,7 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
           {/* Sticky reader controls and status; article text scrolls underneath. */}
           <div className="flex items-center justify-between gap-3">
             <div
-              className={`${isAudioActive ? 'max-sm:hidden' : ''} flex flex-wrap items-center gap-3 min-w-0`}
+              className={`${showPlaybackControls ? 'max-sm:hidden' : ''} flex flex-wrap items-center gap-3 min-w-0`}
             >
               <span className="inline-flex items-center gap-1">
                 <span className="material-symbols-rounded text-[15px]">
@@ -907,12 +970,26 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
               </span>
               {article.byline && <span>• By {article.byline}</span>}
             </div>
-            <div className="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2">
+            <div
+              className={`${showPlaybackControls ? 'w-full sm:w-auto' : ''} ml-auto shrink-0 flex items-center justify-end gap-1.5 sm:gap-2`}
+            >
               {ttsSupported && segments.length > 0 && (
-                <div className="w-full sm:w-auto flex flex-wrap items-center justify-between sm:justify-end gap-1.5 sm:gap-2">
+                <div
+                  ref={playbackControlsRef}
+                  data-testid="reader-playback-controls"
+                  data-motion={
+                    isAudioActive
+                      ? 'expanded'
+                      : controlsRetained
+                        ? 'collapsing'
+                        : 'idle'
+                  }
+                  className={`${playbackStyles.controls} ${showPlaybackControls ? 'w-full justify-between sm:w-auto sm:justify-end' : 'justify-end'} shrink-0 flex flex-wrap items-center gap-1.5 sm:gap-2`}
+                >
                   {/* Play / Pause / Resume Button with Filled Media Icons */}
                   <button
                     type="button"
+                    ref={playbackButtonRef}
                     onClick={handleTogglePlayPause}
                     aria-label={
                       playbackState === 'playing'
@@ -929,20 +1006,24 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
                           : 'Listen'
                     }
                     style={{
-                      backgroundColor: isAudioActive
+                      backgroundColor: showPlaybackControls
                         ? 'var(--accent)'
                         : 'var(--bg-surface-2)',
-                      color: isAudioActive ? '#ffffff' : 'var(--text-primary)',
+                      color: showPlaybackControls
+                        ? '#ffffff'
+                        : 'var(--text-primary)',
                       border: '1px solid transparent',
                     }}
-                    className="h-9 w-9 sm:w-auto sm:px-3.5 rounded-full inline-flex items-center justify-center gap-1.5 text-xs font-semibold leading-none cursor-pointer hover:brightness-110 active:scale-95 transition-all"
+                    className="shrink-0 h-9 w-9 sm:w-auto sm:px-3.5 rounded-full inline-flex items-center justify-center gap-1.5 text-xs font-semibold leading-none cursor-pointer hover:brightness-110 active:scale-95 transition-all"
                   >
                     <span
                       style={{
-                        color: isAudioActive ? '#ffffff' : 'var(--accent)',
+                        color: showPlaybackControls
+                          ? '#ffffff'
+                          : 'var(--accent)',
                       }}
                       className={`material-symbols-rounded text-[16px] leading-none ${
-                        isAudioActive ? 'filled' : ''
+                        showPlaybackControls ? 'filled' : ''
                       }`}
                     >
                       {playbackState === 'playing'
@@ -956,15 +1037,20 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
                         ? 'Pause'
                         : playbackState === 'paused'
                           ? 'Resume'
-                          : 'Listen'}
+                          : controlsRetained
+                            ? 'Play'
+                            : 'Listen'}
                     </span>
                   </button>
 
                   {/* Active Playback Controls: Unified Stepper Pill, Speed Pill, Custom Voice Dropdown, Red Stop Button */}
-                  {isAudioActive && (
-                    <>
+                  {showPlaybackControls && (
+                    <div className="contents" inert={!isAudioActive}>
                       {/* Unified Paragraph Stepper Capsule [ |◄  2/8  ►| ] */}
-                      <div className="liquid-glass h-8 px-1 rounded-full inline-flex items-center gap-0.5 leading-none">
+                      <div
+                        data-playback-item
+                        className="liquid-glass h-8 px-1 rounded-full inline-flex items-center gap-0.5 leading-none"
+                      >
                         <button
                           type="button"
                           title="Previous paragraph"
@@ -1003,6 +1089,7 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
 
                       <button
                         ref={speedTriggerRef}
+                        data-playback-item
                         type="button"
                         title="Playback speed"
                         aria-label={`Playback speed: ${playbackRate} times`}
@@ -1024,7 +1111,7 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
 
                       {voiceOptions.length > 1 && (
                         <>
-                          <div className="hidden sm:block">
+                          <div data-playback-item className="hidden sm:block">
                             <GlassDropdown<string>
                               size="sm"
                               leadingIcon="record_voice_over"
@@ -1036,6 +1123,7 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
                           </div>
                           <button
                             ref={voiceTriggerRef}
+                            data-playback-item
                             type="button"
                             aria-label={`Voice: ${voiceOptions.find((option) => option.id === selectedVoiceURI)?.label ?? 'Select voice'}`}
                             aria-haspopup="dialog"
@@ -1055,6 +1143,7 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
 
                       <button
                         type="button"
+                        data-playback-item
                         title="Stop audio reader"
                         aria-label="Stop audio reader"
                         onClick={stopSpeech}
@@ -1069,7 +1158,7 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
                           stop
                         </span>
                       </button>
-                    </>
+                    </div>
                   )}
                 </div>
               )}

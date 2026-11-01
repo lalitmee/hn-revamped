@@ -64,6 +64,8 @@ beforeEach(() => {
   vi.stubGlobal('SpeechSynthesisUtterance', class {});
   vi.stubGlobal('speechSynthesis', {
     cancel: vi.fn(),
+    pause: vi.fn(),
+    resume: vi.fn(),
     getVoices: () => [],
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
@@ -72,6 +74,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   sessionStorage.clear();
   Object.assign(TTS_FLAGS, { piper: true, kokoro: true, supertonic: true });
   vi.unstubAllGlobals();
@@ -100,6 +103,13 @@ it.each([
   expect(stickyControls).toContainElement(
     screen.getByRole('button', { name: 'Listen to article' })
   );
+  expect(
+    stickyControls?.querySelector('[data-testid="reader-playback-controls"]')
+  ).toHaveClass('shrink-0', 'justify-end');
+  expect(
+    stickyControls?.querySelector('[data-testid="reader-playback-controls"]')
+      ?.parentElement
+  ).toHaveClass('ml-auto');
   expect(workers).toHaveLength(0);
   openVoiceDropdown();
   expect(workers).toHaveLength(0);
@@ -133,6 +143,100 @@ it.each([
   expect(stickyControls).toContainElement(screen.getByRole('status'));
   unmount();
   expect(workers[0].terminate).toHaveBeenCalled();
+});
+
+it('keeps playback first and retains controls for the stop animation', () => {
+  vi.useFakeTimers();
+  const { unmount } = render(<ArticleReaderView url={URL} storyTitle="Test" />);
+  const controls = screen.getByTestId('reader-playback-controls');
+  const listen = screen.getByRole('button', { name: 'Listen to article' });
+  expect(controls.querySelector('button')).toBe(listen);
+  expect(listen).not.toHaveClass('order-last');
+  expect(controls).toHaveAttribute('data-motion', 'idle');
+  fireEvent.click(listen);
+  expect(controls).toHaveAttribute('data-motion', 'expanded');
+  fireEvent.click(screen.getByRole('button', { name: 'Pause reading aloud' }));
+  expect(controls).toHaveAttribute('data-motion', 'expanded');
+  fireEvent.click(screen.getByRole('button', { name: 'Stop audio reader' }));
+  expect(controls).toHaveAttribute('data-motion', 'collapsing');
+  expect(listen).toHaveFocus();
+  expect(
+    screen.getByRole('button', { name: 'Stop audio reader' }).parentElement
+  ).toHaveAttribute('inert');
+  act(() => vi.advanceTimersByTime(240));
+  expect(controls).toHaveAttribute('data-motion', 'idle');
+  expect(
+    screen.queryByRole('button', { name: 'Stop audio reader' })
+  ).toBeNull();
+  unmount();
+  vi.useRealTimers();
+});
+
+it('moves the actual controls together and reverses their travel on stop', () => {
+  const cancel = vi.fn();
+  const animate = vi.fn(() => ({ cancel }));
+  const originalAnimate = HTMLElement.prototype.animate;
+  HTMLElement.prototype.animate = animate as unknown as typeof originalAnimate;
+  const boundsMock = vi
+    .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+    .mockImplementation(function (this: HTMLElement) {
+      const right =
+        this.dataset.testid === 'reader-playback-controls' ? 400 : 136;
+      return {
+        x: right - 36,
+        y: 0,
+        left: right - 36,
+        right,
+        top: 0,
+        bottom: 36,
+        width: 36,
+        height: 36,
+        toJSON: () => ({}),
+      };
+    });
+  const { unmount } = render(<ArticleReaderView url={URL} storyTitle="Test" />);
+  fireEvent.click(screen.getByRole('button', { name: 'Listen to article' }));
+  expect(animate).toHaveBeenCalledWith(
+    [
+      { transform: 'translateX(264px)', opacity: 1 },
+      { transform: 'translateX(0)', opacity: 1 },
+    ],
+    expect.objectContaining({ duration: 240 })
+  );
+  const callsAfterStart = animate.mock.calls.length;
+  fireEvent.click(screen.getByRole('button', { name: 'Pause reading aloud' }));
+  expect(animate).toHaveBeenCalledTimes(callsAfterStart);
+  fireEvent.click(screen.getByRole('button', { name: 'Stop audio reader' }));
+  expect(animate).toHaveBeenCalledWith(
+    [
+      { transform: 'translateX(0)', opacity: 1 },
+      { transform: 'translateX(264px)', opacity: 1 },
+    ],
+    expect.objectContaining({ duration: 240 })
+  );
+  unmount();
+  expect(cancel).toHaveBeenCalled();
+  if (originalAnimate) HTMLElement.prototype.animate = originalAnimate;
+  else Reflect.deleteProperty(HTMLElement.prototype, 'animate');
+  boundsMock.mockRestore();
+});
+
+it('skips the stop animation when reduced motion is preferred', () => {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn(() => ({ matches: true }))
+  );
+  const { unmount } = render(<ArticleReaderView url={URL} storyTitle="Test" />);
+  fireEvent.click(screen.getByRole('button', { name: 'Listen to article' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Stop audio reader' }));
+  expect(screen.getByTestId('reader-playback-controls')).toHaveAttribute(
+    'data-motion',
+    'idle'
+  );
+  expect(
+    screen.queryByRole('button', { name: 'Stop audio reader' })
+  ).toBeNull();
+  unmount();
 });
 
 it('shows voice-loading errors in the status area', () => {

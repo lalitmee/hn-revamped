@@ -1,0 +1,12 @@
+.controls {
+  isolation: isolate;
+}
+
+.controls > button {
+  position: relative;
+  z-index: 1;
+}
+
+.controls[data-motion='collapsing'] [data-playback-item] {
+  pointer-events: none;
+}
