@@ -53,7 +53,6 @@ export const TimeTravelPopover: React.FC<TimeTravelPopoverProps> = ({
         aria-expanded={isOpen}
         onClick={() => setIsOpen(true)}
         className="liquid-glass w-10 h-10 rounded-full inline-flex items-center justify-center"
-        style={{ color: 'var(--accent)' }}
       >
         <span aria-hidden="true" className="material-symbols-rounded">
           history

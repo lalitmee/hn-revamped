@@ -39,12 +39,24 @@ describe('mobile feed picker', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('opens the existing feed picker from the floating button', () => {
+    render(<AppHeader {...props} />);
+    fireEvent.click(
+      screen.getByRole('button', { name: /Swipe up or down to switch feeds/ })
+    );
+    expect(
+      screen.getByRole('dialog', { name: 'Choose a story feed' })
+    ).toBeInTheDocument();
+  });
+
   it('swipes vertically through feeds without opening the picker', () => {
     const onSelectFeed = vi.fn();
-    const { container, rerender } = render(
+    const { rerender } = render(
       <AppHeader {...props} onSelectFeed={onSelectFeed} />
     );
-    const trigger = container.querySelector('button[aria-haspopup="dialog"]')!;
+    const trigger = screen.getByRole('button', {
+      name: /Swipe up or down to switch feeds/,
+    });
     fireEvent.touchStart(trigger, {
       touches: [{ clientX: 20, clientY: 90 }],
     });
@@ -69,10 +81,10 @@ describe('mobile feed picker', () => {
 
   it('ignores short and horizontal swipes on the mobile feed button', () => {
     const onSelectFeed = vi.fn();
-    const { container } = render(
-      <AppHeader {...props} onSelectFeed={onSelectFeed} />
-    );
-    const trigger = container.querySelector('button[aria-haspopup="dialog"]')!;
+    render(<AppHeader {...props} onSelectFeed={onSelectFeed} />);
+    const trigger = screen.getByRole('button', {
+      name: /Swipe up or down to switch feeds/,
+    });
     fireEvent.touchStart(trigger, {
       touches: [{ clientX: 20, clientY: 90 }],
     });

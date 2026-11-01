@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { FeedType, LayoutMode } from '@/types/hn';
 import {
   TimeTravelPopover,
@@ -55,6 +56,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 }) => {
   const [isFeedSheetOpen, setIsFeedSheetOpen] = useState(false);
   const feedTriggerRef = useRef<HTMLButtonElement>(null);
+  const [portalReady, setPortalReady] = useState(false);
   const feedTouchStartRef = useRef<{ x: number; y: number } | null>(null);
   const suppressFeedClickRef = useRef(false);
   const backActionVisible = isStoryOpen || isAppearanceOpen;
@@ -63,6 +65,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
     'enter' | 'exit' | null
   >(null);
   const activeFeedTab = FEED_TABS.find((tab) => tab.id === activeFeed)!;
+
+  useLayoutEffect(() => setPortalReady(true), []);
 
   useLayoutEffect(() => {
     if (previousBackActionRef.current === backActionVisible) return;
@@ -110,35 +114,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           type="button"
           aria-haspopup="dialog"
           aria-expanded={isFeedSheetOpen}
-          onTouchStart={(event) => {
-            const touch = event.touches[0];
-            feedTouchStartRef.current = { x: touch.clientX, y: touch.clientY };
-            suppressFeedClickRef.current = false;
-          }}
-          onTouchEnd={(event) => {
-            const start = feedTouchStartRef.current;
-            feedTouchStartRef.current = null;
-            if (!start) return;
-            const touch = event.changedTouches[0];
-            const dx = touch.clientX - start.x;
-            const dy = touch.clientY - start.y;
-            if (Math.abs(dy) < 35 || Math.abs(dy) <= Math.abs(dx)) return;
-            suppressFeedClickRef.current = true;
-            const index = FEED_TABS.findIndex((tab) => tab.id === activeFeed);
-            const nextIndex =
-              (index + (dy < 0 ? 1 : -1) + FEED_TABS.length) % FEED_TABS.length;
-            onSelectFeed(FEED_TABS[nextIndex].id);
-          }}
-          onTouchCancel={() => {
-            feedTouchStartRef.current = null;
-          }}
-          onClick={() => {
-            if (suppressFeedClickRef.current) {
-              suppressFeedClickRef.current = false;
-              return;
-            }
-            setIsFeedSheetOpen(true);
-          }}
+          onClick={() => setIsFeedSheetOpen(true)}
           className="liquid-glass lg:hidden h-10 rounded-full px-2.5 inline-flex items-center gap-1 text-xs font-semibold shrink-0"
         >
           <span
@@ -157,6 +133,60 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           </span>
         </button>
       )}
+      {portalReady &&
+        !isStoryOpen &&
+        !isAppearanceOpen &&
+        createPortal(
+          <button
+            type="button"
+            aria-label={`Swipe up or down to switch feeds. Current feed: ${activeFeedTab.label}`}
+            title="Swipe up or down to switch feeds"
+            style={{ touchAction: 'none', color: 'var(--accent)' }}
+            onTouchStart={(event) => {
+              if (event.touches.length !== 1) return;
+              const touch = event.touches[0];
+              feedTouchStartRef.current = {
+                x: touch.clientX,
+                y: touch.clientY,
+              };
+              suppressFeedClickRef.current = false;
+            }}
+            onTouchEnd={(event) => {
+              const start = feedTouchStartRef.current;
+              feedTouchStartRef.current = null;
+              if (!start || event.changedTouches.length !== 1) return;
+              const touch = event.changedTouches[0];
+              const dx = touch.clientX - start.x;
+              const dy = touch.clientY - start.y;
+              if (Math.abs(dy) < 35 || Math.abs(dy) <= Math.abs(dx)) return;
+              suppressFeedClickRef.current = true;
+              const index = FEED_TABS.findIndex((tab) => tab.id === activeFeed);
+              const nextIndex =
+                (index + (dy < 0 ? 1 : -1) + FEED_TABS.length) %
+                FEED_TABS.length;
+              onSelectFeed(FEED_TABS[nextIndex].id);
+            }}
+            onTouchCancel={() => {
+              feedTouchStartRef.current = null;
+            }}
+            onClick={() => {
+              if (suppressFeedClickRef.current) {
+                suppressFeedClickRef.current = false;
+                return;
+              }
+              feedTriggerRef.current?.click();
+            }}
+            className="liquid-glass fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] right-4 z-40 lg:hidden w-12 h-12 rounded-full shadow-lg flex items-center justify-center"
+          >
+            <span
+              aria-hidden="true"
+              className="material-symbols-rounded text-[24px]"
+            >
+              {activeFeedTab.icon}
+            </span>
+          </button>,
+          document.body
+        )}
       <div className="hidden lg:flex items-center gap-3 min-w-0">
         <div className="flex items-center gap-2.5 pr-1 shrink-0">
           <div className="liquid-glass-primary w-8 h-8 rounded-xl flex items-center justify-center text-white font-black text-sm">
