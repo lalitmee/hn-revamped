@@ -55,6 +55,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 }) => {
   const [isFeedSheetOpen, setIsFeedSheetOpen] = useState(false);
   const feedTriggerRef = useRef<HTMLButtonElement>(null);
+  const feedTouchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const suppressFeedClickRef = useRef(false);
   const backActionVisible = isStoryOpen || isAppearanceOpen;
   const previousBackActionRef = useRef(backActionVisible);
   const [logoBackAnimation, setLogoBackAnimation] = useState<
@@ -108,7 +110,35 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           type="button"
           aria-haspopup="dialog"
           aria-expanded={isFeedSheetOpen}
-          onClick={() => setIsFeedSheetOpen(true)}
+          onTouchStart={(event) => {
+            const touch = event.touches[0];
+            feedTouchStartRef.current = { x: touch.clientX, y: touch.clientY };
+            suppressFeedClickRef.current = false;
+          }}
+          onTouchEnd={(event) => {
+            const start = feedTouchStartRef.current;
+            feedTouchStartRef.current = null;
+            if (!start) return;
+            const touch = event.changedTouches[0];
+            const dx = touch.clientX - start.x;
+            const dy = touch.clientY - start.y;
+            if (Math.abs(dy) < 35 || Math.abs(dy) <= Math.abs(dx)) return;
+            suppressFeedClickRef.current = true;
+            const index = FEED_TABS.findIndex((tab) => tab.id === activeFeed);
+            const nextIndex =
+              (index + (dy < 0 ? 1 : -1) + FEED_TABS.length) % FEED_TABS.length;
+            onSelectFeed(FEED_TABS[nextIndex].id);
+          }}
+          onTouchCancel={() => {
+            feedTouchStartRef.current = null;
+          }}
+          onClick={() => {
+            if (suppressFeedClickRef.current) {
+              suppressFeedClickRef.current = false;
+              return;
+            }
+            setIsFeedSheetOpen(true);
+          }}
           className="liquid-glass lg:hidden h-10 rounded-full px-2.5 inline-flex items-center gap-1 text-xs font-semibold shrink-0"
         >
           <span

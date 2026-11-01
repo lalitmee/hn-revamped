@@ -841,9 +841,5 @@ button.liquid-glass-primary:hover:not(:disabled) {
 
 .hn-article-body [data-tts-active='true'] {
   background-color: color-mix(in srgb, var(--accent) 15%, transparent);
-  box-shadow:
-    -8px 0 0 0 color-mix(in srgb, var(--accent) 15%, transparent),
-    8px 0 0 0 color-mix(in srgb, var(--accent) 15%, transparent),
-    0 -4px 0 0 color-mix(in srgb, var(--accent) 15%, transparent),
-    0 4px 0 0 color-mix(in srgb, var(--accent) 15%, transparent);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 15%, transparent);
 }

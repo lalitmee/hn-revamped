@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'HN Revamped — Intelligent Hacker News Reader',
+    name: 'HN Revamped',
     short_name: 'HN Revamped',
     description:
       'A fast, readable Hacker News client with split-pane and reader modes.',

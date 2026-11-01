@@ -39,6 +39,59 @@ describe('mobile feed picker', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('swipes vertically through feeds without opening the picker', () => {
+    const onSelectFeed = vi.fn();
+    const { container, rerender } = render(
+      <AppHeader {...props} onSelectFeed={onSelectFeed} />
+    );
+    const trigger = container.querySelector('button[aria-haspopup="dialog"]')!;
+    fireEvent.touchStart(trigger, {
+      touches: [{ clientX: 20, clientY: 90 }],
+    });
+    fireEvent.touchEnd(trigger, {
+      changedTouches: [{ clientX: 22, clientY: 40 }],
+    });
+    fireEvent.click(trigger);
+    expect(onSelectFeed).toHaveBeenCalledWith('new');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    rerender(
+      <AppHeader {...props} activeFeed="top" onSelectFeed={onSelectFeed} />
+    );
+    fireEvent.touchStart(trigger, {
+      touches: [{ clientX: 20, clientY: 40 }],
+    });
+    fireEvent.touchEnd(trigger, {
+      changedTouches: [{ clientX: 20, clientY: 90 }],
+    });
+    expect(onSelectFeed).toHaveBeenLastCalledWith('saved');
+  });
+
+  it('ignores short and horizontal swipes on the mobile feed button', () => {
+    const onSelectFeed = vi.fn();
+    const { container } = render(
+      <AppHeader {...props} onSelectFeed={onSelectFeed} />
+    );
+    const trigger = container.querySelector('button[aria-haspopup="dialog"]')!;
+    fireEvent.touchStart(trigger, {
+      touches: [{ clientX: 20, clientY: 90 }],
+    });
+    fireEvent.touchEnd(trigger, {
+      changedTouches: [{ clientX: 20, clientY: 70 }],
+    });
+    fireEvent.touchStart(trigger, {
+      touches: [{ clientX: 20, clientY: 90 }],
+    });
+    fireEvent.touchEnd(trigger, {
+      changedTouches: [{ clientX: 90, clientY: 40 }],
+    });
+    expect(onSelectFeed).not.toHaveBeenCalled();
+    fireEvent.click(trigger);
+    expect(
+      screen.getByRole('dialog', { name: 'Choose a story feed' })
+    ).toBeInTheDocument();
+  });
+
   it('opens time travel as a mobile sheet and selects a period', () => {
     const onSelectTimeTravel = vi.fn();
     render(<AppHeader {...props} onSelectTimeTravel={onSelectTimeTravel} />);
