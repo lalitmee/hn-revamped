@@ -41,11 +41,12 @@ HN Revamped is an opinionated, distraction-free web client for Hacker News built
 - Strict HTML sanitization via `isomorphic-dompurify`.
 - Built-in fallback cards for non-standard web media, including YouTube video players, GitHub repositories, and PDF documents.
 
-### 🎧 Paragraph-Synced Audio Reader (Web Speech TTS)
+### 🎧 Paragraph-Synced Audio Reader
 
-- In-browser text-to-speech player utilizing native `window.speechSynthesis`.
-- Code-aware content parsing that skips `<pre>` syntax blocks and raw URLs to prevent unnatural playback.
-- Paragraph stepper capsule with active text highlighting, auto-scroll, speed adjustment (1x to 2x), and OS voice selection.
+- System voices via `window.speechSynthesis` remain the default.
+- Optional browser-local Piper, Kokoro q4, and Supertonic voices run inference in dedicated workers. Selecting a local voice downloads only its own engine and model; the reader never starts one merely by opening an article.
+- Code-aware content parsing skips `<pre>` blocks and raw URLs. The paragraph stepper highlights and scrolls the spoken text, with playback speed from 1× to 2×.
+- The voice dropdown uses `Provider: Voice` labels. A one-paragraph lookahead reduces gaps without synthesizing the whole post.
 
 ### 🧵 Comment Folding & Reading Management
 
@@ -118,7 +119,7 @@ flowchart LR
 ### Prerequisites
 
 - Node.js 20.x or newer
-- Yarn 1.22+
+- pnpm 11+
 
 ### Installation
 
@@ -128,15 +129,25 @@ git clone https://github.com/lalitmee/hn-revamped.git
 cd hn-revamped
 
 # Install dependencies
-yarn install --frozen-lockfile
+pnpm install --frozen-lockfile
 
 # Start development server
-yarn dev
+pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
+
+## Reader voice build flags
+
+All three optional engines are enabled by default. To turn off one engine, set its respective build-time variable to `false` in the production environment and **rebuild/redeploy**:
+
+- `NEXT_PUBLIC_ENABLE_PIPER_TTS=false`
+- `NEXT_PUBLIC_ENABLE_KOKORO_TTS=false`
+- `NEXT_PUBLIC_ENABLE_SUPERTONIC_TTS=false`
+
+Each flag is independent. A disabled engine is absent from the voice selector and its worker, runtime, and model are never loaded by the browser. These Next.js public variables are frozen into the client bundle at build time; changing them without a rebuild does not affect an existing deployment. No extra server route is used. Piper voice weights and Supertonic weights are fetched directly from pinned Hugging Face revisions. Their WASM assets are fetched from version-pinned CDN URLs. Supertonic's download is approximately 398 MB, so test it on a suitable connection. Model licensing is separate from this app's MIT license (Supertonic weights: OpenRAIL-M).
 
 ## Development Checks
 
@@ -144,16 +155,16 @@ Always verify tests, types, and production builds before committing changes:
 
 ```bash
 # Run unit and integration tests (Vitest)
-yarn test
+pnpm test
 
 # Validate TypeScript types
-yarn typecheck
+pnpm typecheck
 
 # Verify optimized production build
-yarn build
+pnpm build
 
 # Run local production server
-yarn start
+pnpm start
 ```
 
 ---

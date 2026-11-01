@@ -224,6 +224,279 @@ body::-webkit-scrollbar-thumb:hover,
   display: none;
 }
 
+/* Keep the touch-scrolling feed flush with the mobile viewport edge. */
+@media (max-width: 1023px) {
+  .mobile-feed-scroll {
+    scrollbar-width: none;
+  }
+
+  .mobile-feed-scroll::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@keyframes swipeHintWave {
+  0%,
+  100% {
+    transform: translateX(-2px);
+    opacity: 0.72;
+  }
+  50% {
+    transform: translateX(3px);
+    opacity: 1;
+  }
+}
+
+.swipe-hint-icon {
+  animation: swipeHintWave 1.2s ease-in-out infinite;
+}
+
+@keyframes swipeHintShimmer {
+  from {
+    transform: translateX(-140%) skewX(-18deg);
+  }
+  to {
+    transform: translateX(180%) skewX(-18deg);
+  }
+}
+
+.swipe-hint-pill {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.swipe-hint-pill::after {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgb(255 255 255 / 22%) 50%,
+    transparent 70%
+  );
+  content: '';
+  animation: swipeHintShimmer 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.swipe-hint-pill > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .swipe-hint-icon,
+  .swipe-hint-pill::after {
+    animation: none;
+  }
+}
+
+@keyframes detailTabEnterFromRight {
+  from {
+    opacity: 0.72;
+    transform: translateX(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes detailTabEnterFromLeft {
+  from {
+    opacity: 0.72;
+    transform: translateX(-28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes appearanceTabExitToLeft {
+  to {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+
+@keyframes appearanceTabExitToRight {
+  to {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+@keyframes appearanceTabEnterFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes appearanceTabEnterFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.appearance-tab-indicator {
+  left: 0;
+  transition:
+    transform 280ms cubic-bezier(0.2, 0, 0, 1),
+    width 280ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+@media (max-width: 639px) {
+  .appearance-tab-indicator {
+    bottom: 0;
+    height: 2px;
+    border-radius: 9999px;
+    background-color: var(--accent);
+  }
+}
+
+@media (min-width: 640px) {
+  .appearance-tab-indicator {
+    top: 4px;
+    bottom: 4px;
+    border-radius: 9999px;
+    background-color: var(--accent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .appearance-tab-indicator {
+    transition: none;
+  }
+}
+
+@keyframes mobileSheetEnter {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes mobileSheetExit {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes mobileBackdropEnter {
+  from {
+    background-color: transparent;
+  }
+  to {
+    background-color: rgb(0 0 0 / 50%);
+  }
+}
+
+@keyframes mobileBackdropExit {
+  from {
+    background-color: rgb(0 0 0 / 50%);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
+@keyframes mobileHeaderLogoBackEnter {
+  from {
+    opacity: 0.75;
+    transform: translateX(-48px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes mobileHeaderLogoBackExit {
+  from {
+    opacity: 0.75;
+    transform: translateX(48px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@media (max-width: 639px) and (prefers-reduced-motion: no-preference) {
+  .appearance-tab-panel {
+    view-transition-name: appearance-tab-panel;
+  }
+
+  :root[data-appearance-tab-direction='forward']::view-transition-old(
+      appearance-tab-panel
+    ) {
+    animation: appearanceTabExitToLeft 220ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+
+  :root[data-appearance-tab-direction='forward']::view-transition-new(
+      appearance-tab-panel
+    ) {
+    animation: appearanceTabEnterFromRight 220ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+
+  :root[data-appearance-tab-direction='backward']::view-transition-old(
+      appearance-tab-panel
+    ) {
+    animation: appearanceTabExitToRight 220ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+
+  :root[data-appearance-tab-direction='backward']::view-transition-new(
+      appearance-tab-panel
+    ) {
+    animation: appearanceTabEnterFromLeft 220ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .detail-tab-enter-from-right {
+    animation: detailTabEnterFromRight 260ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+  .detail-tab-enter-from-left {
+    animation: detailTabEnterFromLeft 260ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+  .mobile-sheet-enter {
+    animation: mobileSheetEnter 240ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+  .mobile-sheet-exit {
+    animation: mobileSheetExit 240ms cubic-bezier(0.4, 0, 1, 1) both;
+  }
+  .mobile-sheet-backdrop-enter {
+    animation: mobileBackdropEnter 240ms ease-out both;
+  }
+  .mobile-sheet-backdrop-exit {
+    animation: mobileBackdropExit 240ms ease-in both;
+  }
+  .mobile-header-logo-back-enter {
+    animation: mobileHeaderLogoBackEnter 240ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+  .mobile-header-logo-back-exit {
+    animation: mobileHeaderLogoBackExit 240ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+}
+
 /* Google Material 3 Tonal Surface & Pill Design System */
 .liquid-glass {
   background-color: var(--bg-surface-2);
@@ -353,6 +626,12 @@ button.liquid-glass-primary:hover:not(:disabled) {
 
 .animate-story-in {
   animation: storyCardIn 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (min-width: 640px) {
+  .appearance-tab-content {
+    animation: storyCardIn 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
 }
 
 @keyframes commentStateIn {
@@ -562,9 +841,5 @@ button.liquid-glass-primary:hover:not(:disabled) {
 
 .hn-article-body [data-tts-active='true'] {
   background-color: color-mix(in srgb, var(--accent) 15%, transparent);
-  box-shadow:
-    -8px 0 0 0 color-mix(in srgb, var(--accent) 15%, transparent),
-    8px 0 0 0 color-mix(in srgb, var(--accent) 15%, transparent),
-    0 -4px 0 0 color-mix(in srgb, var(--accent) 15%, transparent),
-    0 4px 0 0 color-mix(in srgb, var(--accent) 15%, transparent);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 15%, transparent);
 }

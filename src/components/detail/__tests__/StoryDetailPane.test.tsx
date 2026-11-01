@@ -28,19 +28,28 @@ it('shows Discussion when switching from Reader View to a story without a URL', 
     onToggleBookmark: vi.fn(),
     onInternalHnLinkClick: vi.fn(),
   };
-  const { rerender } = render(<StoryDetailPane {...props} story={story} />);
+  const { container, rerender } = render(
+    <StoryDetailPane {...props} story={story} />
+  );
   expect(
-    screen.getByRole('button', { name: 'Reader View' })
-  ).toBeInTheDocument();
+    container.querySelector('.custom-scrollbar.overflow-y-auto')
+  ).toHaveClass('pt-0');
+  expect(screen.getAllByRole('button', { name: 'Reader View' })).toHaveLength(
+    2
+  );
 
   rerender(
     <StoryDetailPane {...props} story={{ ...story, id: 2, url: undefined }} />
   );
-  const discussion = screen.getByRole('button', { name: /Discussion/ });
-  expect(discussion).toHaveClass('liquid-glass-primary');
+  const discussion = screen.getAllByRole('button', { name: /Discussion/ });
   expect(
-    screen.queryByRole('button', { name: 'Reader View' })
-  ).not.toBeInTheDocument();
+    discussion.some((button) =>
+      button.classList.contains('liquid-glass-primary')
+    )
+  ).toBe(true);
+  expect(screen.queryAllByRole('button', { name: 'Reader View' })).toHaveLength(
+    0
+  );
   expect(
     screen.queryByText(/text-only Hacker News discussion/)
   ).not.toBeInTheDocument();

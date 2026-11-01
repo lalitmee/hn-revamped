@@ -5,6 +5,31 @@ const PREFS_KEY = 'hn_revamped_prefs_v1';
 const TYPOGRAPHY_MIGRATED_KEY = 'hn_revamped_typo_v2';
 const HISTORY_KEY = 'hn_revamped_history_v1';
 const BOOKMARKS_KEY = 'hn_revamped_bookmarks_v1';
+const SWIPE_HINT_KEYS = {
+  feed: 'hn_revamped_swipe_used_feed_v1',
+  appearance: 'hn_revamped_swipe_used_appearance_v1',
+  detail: 'hn_revamped_swipe_used_detail_v1',
+} as const;
+
+export type SwipeHintContext = keyof typeof SWIPE_HINT_KEYS;
+
+export function hasUsedSwipe(context: SwipeHintContext): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return window.localStorage.getItem(SWIPE_HINT_KEYS[context]) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function recordSwipe(context: SwipeHintContext): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(SWIPE_HINT_KEYS[context], '1');
+  } catch {
+    // Ignore storage quota errors
+  }
+}
 
 export function loadPreferences(): UserPreferences {
   if (typeof window === 'undefined') return DEFAULT_PREFERENCES;
@@ -13,6 +38,10 @@ export function loadPreferences(): UserPreferences {
     if (!raw) return DEFAULT_PREFERENCES;
     const parsed = JSON.parse(raw);
     const merged: UserPreferences = { ...DEFAULT_PREFERENCES, ...parsed };
+    if (merged.customAccent == null) {
+      merged.customAccent = DEFAULT_PREFERENCES.customAccent;
+      window.localStorage.setItem(PREFS_KEY, JSON.stringify(merged));
+    }
 
     // One-time migration from legacy 16px / 1.65 default to compact 14px / 1.55 default
     if (

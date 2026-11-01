@@ -260,14 +260,12 @@ export const FONT_FAMILIES: Record<
 };
 
 export const ACCENT_PRESETS: { id: string; label: string; color: string }[] = [
-  { id: 'tangerine', label: 'HN Tangerine', color: '#F97316' },
+  { id: 'tangerine', label: 'HN Orange', color: '#FF6600' },
   { id: 'blue', label: 'Google Blue', color: '#3B82F6' },
   { id: 'emerald', label: 'Emerald Mint', color: '#10B981' },
   { id: 'violet', label: 'Royal Violet', color: '#8B5CF6' },
   { id: 'rose', label: 'Rose Coral', color: '#F43F5E' },
-  { id: 'amber', label: 'Amber Gold', color: '#F59E0B' },
   { id: 'cyan', label: 'Cyan Teal', color: '#06B6D4' },
-  { id: 'indigo', label: 'Electric Indigo', color: '#6366F1' },
 ];
 
 export const DEFAULT_PREFERENCES: UserPreferences = {
@@ -275,7 +273,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   themeMode: 'system',
   lightThemeId: 'warm-paper',
   darkThemeId: 'obsidian-slate',
-  customAccent: null,
+  customAccent: '#FF6600',
   fontFamily: 'sans',
   fontSize: 14,
   lineHeight: 1.55,

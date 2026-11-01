@@ -6,33 +6,9 @@ let modelPromise: Promise<KokoroTTS> | null = null;
 
 async function loadModel(): Promise<KokoroTTS> {
   const { KokoroTTS } = await import('kokoro-js');
-  const gpu =
-    typeof navigator === 'undefined'
-      ? undefined
-      : (
-          navigator as Navigator & {
-            gpu?: { requestAdapter: () => Promise<unknown | null> };
-          }
-        ).gpu;
-  // navigator.gpu can exist even when the browser cannot provide an adapter.
-  // Probe first: ONNX Runtime can cache a failed initial WebGPU session and make
-  // a subsequent WASM retry fail with the same backend error.
-  let hasWebGPUAdapter = false;
-  try {
-    hasWebGPUAdapter = Boolean(await gpu?.requestAdapter());
-  } catch {
-    // Treat adapter lookup failures as unavailable WebGPU.
-  }
-
-  if (hasWebGPUAdapter) {
-    return KokoroTTS.from_pretrained(MODEL_ID, {
-      dtype: 'fp32',
-      device: 'webgpu',
-    });
-  }
-
+  // q4 only: never download the larger q8/fp32 variants, even on WebGPU hosts.
   return KokoroTTS.from_pretrained(MODEL_ID, {
-    dtype: 'q8',
+    dtype: 'q4',
     device: 'wasm',
   });
 }

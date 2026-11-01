@@ -9,6 +9,12 @@ import React, {
 } from 'react';
 import { ReaderArticle } from '@/types/hn';
 import { GlassDropdown } from '@/components/ui/GlassDropdown';
+import { MobileBottomSheet } from '@/components/ui/MobileBottomSheet';
+import {
+  enabledLocalVoice,
+  TTS_FLAGS,
+  type LocalTtsEngine,
+} from '@/lib/tts-flags';
 
 interface ArticleReaderViewProps {
   url?: string;
@@ -17,11 +23,30 @@ interface ArticleReaderViewProps {
 
 const SPEED_OPTIONS = [1, 1.25, 1.5, 1.75, 2] as const;
 
+const PIPER_VOICES = [
+  { id: 'piper:en_US-lessac-medium', label: 'Piper: Lessac' },
+  { id: 'piper:en_US-amy-medium', label: 'Piper: Amy' },
+  { id: 'piper:en_US-hfc_female-medium', label: 'Piper: HFC Female' },
+];
+
+const SUPERTONIC_VOICES = [
+  { id: 'supertonic:F1', label: 'Supertonic: F1' },
+  { id: 'supertonic:F2', label: 'Supertonic: F2' },
+  { id: 'supertonic:M1', label: 'Supertonic: M1' },
+  { id: 'supertonic:M2', label: 'Supertonic: M2' },
+];
+
+const LOCAL_ENGINE_LABELS: Record<LocalTtsEngine, string> = {
+  piper: 'Piper',
+  kokoro: 'Kokoro',
+  supertonic: 'Supertonic',
+};
+
 const KOKORO_VOICES = [
-  { id: 'kokoro:af_heart', label: 'Kokoro · Heart (local)' },
-  { id: 'kokoro:af_bella', label: 'Kokoro · Bella (local)' },
-  { id: 'kokoro:af_nova', label: 'Kokoro · Nova (local)' },
-  { id: 'kokoro:am_michael', label: 'Kokoro · Michael (local)' },
+  { id: 'kokoro:af_heart', label: 'Kokoro: Heart' },
+  { id: 'kokoro:af_bella', label: 'Kokoro: Bella' },
+  { id: 'kokoro:af_nova', label: 'Kokoro: Nova' },
+  { id: 'kokoro:am_michael', label: 'Kokoro: Michael' },
 ];
 
 export interface SpokenSegment {
@@ -94,7 +119,8 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
   storyTitle,
 }) => {
   const [article, setArticle] = useState<ReaderArticle | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(Boolean(url));
+  const isArticleLoading = Boolean(url) && (loading || article?.url !== url);
 
   // Audio Reader State
   const [ttsSupported, setTtsSupported] = useState(false);
@@ -106,8 +132,18 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
   const [activeSegmentIdx, setActiveSegmentIdx] = useState<number>(0);
   const [playbackRate, setPlaybackRate] = useState<number>(1);
   const [ttsNotice, setTtsNotice] = useState<string | null>(null);
+  const updateTtsNotice = useCallback((notice: string | null) => {
+    setTtsNotice(notice);
+  }, []);
 
   const articleBodyRef = useRef<HTMLDivElement>(null);
+  const readerCardRef = useRef<HTMLElement>(null);
+  const readerToolbarRef = useRef<HTMLDivElement>(null);
+  const [isReaderToolbarSticky, setIsReaderToolbarSticky] = useState(false);
+  const speedTriggerRef = useRef<HTMLButtonElement>(null);
+  const voiceTriggerRef = useRef<HTMLButtonElement>(null);
+  const [isSpeedSheetOpen, setIsSpeedSheetOpen] = useState(false);
+  const [isVoiceSheetOpen, setIsVoiceSheetOpen] = useState(false);
   const activeSegmentRef = useRef<number>(0);
   const playbackRateRef = useRef<number>(1);
   const selectedVoiceRef = useRef<string>('');
@@ -116,9 +152,14 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const workerRef = useRef<Worker | null>(null);
+  const workerEngineRef = useRef<string | null>(null);
   const workerReadyRef = useRef(false);
   const workerErrorRef = useRef<string | null>(null);
-  type GeneratedAudio = { audio: Float32Array; sampleRate: number };
+  type GeneratedAudio = {
+    audio?: Float32Array;
+    wav?: ArrayBuffer;
+    sampleRate?: number;
+  };
   const requestsRef = useRef(
     new Map<
       number,
@@ -134,47 +175,15 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
     promise: Promise<GeneratedAudio>;
   } | null>(null);
 
-  const requestAudio = useCallback(
-    (
-      text: string,
-      voice: string,
-      speed: number,
-      priority: 'play' | 'prefetch'
-    ) => {
-      const worker = workerRef.current;
-      if (!worker || workerErrorRef.current) {
-        return Promise.reject(
-          new Error(
-            workerErrorRef.current ?? 'Local voice worker is unavailable.'
-          )
-        );
-      }
-      const id = ++nextRequestIdRef.current;
-      return new Promise<GeneratedAudio>((resolve, reject) => {
-        requestsRef.current.set(id, { resolve, reject });
-        worker.postMessage({
-          type: 'generate',
-          id,
-          text,
-          voice,
-          speed,
-          priority,
-        });
-      });
-    },
-    []
-  );
-
-  // Load native voices when available; local Kokoro only needs Web Audio.
+  // Load native voices when available; optional local voices only need Web Audio.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const hasNativeTts = 'speechSynthesis' in window;
-    setTtsSupported(hasNativeTts || 'AudioContext' in window);
-    if (!hasNativeTts) {
-      setSelectedVoiceURI('kokoro:af_heart');
-      selectedVoiceRef.current = 'kokoro:af_heart';
-      return;
-    }
+    setTtsSupported(
+      hasNativeTts ||
+        ('AudioContext' in window && Object.values(TTS_FLAGS).some(Boolean))
+    );
+    if (!hasNativeTts) return;
 
     const updateVoices = () => {
       const available = window.speechSynthesis.getVoices() || [];
@@ -199,88 +208,155 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
     };
 
     updateVoices();
-    window.speechSynthesis.addEventListener?.('voiceschanged', updateVoices);
+    const speechSynthesis = window.speechSynthesis;
+    speechSynthesis.addEventListener?.('voiceschanged', updateVoices);
     return () => {
-      window.speechSynthesis.removeEventListener?.(
-        'voiceschanged',
-        updateVoices
-      );
-      window.speechSynthesis.cancel();
+      speechSynthesis.removeEventListener?.('voiceschanged', updateVoices);
+      speechSynthesis.cancel();
     };
   }, []);
 
-  // Reader View is mounted only for the active reader tab. Prewarm the model
-  // here, not on site load; the worker keeps downloads and WASM off the UI thread.
-  useEffect(() => {
-    if (
-      typeof Worker === 'undefined' ||
-      typeof window.AudioContext === 'undefined'
-    )
-      return;
-    let worker: Worker;
-    try {
-      worker = new Worker(
-        new URL('../../lib/kokoro-worker.ts', import.meta.url),
-        {
-          type: 'module',
+  const stopLocalWorker = useCallback(() => {
+    requestsRef.current.forEach(({ reject }) =>
+      reject(new Error('Local voice worker closed.'))
+    );
+    requestsRef.current.clear();
+    prefetchedRef.current = null;
+    workerRef.current?.terminate();
+    workerRef.current = null;
+    workerEngineRef.current = null;
+    workerReadyRef.current = false;
+    workerErrorRef.current = null;
+  }, []);
+
+  // Start only the explicitly selected engine; changing engines tears down
+  // the old worker, and system voices never initialize a local model.
+  const startWorker = useCallback(
+    (engine: LocalTtsEngine, selectedVoice: string) => {
+      if (!TTS_FLAGS[engine]) return null;
+      const voiceId = selectedVoice.slice(selectedVoice.indexOf(':') + 1);
+      const workerKey = engine === 'piper' ? `${engine}:${voiceId}` : engine;
+      if (workerEngineRef.current !== workerKey) stopLocalWorker();
+      if (workerRef.current || workerErrorRef.current) return workerRef.current;
+      if (
+        typeof Worker === 'undefined' ||
+        typeof window.AudioContext === 'undefined'
+      ) {
+        updateTtsNotice(
+          'Local voice playback is not supported in this browser.'
+        );
+        return null;
+      }
+      let worker: Worker;
+      try {
+        worker = new Worker(`/tts-workers/${engine}.js`, { type: 'module' });
+      } catch {
+        workerErrorRef.current = 'Could not start the local voice worker.';
+        updateTtsNotice(workerErrorRef.current);
+        return null;
+      }
+      workerRef.current = worker;
+      workerEngineRef.current = workerKey;
+      worker.onmessage = (
+        event: MessageEvent<{
+          type: 'ready' | 'audio' | 'error';
+          id: number;
+          audio?: Float32Array;
+          wav?: ArrayBuffer;
+          samplingRate?: number;
+          message?: string;
+        }>
+      ) => {
+        const response = event.data;
+        if (response.type === 'ready') {
+          workerReadyRef.current = true;
+          updateTtsNotice(
+            requestsRef.current.size > 0 ? 'Preparing speech…' : null
+          );
+          return;
         }
-      );
-    } catch {
-      workerErrorRef.current = 'Could not start the local voice worker.';
-      return;
-    }
-    workerRef.current = worker;
-    worker.onmessage = (
-      event: MessageEvent<{
-        type: 'ready' | 'audio' | 'error';
-        id: number;
-        audio?: Float32Array;
-        samplingRate?: number;
-        message?: string;
-      }>
-    ) => {
-      const response = event.data;
-      if (response.type === 'ready') {
-        workerReadyRef.current = true;
-        return;
-      }
-      if (response.type === 'error' && response.id === 0) {
-        workerErrorRef.current =
-          response.message ?? 'Local voice failed to load.';
-        return;
-      }
-      const request = requestsRef.current.get(response.id);
-      if (!request) return;
-      requestsRef.current.delete(response.id);
-      if (response.type === 'error')
-        request.reject(new Error(response.message ?? 'Local voice failed.'));
-      else if (response.audio && response.samplingRate)
-        request.resolve({
-          audio: response.audio,
-          sampleRate: response.samplingRate,
-        });
-    };
-    worker.onerror = () => {
-      workerErrorRef.current = 'The local voice worker stopped unexpectedly.';
-      requestsRef.current.forEach(({ reject }) =>
-        reject(new Error(workerErrorRef.current!))
-      );
-      requestsRef.current.clear();
-    };
-    worker.postMessage({ type: 'load', id: 0 });
+        if (response.type === 'error' && response.id === 0) {
+          workerErrorRef.current =
+            response.message ?? 'Local voice failed to load.';
+          updateTtsNotice(
+            `Could not load ${LOCAL_ENGINE_LABELS[engine]} voice: ${workerErrorRef.current}`
+          );
+          return;
+        }
+        const request = requestsRef.current.get(response.id);
+        if (!request) return;
+        requestsRef.current.delete(response.id);
+        if (response.type === 'error')
+          request.reject(new Error(response.message ?? 'Local voice failed.'));
+        else if (response.wav || (response.audio && response.samplingRate))
+          request.resolve({
+            audio: response.audio,
+            wav: response.wav,
+            sampleRate: response.samplingRate,
+          });
+        else request.reject(new Error('Local voice returned no audio.'));
+      };
+      worker.onerror = () => {
+        workerErrorRef.current = 'The local voice worker stopped unexpectedly.';
+        updateTtsNotice(workerErrorRef.current);
+        requestsRef.current.forEach(({ reject }) =>
+          reject(new Error(workerErrorRef.current!))
+        );
+        requestsRef.current.clear();
+      };
+      worker.postMessage({ type: 'load', id: 0, voice: voiceId });
+      return worker;
+    },
+    [stopLocalWorker, updateTtsNotice]
+  );
+
+  useEffect(() => {
+    const engine = enabledLocalVoice(selectedVoiceURI);
+    if (engine) startWorker(engine, selectedVoiceURI);
+    else stopLocalWorker();
+  }, [selectedVoiceURI, startWorker, stopLocalWorker]);
+
+  useEffect(() => {
     return () => {
-      requestsRef.current.forEach(({ reject }) =>
-        reject(new Error('Local voice worker closed.'))
-      );
-      requestsRef.current.clear();
-      prefetchedRef.current = null;
-      worker.terminate();
-      workerRef.current = null;
-      workerReadyRef.current = false;
+      speechSeqRef.current += 1;
+      if (speakTimerRef.current) clearTimeout(speakTimerRef.current);
+      stopLocalWorker();
       audioSourceRef.current?.stop();
       void audioContextRef.current?.close();
     };
-  }, []);
+  }, [stopLocalWorker]);
+
+  const requestAudio = useCallback(
+    (
+      text: string,
+      voice: string,
+      speed: number,
+      priority: 'play' | 'prefetch'
+    ) => {
+      const engine = enabledLocalVoice(voice);
+      const worker = engine ? startWorker(engine, voice) : null;
+      if (!worker || workerErrorRef.current) {
+        return Promise.reject(
+          new Error(
+            workerErrorRef.current ?? 'Local voice worker is unavailable.'
+          )
+        );
+      }
+      const id = ++nextRequestIdRef.current;
+      return new Promise<GeneratedAudio>((resolve, reject) => {
+        requestsRef.current.set(id, { resolve, reject });
+        worker.postMessage({
+          type: 'generate',
+          id,
+          text,
+          voice: voice.slice(voice.indexOf(':') + 1),
+          speed,
+          priority,
+        });
+      });
+    },
+    [startWorker]
+  );
 
   const stopSpeech = useCallback(() => {
     speechSeqRef.current += 1;
@@ -377,6 +453,44 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
     [annotatedHtml]
   );
 
+  useEffect(() => {
+    if (!ttsSupported || segments.length === 0) return;
+    const toolbar = readerToolbarRef.current;
+    const card = readerCardRef.current;
+    const scrollRoot = toolbar?.closest<HTMLElement>('.overflow-y-auto');
+    if (!toolbar || !card) return;
+
+    let frame = 0;
+    const updateStickyState = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const scrollTop = scrollRoot
+          ? scrollRoot.getBoundingClientRect().top + scrollRoot.clientTop
+          : 0;
+        const toolbarTop = toolbar.getBoundingClientRect().top;
+        const toolbarHeight = toolbar.getBoundingClientRect().height;
+        const cardBottom = card.getBoundingClientRect().bottom;
+        setIsReaderToolbarSticky(
+          toolbarTop <= scrollTop + 1 && cardBottom > scrollTop + toolbarHeight
+        );
+      });
+    };
+
+    scrollRoot?.addEventListener('scroll', updateStickyState, {
+      passive: true,
+    });
+    window.addEventListener('scroll', updateStickyState, { passive: true });
+    window.addEventListener('resize', updateStickyState);
+    updateStickyState();
+
+    return () => {
+      cancelAnimationFrame(frame);
+      scrollRoot?.removeEventListener('scroll', updateStickyState);
+      window.removeEventListener('scroll', updateStickyState);
+      window.removeEventListener('resize', updateStickyState);
+    };
+  }, [segments.length, ttsSupported]);
+
   // Highlight and smoothly scroll the currently spoken paragraph into view
   useEffect(() => {
     const container = articleBodyRef.current;
@@ -437,11 +551,9 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
 
       const seg = segments[index];
       const selectedVoice = selectedVoiceRef.current;
-      const kokoroVoice = selectedVoice.startsWith('kokoro:')
-        ? selectedVoice.slice('kokoro:'.length)
-        : null;
+      const localEngine = enabledLocalVoice(selectedVoice);
 
-      if (kokoroVoice) {
+      if (localEngine) {
         // Resume the audio context synchronously inside the click gesture, before
         // model loading/inference awaits, so browser autoplay policies allow playback.
         const AudioContextConstructor = window.AudioContext;
@@ -457,29 +569,30 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
           (audioContextRef.current = new AudioContextConstructor());
         void context.resume();
         setTtsNotice(
-          'Loading the local voice model (first use requires a download)…'
+          `Loading ${LOCAL_ENGINE_LABELS[localEngine]} voice${workerReadyRef.current ? '' : ' (first use may download the model)'}…`
         );
 
         const speed = playbackRateRef.current;
-        const key = JSON.stringify([index, seg.text, kokoroVoice, speed]);
+        const key = JSON.stringify([index, seg.text, selectedVoice, speed]);
         const cached = prefetchedRef.current;
         const audioPromise =
           cached?.key === key
             ? cached.promise
-            : requestAudio(seg.text, kokoroVoice, speed, 'play');
+            : requestAudio(seg.text, selectedVoice, 1, 'play');
         prefetchedRef.current = null;
         setTtsNotice(
-          cached?.key === key
-            ? 'Preparing local speech…'
-            : workerReadyRef.current
-              ? 'Generating local speech…'
-              : 'Loading the local voice model (first use requires a download)…'
+          workerReadyRef.current
+            ? `Preparing paragraph ${index + 1} of ${segments.length}…`
+            : `Loading ${LOCAL_ENGINE_LABELS[localEngine]} voice (first use may download the model)…`
         );
         void audioPromise
-          .then(({ audio, sampleRate }) => {
+          .then(async ({ audio, wav, sampleRate }) => {
             if (speechSeqRef.current !== seq) return;
-            const buffer = context.createBuffer(1, audio.length, sampleRate);
-            buffer.copyToChannel(new Float32Array(audio), 0);
+            const buffer = wav
+              ? await context.decodeAudioData(wav)
+              : context.createBuffer(1, audio!.length, sampleRate!);
+            if (!wav) buffer.copyToChannel(new Float32Array(audio!), 0);
+            if (speechSeqRef.current !== seq) return;
             setTtsNotice(null);
             const source = context.createBufferSource();
             source.buffer = buffer;
@@ -505,13 +618,13 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
               const nextKey = JSON.stringify([
                 index + 1,
                 next.text,
-                kokoroVoice,
+                selectedVoice,
                 speed,
               ]);
               const promise = requestAudio(
                 next.text,
-                kokoroVoice,
-                speed,
+                selectedVoice,
+                1,
                 'prefetch'
               );
               // A speculative failure must not produce an unhandled rejection.
@@ -582,16 +695,18 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
   const handleTogglePlayPause = () => {
     if (!ttsSupported || segments.length === 0) return;
 
-    const usingKokoro = selectedVoiceRef.current.startsWith('kokoro:');
+    const usingLocalVoice = Boolean(
+      enabledLocalVoice(selectedVoiceRef.current)
+    );
     if (playbackState === 'playing') {
-      if (usingKokoro) {
+      if (usingLocalVoice) {
         void audioContextRef.current?.suspend();
       } else if ('speechSynthesis' in window) {
         window.speechSynthesis.pause();
       }
       setPlaybackState('paused');
     } else if (playbackState === 'paused') {
-      if (usingKokoro) {
+      if (usingLocalVoice) {
         void audioContextRef.current?.resume();
       } else if ('speechSynthesis' in window) {
         window.speechSynthesis.resume();
@@ -611,17 +726,46 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
     speakSegmentAt(nextIdx);
   };
 
-  const handleCycleSpeed = () => {
-    const currIdx = SPEED_OPTIONS.indexOf(
-      playbackRate as (typeof SPEED_OPTIONS)[number]
-    );
-    const nextSpeed = SPEED_OPTIONS[(currIdx + 1) % SPEED_OPTIONS.length];
+  const handleSelectSpeed = (nextSpeed: number) => {
     setPlaybackRate(nextSpeed);
     playbackRateRef.current = nextSpeed;
     if (playbackState === 'playing') {
       speakSegmentAt(activeSegmentRef.current);
     }
   };
+
+  const handleCycleSpeed = () => {
+    const currIdx = SPEED_OPTIONS.indexOf(
+      playbackRate as (typeof SPEED_OPTIONS)[number]
+    );
+    handleSelectSpeed(SPEED_OPTIONS[(currIdx + 1) % SPEED_OPTIONS.length]);
+  };
+
+  const handleSelectVoice = (uri: string) => {
+    setSelectedVoiceURI(uri);
+    selectedVoiceRef.current = uri;
+    const engine = enabledLocalVoice(uri);
+    setTtsNotice(
+      engine ? `Loading ${LOCAL_ENGINE_LABELS[engine]} voice…` : null
+    );
+    if (playbackState === 'playing') {
+      speakSegmentAt(activeSegmentRef.current);
+    }
+  };
+
+  const voiceOptions = [
+    { id: '', label: 'System: Default', icon: 'devices' },
+    ...voices.map((voice) => ({
+      id: voice.voiceURI,
+      label: `System: ${voice.name.replace(/Microsoft |Google |Apple /g, '')}`,
+      icon: 'graphic_eq',
+    })),
+    ...[
+      ...(TTS_FLAGS.piper ? PIPER_VOICES : []),
+      ...(TTS_FLAGS.kokoro ? KOKORO_VOICES : []),
+      ...(TTS_FLAGS.supertonic ? SUPERTONIC_VOICES : []),
+    ].map((voice) => ({ ...voice, icon: 'graphic_eq' })),
+  ];
 
   if (!url) {
     return (
@@ -637,7 +781,7 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
     );
   }
 
-  if (loading) {
+  if (isArticleLoading) {
     return (
       <div className="space-y-4 py-6">
         <div
@@ -710,6 +854,18 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
   }
 
   const isAudioActive = playbackState !== 'idle';
+  const localVoiceActive =
+    Boolean(enabledLocalVoice(selectedVoiceURI)) && isAudioActive;
+  const displayedTtsNotice =
+    ttsNotice ??
+    (isAudioActive
+      ? playbackState === 'paused'
+        ? `Paused at paragraph ${activeSegmentIdx + 1} of ${segments.length}`
+        : `${localVoiceActive ? 'Speaking' : 'Reading aloud'} paragraph ${activeSegmentIdx + 1} of ${segments.length}`
+      : null);
+  const isTtsProgressNotice = Boolean(
+    displayedTtsNotice && /^(Loading|Preparing)/.test(displayedTtsNotice)
+  );
   const progressPct =
     segments.length > 0
       ? Math.round(((activeSegmentIdx + 1) / segments.length) * 100)
@@ -717,214 +873,358 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
 
   return (
     <article
+      ref={readerCardRef}
       style={{
         backgroundColor: 'var(--bg-surface-1)',
         borderColor: 'var(--border-subtle)',
       }}
-      className="pt-3.5 px-4 md:px-5 pb-5 rounded-2xl border my-1"
+      className="px-4 md:px-5 pb-5 rounded-2xl border mt-0 mb-1"
     >
-      {/* Reader Metadata & Integrated Liquid Glass Audio Reader Bar */}
-      <div
-        style={{
-          color: 'var(--text-muted)',
-          borderColor: 'var(--border-subtle)',
-        }}
-        className="flex flex-col gap-2.5 pb-2.5 mb-3.5 border-b text-xs"
-      >
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="inline-flex items-center gap-1">
-              <span className="material-symbols-rounded text-[15px]">
-                schedule
+      {ttsSupported && segments.length > 0 && (
+        <div
+          ref={readerToolbarRef}
+          style={{
+            color: 'var(--text-muted)',
+            backgroundColor: 'var(--bg-surface-1)',
+            borderColor: 'var(--border-subtle)',
+          }}
+          className={`sticky top-0 z-10 pt-2.5 pb-2 mb-3.5 border-b flex flex-col gap-2.5 text-xs ${
+            isReaderToolbarSticky
+              ? '-mx-4 md:-mx-5 px-4 md:px-5'
+              : 'px-2 rounded-xl'
+          }`}
+        >
+          {/* Sticky reader controls and status; article text scrolls underneath. */}
+          <div className="flex items-center justify-between gap-3">
+            <div
+              className={`${isAudioActive ? 'max-sm:hidden' : ''} flex flex-wrap items-center gap-3 min-w-0`}
+            >
+              <span className="inline-flex items-center gap-1">
+                <span className="material-symbols-rounded text-[15px]">
+                  schedule
+                </span>
+                {article.readingTimeMinutes} min read
               </span>
-              {article.readingTimeMinutes} min read
-            </span>
-            {article.byline && <span>• By {article.byline}</span>}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 ml-auto">
-            {ttsSupported && segments.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2">
-                {/* Play / Pause / Resume Button with Filled Media Icons */}
-                <button
-                  type="button"
-                  onClick={handleTogglePlayPause}
-                  style={{
-                    backgroundColor: isAudioActive
-                      ? 'var(--accent)'
-                      : 'var(--bg-surface-2)',
-                    color: isAudioActive ? '#ffffff' : 'var(--text-primary)',
-                    border: '1px solid transparent',
-                  }}
-                  className="h-8 px-3.5 rounded-full inline-flex items-center justify-center gap-1.5 text-xs font-semibold leading-none cursor-pointer hover:brightness-110 active:scale-95 transition-all"
-                >
-                  <span
+              {article.byline && <span>• By {article.byline}</span>}
+            </div>
+            <div className="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2">
+              {ttsSupported && segments.length > 0 && (
+                <div className="w-full sm:w-auto flex flex-wrap items-center justify-between sm:justify-end gap-1.5 sm:gap-2">
+                  {/* Play / Pause / Resume Button with Filled Media Icons */}
+                  <button
+                    type="button"
+                    onClick={handleTogglePlayPause}
+                    aria-label={
+                      playbackState === 'playing'
+                        ? 'Pause reading aloud'
+                        : playbackState === 'paused'
+                          ? 'Resume reading aloud'
+                          : 'Listen to article'
+                    }
+                    title={
+                      playbackState === 'playing'
+                        ? 'Pause'
+                        : playbackState === 'paused'
+                          ? 'Resume'
+                          : 'Listen'
+                    }
                     style={{
-                      color: isAudioActive ? '#ffffff' : 'var(--accent)',
+                      backgroundColor: isAudioActive
+                        ? 'var(--accent)'
+                        : 'var(--bg-surface-2)',
+                      color: isAudioActive ? '#ffffff' : 'var(--text-primary)',
+                      border: '1px solid transparent',
                     }}
-                    className={`material-symbols-rounded text-[16px] leading-none ${
-                      isAudioActive ? 'filled' : ''
-                    }`}
+                    className="h-9 w-9 sm:w-auto sm:px-3.5 rounded-full inline-flex items-center justify-center gap-1.5 text-xs font-semibold leading-none cursor-pointer hover:brightness-110 active:scale-95 transition-all"
                   >
-                    {playbackState === 'playing'
-                      ? 'pause'
-                      : playbackState === 'paused'
-                        ? 'play_arrow'
-                        : 'headphones'}
-                  </span>
-                  <span className="leading-none">
-                    {playbackState === 'playing'
-                      ? 'Pause'
-                      : playbackState === 'paused'
-                        ? 'Resume'
-                        : 'Listen'}
-                  </span>
-                </button>
-
-                {/* Active Playback Controls: Unified Stepper Pill, Speed Pill, Custom Voice Dropdown, Red Stop Button */}
-                {isAudioActive && (
-                  <>
-                    {/* Unified Paragraph Stepper Capsule [ |◄  2/8  ►| ] */}
-                    <div className="liquid-glass h-8 px-1 rounded-full inline-flex items-center gap-0.5 leading-none">
-                      <button
-                        type="button"
-                        title="Previous paragraph"
-                        aria-label="Previous paragraph"
-                        disabled={activeSegmentIdx <= 0}
-                        onClick={() => handleStepSegment(-1)}
-                        style={{ color: 'var(--text-primary)' }}
-                        className="w-6 h-6 rounded-full inline-flex items-center justify-center leading-none hover:bg-white/10 disabled:opacity-35 active:scale-90 transition-all"
-                      >
-                        <span className="material-symbols-rounded filled text-[16px] leading-none">
-                          skip_previous
-                        </span>
-                      </button>
-
-                      <span
-                        style={{ color: 'var(--text-secondary)' }}
-                        className="px-1.5 inline-flex items-center justify-center text-[11.5px] font-semibold tabular-nums leading-none select-none"
-                      >
-                        {activeSegmentIdx + 1}/{segments.length}
-                      </span>
-
-                      <button
-                        type="button"
-                        title="Next paragraph"
-                        aria-label="Next paragraph"
-                        disabled={activeSegmentIdx >= segments.length - 1}
-                        onClick={() => handleStepSegment(1)}
-                        style={{ color: 'var(--text-primary)' }}
-                        className="w-6 h-6 rounded-full inline-flex items-center justify-center leading-none hover:bg-white/10 disabled:opacity-35 active:scale-90 transition-all"
-                      >
-                        <span className="material-symbols-rounded filled text-[16px] leading-none">
-                          skip_next
-                        </span>
-                      </button>
-                    </div>
-
-                    <button
-                      type="button"
-                      title="Cycle playback speed"
-                      onClick={handleCycleSpeed}
-                      style={{ color: 'var(--accent)' }}
-                      className="liquid-glass h-8 px-3 rounded-full inline-flex items-center justify-center gap-1.5 text-xs font-bold tabular-nums leading-none cursor-pointer active:scale-95"
-                    >
-                      <span className="material-symbols-rounded text-[16px] leading-none">
-                        speed
-                      </span>
-                      <span className="leading-none">{playbackRate}×</span>
-                    </button>
-
-                    <GlassDropdown<string>
-                      size="sm"
-                      leadingIcon="record_voice_over"
-                      ariaLabel="Select speech synthesis voice"
-                      value={selectedVoiceURI}
-                      options={[
-                        { id: '', label: 'System default', icon: 'devices' },
-                        ...voices.map((v) => ({
-                          id: v.voiceURI,
-                          label: v.name.replace(
-                            /Microsoft |Google |Apple /g,
-                            ''
-                          ),
-                          icon: 'graphic_eq',
-                        })),
-                        ...KOKORO_VOICES.map((voice) => ({
-                          ...voice,
-                          icon: 'graphic_eq',
-                        })),
-                      ]}
-                      onChange={(voiceId) => {
-                        setSelectedVoiceURI(voiceId);
-                        selectedVoiceRef.current = voiceId;
-                        if (playbackState === 'playing') {
-                          speakSegmentAt(activeSegmentRef.current);
-                        }
-                      }}
-                    />
-
-                    <button
-                      type="button"
-                      title="Stop audio reader"
-                      aria-label="Stop audio reader"
-                      onClick={stopSpeech}
+                    <span
                       style={{
-                        backgroundColor: 'rgba(239, 68, 68, 0.14)',
-                        color: '#EF4444',
-                        border: '1px solid transparent',
+                        color: isAudioActive ? '#ffffff' : 'var(--accent)',
                       }}
-                      className="w-8 h-8 rounded-full inline-flex items-center justify-center leading-none cursor-pointer hover:bg-red-500/25 active:scale-90 transition-all"
+                      className={`material-symbols-rounded text-[16px] leading-none ${
+                        isAudioActive ? 'filled' : ''
+                      }`}
                     >
-                      <span className="material-symbols-rounded filled text-[16px] leading-none">
-                        stop
-                      </span>
-                    </button>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+                      {playbackState === 'playing'
+                        ? 'pause'
+                        : playbackState === 'paused'
+                          ? 'play_arrow'
+                          : 'play_arrow'}
+                    </span>
+                    <span className="hidden sm:inline leading-none">
+                      {playbackState === 'playing'
+                        ? 'Pause'
+                        : playbackState === 'paused'
+                          ? 'Resume'
+                          : 'Listen'}
+                    </span>
+                  </button>
 
-        {/* Live Progress Bar When Audio Reader Is Active */}
-        {isAudioActive && (
-          <div
-            style={{ backgroundColor: 'var(--bg-surface-2)' }}
-            className="w-full h-1 rounded-full overflow-hidden"
-          >
+                  {/* Active Playback Controls: Unified Stepper Pill, Speed Pill, Custom Voice Dropdown, Red Stop Button */}
+                  {isAudioActive && (
+                    <>
+                      {/* Unified Paragraph Stepper Capsule [ |◄  2/8  ►| ] */}
+                      <div className="liquid-glass h-8 px-1 rounded-full inline-flex items-center gap-0.5 leading-none">
+                        <button
+                          type="button"
+                          title="Previous paragraph"
+                          aria-label="Previous paragraph"
+                          disabled={activeSegmentIdx <= 0}
+                          onClick={() => handleStepSegment(-1)}
+                          style={{ color: 'var(--text-primary)' }}
+                          className="w-6 h-6 rounded-full inline-flex items-center justify-center leading-none hover:bg-white/10 disabled:opacity-35 active:scale-90 transition-all"
+                        >
+                          <span className="material-symbols-rounded filled text-[16px] leading-none">
+                            skip_previous
+                          </span>
+                        </button>
+
+                        <span
+                          style={{ color: 'var(--text-secondary)' }}
+                          className="px-1.5 inline-flex items-center justify-center text-[11.5px] font-semibold tabular-nums leading-none select-none"
+                        >
+                          {activeSegmentIdx + 1}/{segments.length}
+                        </span>
+
+                        <button
+                          type="button"
+                          title="Next paragraph"
+                          aria-label="Next paragraph"
+                          disabled={activeSegmentIdx >= segments.length - 1}
+                          onClick={() => handleStepSegment(1)}
+                          style={{ color: 'var(--text-primary)' }}
+                          className="w-6 h-6 rounded-full inline-flex items-center justify-center leading-none hover:bg-white/10 disabled:opacity-35 active:scale-90 transition-all"
+                        >
+                          <span className="material-symbols-rounded filled text-[16px] leading-none">
+                            skip_next
+                          </span>
+                        </button>
+                      </div>
+
+                      <button
+                        ref={speedTriggerRef}
+                        type="button"
+                        title="Playback speed"
+                        aria-label={`Playback speed: ${playbackRate} times`}
+                        aria-haspopup="dialog"
+                        aria-expanded={isSpeedSheetOpen}
+                        onClick={() => {
+                          if (window.matchMedia('(max-width: 639px)').matches)
+                            setIsSpeedSheetOpen(true);
+                          else handleCycleSpeed();
+                        }}
+                        style={{ color: 'var(--accent)' }}
+                        className="liquid-glass h-8 px-3 rounded-full inline-flex items-center justify-center gap-1.5 text-xs font-bold tabular-nums leading-none cursor-pointer active:scale-95"
+                      >
+                        <span className="material-symbols-rounded text-[16px] leading-none">
+                          speed
+                        </span>
+                        <span className="leading-none">{playbackRate}×</span>
+                      </button>
+
+                      {voiceOptions.length > 1 && (
+                        <>
+                          <div className="hidden sm:block">
+                            <GlassDropdown<string>
+                              size="sm"
+                              leadingIcon="record_voice_over"
+                              ariaLabel="Select speech synthesis voice"
+                              value={selectedVoiceURI}
+                              options={voiceOptions}
+                              onChange={handleSelectVoice}
+                            />
+                          </div>
+                          <button
+                            ref={voiceTriggerRef}
+                            type="button"
+                            aria-label={`Voice: ${voiceOptions.find((option) => option.id === selectedVoiceURI)?.label ?? 'Select voice'}`}
+                            aria-haspopup="dialog"
+                            aria-expanded={isVoiceSheetOpen}
+                            onClick={() => setIsVoiceSheetOpen(true)}
+                            className="liquid-glass sm:hidden w-8 h-8 rounded-full inline-flex items-center justify-center"
+                          >
+                            <span
+                              aria-hidden="true"
+                              className="material-symbols-rounded text-[16px]"
+                            >
+                              record_voice_over
+                            </span>
+                          </button>
+                        </>
+                      )}
+
+                      <button
+                        type="button"
+                        title="Stop audio reader"
+                        aria-label="Stop audio reader"
+                        onClick={stopSpeech}
+                        style={{
+                          backgroundColor: 'rgba(239, 68, 68, 0.14)',
+                          color: '#EF4444',
+                          border: '1px solid transparent',
+                        }}
+                        className="w-8 h-8 rounded-full inline-flex items-center justify-center leading-none cursor-pointer hover:bg-red-500/25 active:scale-90 transition-all"
+                      >
+                        <span className="material-symbols-rounded filled text-[16px] leading-none">
+                          stop
+                        </span>
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Live Progress Bar When Audio Reader Is Active */}
+          {isAudioActive && (
+            <div
+              style={{ backgroundColor: 'var(--bg-surface-2)' }}
+              className="w-full h-1 rounded-full overflow-hidden"
+            >
+              <div
+                style={{
+                  width: `${progressPct}%`,
+                  backgroundColor: 'var(--accent)',
+                  transition: 'width 260ms cubic-bezier(0.22, 1, 0.36, 1)',
+                }}
+                className="h-full rounded-full"
+              />
+            </div>
+          )}
+
+          {displayedTtsNotice && (
             <div
               style={{
-                width: `${progressPct}%`,
-                backgroundColor: 'var(--accent)',
-                transition: 'width 260ms cubic-bezier(0.22, 1, 0.36, 1)',
+                backgroundColor:
+                  'color-mix(in srgb, var(--accent) 12%, transparent)',
+                color: 'var(--text-secondary)',
               }}
-              className="h-full rounded-full"
-            />
-          </div>
-        )}
+              className="min-h-8 px-3 py-1.5 rounded-xl text-[11.5px] flex items-center justify-between gap-2"
+            >
+              <span
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+                className="flex items-center gap-2"
+              >
+                {isTtsProgressNotice ? (
+                  <span
+                    aria-hidden="true"
+                    className="material-symbols-rounded text-[14px] animate-spin"
+                  >
+                    progress_activity
+                  </span>
+                ) : null}
+                {!isTtsProgressNotice && isAudioActive && (
+                  <span
+                    aria-hidden="true"
+                    className="material-symbols-rounded text-[14px]"
+                  >
+                    {playbackState === 'paused' ? 'pause' : 'volume_up'}
+                  </span>
+                )}
+                {displayedTtsNotice}
+              </span>
+              {ttsNotice && !localVoiceActive && (
+                <button
+                  type="button"
+                  aria-label="Dismiss voice status"
+                  onClick={() => setTtsNotice(null)}
+                  className="material-symbols-rounded text-[14px] cursor-pointer"
+                >
+                  close
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
-        {ttsNotice && (
-          <div
+      <MobileBottomSheet
+        isOpen={isSpeedSheetOpen}
+        onClose={() => setIsSpeedSheetOpen(false)}
+        title="Playback speed"
+        ariaLabel="Choose playback speed"
+        triggerRef={speedTriggerRef}
+      >
+        {SPEED_OPTIONS.map((speed) => (
+          <button
+            key={speed}
+            type="button"
+            aria-current={playbackRate === speed ? 'true' : undefined}
+            onClick={() => {
+              handleSelectSpeed(speed);
+              setIsSpeedSheetOpen(false);
+            }}
+            className="w-full min-h-12 px-4 rounded-xl flex items-center gap-3 text-left font-medium"
             style={{
               backgroundColor:
-                'color-mix(in srgb, var(--accent) 12%, transparent)',
-              color: 'var(--text-secondary)',
+                playbackRate === speed ? 'var(--bg-surface-active)' : undefined,
+              color:
+                playbackRate === speed
+                  ? 'var(--accent)'
+                  : 'var(--text-primary)',
             }}
-            className="px-3 py-2 rounded-xl text-[11.5px] flex items-center justify-between gap-2"
           >
-            <span>{ttsNotice}</span>
-            <button
-              type="button"
-              onClick={() => setTtsNotice(null)}
-              className="material-symbols-rounded text-[14px] cursor-pointer"
-            >
-              close
-            </button>
-          </div>
-        )}
-      </div>
-
+            <span aria-hidden="true" className="material-symbols-rounded">
+              speed
+            </span>
+            <span>{speed}×</span>
+            {playbackRate === speed && (
+              <span
+                aria-hidden="true"
+                className="material-symbols-rounded ml-auto"
+              >
+                check
+              </span>
+            )}
+          </button>
+        ))}
+      </MobileBottomSheet>
+      <MobileBottomSheet
+        isOpen={isVoiceSheetOpen}
+        onClose={() => setIsVoiceSheetOpen(false)}
+        title="Choose a voice"
+        ariaLabel="Choose speech synthesis voice"
+        triggerRef={voiceTriggerRef}
+      >
+        {voiceOptions.map((voice) => (
+          <button
+            key={voice.id}
+            type="button"
+            aria-current={selectedVoiceURI === voice.id ? 'true' : undefined}
+            onClick={() => {
+              handleSelectVoice(voice.id);
+              setIsVoiceSheetOpen(false);
+            }}
+            className="w-full min-h-12 px-4 rounded-xl flex items-center gap-3 text-left font-medium"
+            style={{
+              backgroundColor:
+                selectedVoiceURI === voice.id
+                  ? 'var(--bg-surface-active)'
+                  : undefined,
+              color:
+                selectedVoiceURI === voice.id
+                  ? 'var(--accent)'
+                  : 'var(--text-primary)',
+            }}
+          >
+            <span aria-hidden="true" className="material-symbols-rounded">
+              {voice.icon}
+            </span>
+            <span className="truncate">{voice.label}</span>
+            {selectedVoiceURI === voice.id && (
+              <span
+                aria-hidden="true"
+                className="material-symbols-rounded ml-auto"
+              >
+                check
+              </span>
+            )}
+          </button>
+        ))}
+      </MobileBottomSheet>
       <div
         ref={articleBodyRef}
         onClick={(e) => {

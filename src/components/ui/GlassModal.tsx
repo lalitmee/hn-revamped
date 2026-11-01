@@ -11,6 +11,7 @@ interface GlassModalProps {
   heightClass?: string;
   bodyScrollable?: boolean;
   topAligned?: boolean;
+  mobileFullscreen?: boolean;
   children: React.ReactNode;
 }
 
@@ -23,6 +24,7 @@ export const GlassModal: React.FC<GlassModalProps> = ({
   heightClass = 'max-h-[88vh]',
   bodyScrollable = true,
   topAligned = false,
+  mobileFullscreen = false,
   children,
 }) => {
   useEffect(() => {
@@ -41,14 +43,14 @@ export const GlassModal: React.FC<GlassModalProps> = ({
       onClick={onClose}
       className={`animate-glass-backdrop fixed inset-0 z-50 flex justify-center ${
         topAligned ? 'items-start pt-16 sm:pt-20' : 'items-center'
-      } bg-black/30 backdrop-blur-md p-4`}
+      } ${mobileFullscreen ? 'max-sm:!p-0 max-sm:!pt-0' : ''} bg-black/30 backdrop-blur-md p-4`}
     >
       <div
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
         style={{ color: 'var(--text-primary)' }}
-        className={`liquid-glass-modal animate-glass-modal w-full ${maxWidthClass} ${heightClass} flex flex-col rounded-3xl overflow-hidden`}
+        className={`liquid-glass-modal animate-glass-modal w-full ${maxWidthClass} ${heightClass} ${mobileFullscreen ? 'max-sm:!h-dvh max-sm:!max-h-dvh max-sm:!rounded-none' : ''} flex flex-col rounded-3xl overflow-hidden`}
       >
         {title && (
           <div

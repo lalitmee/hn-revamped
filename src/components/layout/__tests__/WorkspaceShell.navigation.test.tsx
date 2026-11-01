@@ -1,0 +1,212 @@
+import React from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
+import { WorkspaceShell } from '../WorkspaceShell';
+
+vi.mock('@/lib/hn-api', () => ({
+  fetchFeedStories: vi.fn(async () => []),
+  fetchTimeTravelStories: vi.fn(async () => []),
+  fetchStoryWithComments: vi.fn(async (id: number) => ({
+    id,
+    title: `Story #${id}`,
+    cleanTitle: `Story #${id}`,
+    points: 0,
+    user: '',
+    time: 0,
+    commentsCount: 0,
+    badges: [],
+    type: 'story',
+    comments: [],
+  })),
+  getCachedStoryWithComments: vi.fn(() => null),
+}));
+vi.mock('../AppHeader', () => ({
+  AppHeader: ({
+    activeFeed,
+    onSelectFeed,
+    onBackToFeed,
+    onOpenSearch,
+    onOpenAppearance,
+  }: {
+    activeFeed: string;
+    onSelectFeed: (feed: 'ask') => void;
+    onBackToFeed: () => void;
+    onOpenSearch: () => void;
+    onOpenAppearance: () => void;
+  }) => (
+    <header>
+      <span data-testid="feed">{activeFeed}</span>
+      <button onClick={() => onSelectFeed('ask')}>Ask</button>
+      <button onClick={onBackToFeed}>Back to feed</button>
+      <button onClick={onOpenSearch}>Search</button>
+      <button onClick={onOpenAppearance}>Appearance</button>
+    </header>
+  ),
+}));
+vi.mock('@/components/feed/StoryFeedPane', () => ({
+  StoryFeedPane: ({
+    onSelectStory,
+  }: {
+    onSelectStory: (story: object) => void;
+  }) => (
+    <article
+      role="button"
+      tabIndex={0}
+      onClick={() =>
+        onSelectStory({
+          id: 123,
+          title: 'Test',
+          cleanTitle: 'Test',
+          points: 1,
+          user: 'a',
+          time: 0,
+          commentsCount: 0,
+          badges: [],
+          type: 'story',
+        })
+      }
+    >
+      <span>Open story</span>
+      <button onClick={(event) => event.stopPropagation()}>Bookmark</button>
+    </article>
+  ),
+}));
+vi.mock('@/components/detail/StoryDetailPane', () => ({
+  StoryDetailPane: ({ story }: { story: { id: number } | null }) => (
+    <div>Detail {story?.id}</div>
+  ),
+}));
+vi.mock('@/components/modals/CommandPaletteModal', () => ({
+  CommandPaletteModal: ({ isOpen }: { isOpen: boolean }) =>
+    isOpen ? <div>Search open</div> : null,
+}));
+vi.mock('@/components/modals/AppearanceModal', () => ({
+  AppearanceModal: () => <div>Appearance open</div>,
+}));
+vi.mock('@/components/modals/ShortcutsModal', () => ({
+  ShortcutsModal: () => null,
+}));
+vi.mock('@/components/ui/ViewTransitionWrapper', () => ({
+  SafeViewTransition: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
+}));
+
+function navigate(url: string, state: object = {}) {
+  window.history.replaceState(state, '', url);
+  act(() => window.dispatchEvent(new PopStateEvent('popstate', { state })));
+}
+
+describe('workspace navigation history', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    navigate('/');
+  });
+  afterEach(() => vi.clearAllMocks());
+
+  it('restores feed and story from URL when traversing history', async () => {
+    render(<WorkspaceShell />);
+    fireEvent.click(screen.getByText('Ask'));
+    expect(window.location.search).toBe('?feed=ask');
+    fireEvent.click(screen.getByText('Open story'));
+    expect(window.location.search).toBe('?feed=ask&story=123');
+    navigate('/?feed=ask', { hnNavigationDepth: 1 });
+    await waitFor(() => expect(screen.queryByText('Detail 123')).toBeNull());
+    expect(screen.getByTestId('feed').textContent).toBe('ask');
+    navigate('/', { hnNavigationDepth: 0 });
+    await waitFor(() =>
+      expect(screen.getByTestId('feed').textContent).toBe('top')
+    );
+  });
+
+  it('swipes feeds across the feed area without intercepting vertical or edge gestures', () => {
+    render(<WorkspaceShell />);
+    const area = screen.getByText('Open story').closest('.mobile-feed-scroll')!;
+    const swipe = (x: number, y: number, endX: number, endY: number) => {
+      fireEvent.touchStart(area, { touches: [{ clientX: x, clientY: y }] });
+      fireEvent.touchEnd(area, {
+        changedTouches: [{ clientX: endX, clientY: endY }],
+      });
+    };
+    swipe(250, 600, 120, 605);
+    expect(screen.getByTestId('feed').textContent).toBe('new');
+    expect(window.location.search).toBe('?feed=new');
+    swipe(250, 600, 245, 740);
+    expect(screen.getByTestId('feed').textContent).toBe('new');
+    swipe(10, 600, 150, 605);
+    expect(screen.getByTestId('feed').textContent).toBe('new');
+    swipe(120, 600, 250, 605);
+    expect(screen.getByTestId('feed').textContent).toBe('top');
+    swipe(120, 600, 250, 605);
+    expect(screen.getByTestId('feed').textContent).toBe('saved');
+    expect(window.location.search).toBe('?feed=saved');
+    swipe(250, 600, 120, 605);
+    expect(screen.getByTestId('feed').textContent).toBe('top');
+    expect(window.location.search).toBe('');
+  });
+
+  it('swipes over cards, suppresses the follow-up click, and remembers hint dismissal', async () => {
+    const view = render(<WorkspaceShell />);
+    expect(screen.getByText('Swipe to switch feeds')).toBeTruthy();
+    const title = screen.getByText('Open story');
+    await act(async () => {
+      fireEvent.touchStart(title, {
+        touches: [{ clientX: 250, clientY: 300 }],
+      });
+      fireEvent.touchEnd(title, {
+        changedTouches: [{ clientX: 120, clientY: 305 }],
+      });
+      fireEvent.click(title, { detail: 1 });
+    });
+    expect(window.location.search).toBe('?feed=new');
+    expect(screen.queryByText('Swipe to switch feeds')).toBeNull();
+    view.unmount();
+    render(<WorkspaceShell />);
+    expect(screen.queryByText('Swipe to switch feeds')).toBeNull();
+    const bookmark = screen.getByText('Bookmark');
+    await act(async () => {
+      fireEvent.touchStart(bookmark, {
+        touches: [{ clientX: 250, clientY: 300 }],
+      });
+      fireEvent.touchEnd(bookmark, {
+        changedTouches: [{ clientX: 120, clientY: 305 }],
+      });
+    });
+    expect(window.location.search).toBe('?feed=new');
+    fireEvent.click(screen.getByText('Open story'));
+    expect(window.location.search).toBe('?feed=new&story=123');
+  });
+
+  it('opens appearance as a URL-backed view and restores it on navigation', async () => {
+    render(<WorkspaceShell />);
+    fireEvent.click(screen.getByText('Appearance'));
+    expect(window.location.search).toBe('?view=appearance');
+    expect(screen.getByText('Appearance open')).toBeTruthy();
+    navigate('/', { hnNavigationDepth: 0 });
+    await waitFor(() =>
+      expect(screen.queryByText('Appearance open')).toBeNull()
+    );
+    navigate('/?view=appearance', { hnNavigationDepth: 1 });
+    await waitFor(() =>
+      expect(screen.getByText('Appearance open')).toBeTruthy()
+    );
+  });
+
+  it('restores a direct story link and closes a transient overlay on Back', async () => {
+    navigate('/?story=456');
+    render(<WorkspaceShell />);
+    await waitFor(() =>
+      expect(screen.getAllByText('Detail 456').length).toBeGreaterThan(0)
+    );
+    fireEvent.click(screen.getByText('Search'));
+    expect(screen.getByText('Search open')).toBeTruthy();
+    navigate('/?story=456', { hnNavigationDepth: 0 });
+    await waitFor(() => expect(screen.queryByText('Search open')).toBeNull());
+  });
+});

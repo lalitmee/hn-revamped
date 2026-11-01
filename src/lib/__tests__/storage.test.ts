@@ -6,6 +6,8 @@ import {
   getNewCommentsDelta,
   toggleBookmarkStory,
   filterStories,
+  hasUsedSwipe,
+  recordSwipe,
 } from '../storage';
 import { DEFAULT_PREFERENCES } from '../themes';
 import { HNStory } from '@/types/hn';
@@ -38,6 +40,18 @@ describe('Local Storage & Filtering Service', () => {
     });
     expect(loadPreferences().themeId).toBe('kindle-sepia');
     expect(loadPreferences().fontSize).toBe(18);
+  });
+
+  it('remembers swipe actions separately for Appearance and detail hints', () => {
+    expect(hasUsedSwipe('appearance')).toBe(false);
+    expect(hasUsedSwipe('detail')).toBe(false);
+
+    recordSwipe('appearance');
+    expect(hasUsedSwipe('appearance')).toBe(true);
+    expect(hasUsedSwipe('detail')).toBe(false);
+
+    recordSwipe('detail');
+    expect(hasUsedSwipe('detail')).toBe(true);
   });
 
   it('tracks read stories and calculates +N new comment deltas', () => {

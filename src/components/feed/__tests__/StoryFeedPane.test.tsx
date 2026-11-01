@@ -42,8 +42,8 @@ describe('StoryFeedPane Component', () => {
     // Only 2 unique stories should be rendered
     const storyElements = container.querySelectorAll('[data-story-id]');
     expect(storyElements.length).toBe(2);
-    expect(screen.getByText('Story 1')).toBeInTheDocument();
-    expect(screen.getByText('Story 2')).toBeInTheDocument();
+    expect(screen.getAllByText('Story 1')).toHaveLength(2);
+    expect(screen.getAllByText('Story 2')).toHaveLength(2);
     expect(screen.queryByText('Story 1 Duplicate')).not.toBeInTheDocument();
   });
 });

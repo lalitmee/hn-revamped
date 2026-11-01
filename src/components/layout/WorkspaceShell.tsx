@@ -32,10 +32,12 @@ import {
 } from '@/lib/hn-api';
 import {
   filterStories,
+  hasUsedSwipe,
   loadBookmarks,
   loadPreferences,
   loadReadHistory,
   markStoryAsRead,
+  recordSwipe,
   savePreferences,
   toggleBookmarkStory,
 } from '@/lib/storage';
@@ -69,8 +71,14 @@ export const WorkspaceShell: React.FC = () => {
   const [selectedStory, setSelectedStory] =
     useState<HNStoryWithComments | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const feedTouchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const suppressFeedClickUntilRef = useRef(0);
+  const [showFeedSwipeHint, setShowFeedSwipeHint] = useState(false);
+  const [showDetailSwipeHint, setShowDetailSwipeHint] = useState(true);
   const [activeTab, setActiveTab] = useState<DetailTab>('comments');
   const latestStoryReqRef = useRef(0);
+  const navigationDepthRef = useRef(0);
 
   const [readHistory, setReadHistory] = useState<
     Record<number, ReadHistoryEntry>
@@ -81,9 +89,52 @@ export const WorkspaceShell: React.FC = () => {
   const [isAppearanceOpen, setIsAppearanceOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [systemPrefersDark, setSystemPrefersDark] = useState(true);
+  const overlayRef = useRef<'search' | 'shortcuts' | null>(null);
+
+  const closeOverlay = useCallback(() => {
+    if (
+      new URLSearchParams(window.location.search).get('view') === 'appearance'
+    ) {
+      if (navigationDepthRef.current > 0) window.history.back();
+      else {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('view');
+        window.history.replaceState(
+          window.history.state,
+          '',
+          `${url.pathname}${url.search}${url.hash}`
+        );
+        setIsAppearanceOpen(false);
+      }
+      return;
+    }
+    if (
+      overlayRef.current &&
+      window.history.state?.hnOverlay === overlayRef.current
+    ) {
+      window.history.back();
+    } else {
+      overlayRef.current = null;
+      setIsSearchOpen(false);
+      setIsAppearanceOpen(false);
+      setIsShortcutsOpen(false);
+    }
+  }, []);
+
+  const openOverlay = useCallback((overlay: 'search' | 'shortcuts') => {
+    if (overlayRef.current === overlay) return;
+    window.history.pushState(
+      { ...window.history.state, hnOverlay: overlay },
+      ''
+    );
+    overlayRef.current = overlay;
+    setIsSearchOpen(overlay === 'search');
+    setIsShortcutsOpen(overlay === 'shortcuts');
+  }, []);
 
   // Hydrate local preferences, read history, bookmarks, and OS color scheme
   useEffect(() => {
+    setShowFeedSwipeHint(!hasUsedSwipe('feed'));
     setPreferences(loadPreferences());
     setPrefsHydrated(true);
     setReadHistory(loadReadHistory());
@@ -185,37 +236,56 @@ export const WorkspaceShell: React.FC = () => {
     savePreferences(next);
   }, []);
 
-  const syncStoryQueryParam = useCallback(
-    (storyId: number | null, replace = false) => {
-      if (typeof window === 'undefined') return;
+  const syncNavigation = useCallback(
+    (
+      next: {
+        story?: number | null;
+        feed?: FeedType;
+        time?: TimeTravelPreset;
+        view?: 'appearance' | null;
+      },
+      replace = false
+    ) => {
       const url = new URL(window.location.href);
-      const currentParam = url.searchParams.get('story');
-      const nextParam = storyId ? String(storyId) : null;
-
-      if (currentParam === nextParam) return;
-
-      if (nextParam) {
-        url.searchParams.set('story', nextParam);
-      } else {
-        url.searchParams.delete('story');
+      if (next.story !== undefined) {
+        if (next.story) url.searchParams.set('story', String(next.story));
+        else url.searchParams.delete('story');
       }
-
-      if (replace) {
-        window.history.replaceState(
-          {},
-          '',
-          `${url.pathname}${url.search}${url.hash}`
-        );
-      } else {
-        window.history.pushState(
-          {},
-          '',
-          `${url.pathname}${url.search}${url.hash}`
-        );
+      if (next.feed !== undefined) {
+        if (next.feed === 'top') url.searchParams.delete('feed');
+        else url.searchParams.set('feed', next.feed);
       }
+      if (next.time !== undefined) {
+        if (next.time === 'live') url.searchParams.delete('time');
+        else url.searchParams.set('time', next.time);
+      }
+      if (next.view !== undefined) {
+        if (next.view) url.searchParams.set('view', next.view);
+        else url.searchParams.delete('view');
+      }
+      const target = `${url.pathname}${url.search}${url.hash}`;
+      if (
+        target ===
+        `${window.location.pathname}${window.location.search}${window.location.hash}`
+      )
+        return;
+      const depth = navigationDepthRef.current + (replace ? 0 : 1);
+      const state = {
+        ...window.history.state,
+        hnNavigationDepth: depth,
+        hnOverlay: null,
+      };
+      if (replace) window.history.replaceState(state, '', target);
+      else window.history.pushState(state, '', target);
+      navigationDepthRef.current = depth;
     },
     []
   );
+
+  const openAppearance = useCallback(() => {
+    syncNavigation({ view: 'appearance' });
+    setIsAppearanceOpen(true);
+  }, [syncNavigation]);
 
   const handleSelectStory = useCallback(
     (
@@ -223,12 +293,13 @@ export const WorkspaceShell: React.FC = () => {
       options?: { skipUrlSync?: boolean; isPlaceholder?: boolean }
     ) => {
       const reqId = ++latestStoryReqRef.current;
+      setShowDetailSwipeHint(!hasUsedSwipe('detail'));
 
       // A text-only story has no Reader View; don't carry that selection over.
       if (!story.url) setActiveTab('comments');
 
       if (!options?.skipUrlSync) {
-        syncStoryQueryParam(story.id);
+        syncNavigation({ story: story.id, view: null });
       }
 
       // Immediately update selectedStory so the feed highlight and detail header switch in 0ms
@@ -264,7 +335,7 @@ export const WorkspaceShell: React.FC = () => {
           );
           setReadHistory(updatedHistory);
           if (!options?.skipUrlSync && fullStory.id !== story.id) {
-            syncStoryQueryParam(fullStory.id, true);
+            syncNavigation({ story: fullStory.id }, true);
           }
         })
         .catch(() => {
@@ -273,15 +344,58 @@ export const WorkspaceShell: React.FC = () => {
           setLoadingDetail(false);
         });
     },
-    [syncStoryQueryParam]
+    [syncNavigation]
   );
+
+  const returnToFeed = useCallback(() => {
+    if (navigationDepthRef.current > 0) {
+      window.history.back();
+    } else {
+      ++latestStoryReqRef.current;
+      setSelectedStory(null);
+      syncNavigation({ story: null }, true);
+    }
+  }, [syncNavigation]);
 
   // Deep-link support for ?story=<id> on initial page load and browser Back/Forward
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const loadStoryFromUrl = () => {
+      navigationDepthRef.current = window.history.state?.hnNavigationDepth ?? 0;
+      overlayRef.current = window.history.state?.hnOverlay ?? null;
       const params = new URLSearchParams(window.location.search);
+      setIsSearchOpen(overlayRef.current === 'search');
+      setIsAppearanceOpen(params.get('view') === 'appearance');
+      setIsShortcutsOpen(overlayRef.current === 'shortcuts');
+      const feed = params.get('feed');
+      const time = params.get('time');
+      const validFeeds: FeedType[] = [
+        'top',
+        'new',
+        'best',
+        'ask',
+        'show',
+        'jobs',
+        'saved',
+      ];
+      const validTimes: TimeTravelPreset[] = [
+        'live',
+        'yesterday',
+        'last-week',
+        'last-month',
+        'one-year-ago',
+      ];
+      setActiveFeed(
+        validFeeds.includes(feed as FeedType) ? (feed as FeedType) : 'top'
+      );
+      setTimeTravel(
+        validTimes.includes(time as TimeTravelPreset)
+          ? (time as TimeTravelPreset)
+          : 'live'
+      );
+      setActiveTab('comments');
+      ++latestStoryReqRef.current;
       const rawId = params.get('story');
       const parsedId = rawId ? Number(rawId) : NaN;
 
@@ -302,9 +416,16 @@ export const WorkspaceShell: React.FC = () => {
         );
       } else {
         setSelectedStory(null);
+        setLoadingDetail(false);
       }
     };
 
+    if (window.history.state?.hnNavigationDepth === undefined) {
+      window.history.replaceState(
+        { ...window.history.state, hnNavigationDepth: 0 },
+        ''
+      );
+    }
     loadStoryFromUrl();
     window.addEventListener('popstate', loadStoryFromUrl);
     return () => window.removeEventListener('popstate', loadStoryFromUrl);
@@ -313,7 +434,17 @@ export const WorkspaceShell: React.FC = () => {
   // Switch Feed Category: Clear current stories & reset selection immediately
   const handleSelectFeed = useCallback(
     (nextFeed: FeedType) => {
-      syncStoryQueryParam(null);
+      if (nextFeed === activeFeed && timeTravel === 'live' && !selectedStory)
+        return;
+      ++latestStoryReqRef.current;
+      if (overlayRef.current) {
+        window.history.replaceState(
+          { ...window.history.state, hnOverlay: null },
+          ''
+        );
+        overlayRef.current = null;
+      }
+      syncNavigation({ story: null, feed: nextFeed, time: 'live', view: null });
       setIsAppearanceOpen(false);
       setActiveFeed(nextFeed);
       setTimeTravel('live');
@@ -322,13 +453,22 @@ export const WorkspaceShell: React.FC = () => {
       setStories([]);
       setLoadingFeed(true);
     },
-    [syncStoryQueryParam]
+    [activeFeed, timeTravel, selectedStory, syncNavigation]
   );
 
   // Switch Time Travel Range: Clear current stories & reset selection immediately
   const handleSelectTimeTravel = useCallback(
     (preset: TimeTravelPreset) => {
-      syncStoryQueryParam(null);
+      if (preset === timeTravel && !selectedStory) return;
+      ++latestStoryReqRef.current;
+      if (overlayRef.current) {
+        window.history.replaceState(
+          { ...window.history.state, hnOverlay: null },
+          ''
+        );
+        overlayRef.current = null;
+      }
+      syncNavigation({ story: null, time: preset, view: null });
       setIsAppearanceOpen(false);
       setTimeTravel(preset);
       setSelectedStory(null);
@@ -336,7 +476,7 @@ export const WorkspaceShell: React.FC = () => {
       setStories([]);
       setLoadingFeed(true);
     },
-    [syncStoryQueryParam]
+    [timeTravel, selectedStory, syncNavigation]
   );
 
   // Load feed or time-travel stories
@@ -434,6 +574,94 @@ export const WorkspaceShell: React.FC = () => {
     return list;
   }, [stories, preferences, readHistory, selectedStory]);
 
+  const onFeedTouchStart = (event: React.TouchEvent) => {
+    feedTouchStartRef.current = null;
+    suppressFeedClickUntilRef.current = 0;
+    if (selectedStory || event.touches.length !== 1) return;
+    const target = event.target as HTMLElement;
+    if (
+      target.closest(
+        'button, a, input, textarea, select, [role="button"]:not(article), [role="slider"], [role="switch"], [contenteditable="true"]'
+      )
+    )
+      return;
+    const touch = event.touches[0];
+    if (touch.clientX < 28 || touch.clientX > window.innerWidth - 28) return;
+    feedTouchStartRef.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const onFeedTouchEnd = (event: React.TouchEvent) => {
+    const start = feedTouchStartRef.current;
+    feedTouchStartRef.current = null;
+    if (!start || selectedStory || event.changedTouches.length !== 1) return;
+    const touch = event.changedTouches[0];
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    if (Math.abs(dx) < 80 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    const feeds: FeedType[] = [
+      'top',
+      'new',
+      'best',
+      'ask',
+      'show',
+      'jobs',
+      'saved',
+    ];
+    const nextIndex =
+      (feeds.indexOf(activeFeed) + (dx < 0 ? 1 : -1) + feeds.length) %
+      feeds.length;
+    suppressFeedClickUntilRef.current = Date.now() + 500;
+    handleSelectFeed(feeds[nextIndex]);
+    recordSwipe('feed');
+    setShowFeedSwipeHint(false);
+  };
+
+  const onFeedClickCapture = (event: React.MouseEvent) => {
+    if (event.detail !== 0 && Date.now() < suppressFeedClickUntilRef.current) {
+      event.preventDefault();
+      event.stopPropagation();
+      suppressFeedClickUntilRef.current = 0;
+    }
+  };
+
+  const onDetailTouchStart = (event: React.TouchEvent) => {
+    touchStartRef.current = null;
+    if (event.touches.length !== 1) return;
+    const target = event.target as HTMLElement;
+    if (
+      target.closest(
+        'button, a, input, textarea, select, pre, [role="button"], [data-no-story-swipe]'
+      )
+    )
+      return;
+    const touch = event.touches[0];
+    // Leave the screen edge to the browser's back gesture.
+    touchStartRef.current =
+      touch.clientX < 28 || touch.clientX > window.innerWidth - 28
+        ? null
+        : { x: touch.clientX, y: touch.clientY };
+  };
+
+  const onDetailTouchEnd = (event: React.TouchEvent) => {
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+    if (!start || event.changedTouches.length !== 1) return;
+    const touch = event.changedTouches[0];
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    if (Math.abs(dx) < 80 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (!selectedStory?.url) return;
+    if (dx < 0 && activeTab === 'comments') {
+      setActiveTab('reader');
+      recordSwipe('detail');
+      setShowDetailSwipeHint(false);
+    } else if (dx > 0 && activeTab === 'reader') {
+      setActiveTab('comments');
+      recordSwipe('detail');
+      setShowDetailSwipeHint(false);
+    }
+  };
+
   const bookmarkedIds = useMemo(
     () => new Set(bookmarks.map((b) => b.id)),
     [bookmarks]
@@ -447,23 +675,26 @@ export const WorkspaceShell: React.FC = () => {
 
       if (e.key === 'Escape' && isAppearanceOpen) {
         e.preventDefault();
-        setIsAppearanceOpen(false);
+        closeOverlay();
         return;
       }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
-        setIsSearchOpen((prev) => !prev);
+        if (isSearchOpen) closeOverlay();
+        else openOverlay('search');
         return;
       }
       if (e.key === '/') {
         e.preventDefault();
-        setIsSearchOpen(true);
+        openOverlay('search');
       } else if (e.key === '?') {
         e.preventDefault();
-        setIsShortcutsOpen((prev) => !prev);
+        if (isShortcutsOpen) closeOverlay();
+        else openOverlay('shortcuts');
       } else if (e.key === 't') {
         e.preventDefault();
-        setIsAppearanceOpen((prev) => !prev);
+        if (isAppearanceOpen) closeOverlay();
+        else openAppearance();
       } else if (e.key === 'z') {
         e.preventDefault();
         handleUpdatePreferences({
@@ -499,6 +730,11 @@ export const WorkspaceShell: React.FC = () => {
     selectedStory,
     visibleStories,
     isAppearanceOpen,
+    isSearchOpen,
+    isShortcutsOpen,
+    openOverlay,
+    openAppearance,
+    closeOverlay,
     handleSelectStory,
     handleUpdatePreferences,
   ]);
@@ -517,8 +753,8 @@ export const WorkspaceShell: React.FC = () => {
       style={inlineRootStyle}
       className={`${
         preferences.layoutMode === 'split' || isAppearanceOpen
-          ? 'min-h-screen lg:h-screen lg:overflow-hidden flex flex-col'
-          : 'min-h-screen flex flex-col'
+          ? 'h-dvh overflow-hidden flex flex-col'
+          : 'h-dvh overflow-hidden lg:min-h-screen lg:h-auto lg:overflow-visible flex flex-col'
       } transition-colors duration-200`}
     >
       <AppHeader
@@ -535,13 +771,16 @@ export const WorkspaceShell: React.FC = () => {
         }
         timeTravelPreset={timeTravel}
         onSelectTimeTravel={handleSelectTimeTravel}
-        onOpenSearch={() => startTransition(() => setIsSearchOpen(true))}
+        onOpenSearch={() => openOverlay('search')}
         isAppearanceOpen={isAppearanceOpen}
         onOpenAppearance={() =>
-          startTransition(() => setIsAppearanceOpen((prev) => !prev))
+          isAppearanceOpen ? closeOverlay() : openAppearance()
         }
-        onOpenShortcuts={() => startTransition(() => setIsShortcutsOpen(true))}
+        onOpenShortcuts={() => openOverlay('shortcuts')}
         savedCount={bookmarks.length}
+        isStoryOpen={Boolean(selectedStory) && !isAppearanceOpen}
+        onBackToFeed={returnToFeed}
+        onBackFromAppearance={closeOverlay}
       />
 
       <SafeViewTransition>
@@ -550,14 +789,20 @@ export const WorkspaceShell: React.FC = () => {
             isOpen={isAppearanceOpen}
             preferences={{ ...preferences, themeId: resolvedThemeId }}
             onUpdate={handleUpdatePreferences}
-            onClose={() => startTransition(() => setIsAppearanceOpen(false))}
+            onClose={closeOverlay}
           />
         ) : preferences.layoutMode === 'split' ? (
           <main className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
             {/* Sticky / Independently Contained Left Feed Pane */}
             <section
               style={{ borderColor: 'var(--border-subtle)' }}
-              className="custom-scrollbar lg:col-span-5 xl:col-span-5 border-r h-full overflow-y-auto overscroll-contain"
+              onTouchStart={onFeedTouchStart}
+              onTouchEnd={onFeedTouchEnd}
+              onClickCapture={onFeedClickCapture}
+              onTouchCancel={() => {
+                feedTouchStartRef.current = null;
+              }}
+              className={`touch-pan-y custom-scrollbar mobile-feed-scroll lg:col-span-5 xl:col-span-5 lg:border-r h-full overflow-y-auto overscroll-contain ${selectedStory ? 'hidden lg:block' : ''}`}
             >
               <StoryFeedPane
                 stories={visibleStories}
@@ -616,18 +861,84 @@ export const WorkspaceShell: React.FC = () => {
                 }
               />
             </section>
+            {selectedStory && (
+              <section
+                onTouchStart={onDetailTouchStart}
+                onTouchEnd={onDetailTouchEnd}
+                className="lg:hidden relative flex flex-col min-h-0 overflow-hidden min-w-0"
+              >
+                <StoryDetailPane
+                  story={selectedStory}
+                  loading={loadingDetail}
+                  activeTab={activeTab}
+                  onTabChange={setActiveTab}
+                  collapseMode={preferences.defaultCollapseMode ?? 'root-only'}
+                  compact={preferences.cardDensity === 'compact'}
+                  onCollapseModeChange={(mode) =>
+                    handleUpdatePreferences({
+                      ...preferences,
+                      defaultCollapseMode: mode,
+                    })
+                  }
+                  isBookmarked={bookmarkedIds.has(selectedStory.id)}
+                  onToggleBookmark={() =>
+                    setBookmarks(toggleBookmarkStory(selectedStory).bookmarks)
+                  }
+                  onInternalHnLinkClick={(id) =>
+                    handleSelectStory(
+                      {
+                        id,
+                        title: `Story #${id}`,
+                        cleanTitle: `Story #${id}`,
+                        points: 0,
+                        user: '',
+                        time: Math.floor(Date.now() / 1000),
+                        commentsCount: 0,
+                        badges: [],
+                        type: 'story',
+                      },
+                      { isPlaceholder: true }
+                    )
+                  }
+                />
+                {showDetailSwipeHint && (
+                  <div className="pointer-events-none fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] left-1/2 z-40 -translate-x-1/2 lg:hidden">
+                    <div className="swipe-hint-pill liquid-glass rounded-full h-8 px-3.5 inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--text-secondary)] shadow-lg whitespace-nowrap">
+                      <span
+                        aria-hidden="true"
+                        className="swipe-hint-icon material-symbols-rounded text-[16px] text-[var(--accent)]"
+                      >
+                        swipe
+                      </span>
+                      <span>Swipe to switch discussion and reader</span>
+                    </div>
+                  </div>
+                )}
+              </section>
+            )}
           </main>
         ) : (
-          <main className="flex-1 max-w-4xl w-full mx-auto py-4 px-2 sm:px-6">
+          <main
+            onTouchStart={onFeedTouchStart}
+            onTouchEnd={onFeedTouchEnd}
+            onClickCapture={onFeedClickCapture}
+            onTouchCancel={() => {
+              feedTouchStartRef.current = null;
+            }}
+            className={`touch-pan-y custom-scrollbar mobile-feed-scroll flex-1 min-h-0 ${selectedStory ? 'max-lg:overflow-hidden max-lg:py-0 max-lg:px-0' : 'overflow-y-auto'} lg:overflow-visible max-w-4xl w-full mx-auto py-2 sm:py-4 px-1.5 sm:px-6`}
+          >
             {selectedStory ? (
-              <div>
-                <div className="ml-5 mb-2">
+              <div
+                onTouchStart={onDetailTouchStart}
+                onTouchEnd={onDetailTouchEnd}
+                className="relative h-full min-h-0 flex flex-col"
+              >
+                <div className="hidden lg:block ml-5 mb-2">
                   <GlassButton
                     icon="arrow_back"
                     iconAccent
                     onClick={() => {
-                      setSelectedStory(null);
-                      syncStoryQueryParam(null);
+                      returnToFeed();
                     }}
                   >
                     Back to Story Feed
@@ -664,6 +975,19 @@ export const WorkspaceShell: React.FC = () => {
                     })
                   }
                 />
+                {showDetailSwipeHint && (
+                  <div className="pointer-events-none fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] left-1/2 z-40 -translate-x-1/2 lg:hidden">
+                    <div className="swipe-hint-pill liquid-glass rounded-full h-8 px-3.5 inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--text-secondary)] shadow-lg whitespace-nowrap">
+                      <span
+                        aria-hidden="true"
+                        className="swipe-hint-icon material-symbols-rounded text-[16px] text-[var(--accent)]"
+                      >
+                        swipe
+                      </span>
+                      <span>Swipe to switch discussion and reader</span>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <StoryFeedPane
@@ -686,19 +1010,42 @@ export const WorkspaceShell: React.FC = () => {
         )}
       </SafeViewTransition>
 
+      {showFeedSwipeHint &&
+        !selectedStory &&
+        !isAppearanceOpen &&
+        !isSearchOpen &&
+        !isShortcutsOpen && (
+          <div className="pointer-events-none fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] left-1/2 z-40 -translate-x-1/2 lg:hidden">
+            <div className="swipe-hint-pill liquid-glass rounded-full h-8 px-3.5 inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--text-secondary)] shadow-lg whitespace-nowrap">
+              <span
+                aria-hidden="true"
+                className="swipe-hint-icon material-symbols-rounded text-[16px] text-[var(--accent)]"
+              >
+                swipe
+              </span>
+              <span>Swipe to switch feeds</span>
+            </div>
+          </div>
+        )}
+
       <CommandPaletteModal
         isOpen={isSearchOpen}
-        onClose={() => setIsSearchOpen(false)}
+        onClose={closeOverlay}
         onSelectStory={(story) => {
-          setIsAppearanceOpen(false);
+          // Replace the overlay entry with the destination so Back returns to its origin.
+          if (overlayRef.current) {
+            window.history.replaceState(
+              { ...window.history.state, hnOverlay: null },
+              ''
+            );
+            overlayRef.current = null;
+          }
+          setIsSearchOpen(false);
           handleSelectStory(story);
         }}
       />
 
-      <ShortcutsModal
-        isOpen={isShortcutsOpen}
-        onClose={() => setIsShortcutsOpen(false)}
-      />
+      <ShortcutsModal isOpen={isShortcutsOpen} onClose={closeOverlay} />
     </div>
   );
 };

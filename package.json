@@ -1,9 +1,12 @@
 {
   "name": "hn-revamped",
   "version": "0.1.0",
+  "packageManager": "pnpm@11.8.0",
   "license": "MIT",
   "scripts": {
+    "predev": "node scripts/build-tts-workers.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/build-tts-workers.mjs",
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
@@ -12,11 +15,13 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"README.md\""
   },
   "dependencies": {
+    "@mintplex-labs/piper-tts-web": "1.0.5",
     "@mozilla/readability": "^0.5.0",
     "dompurify": "^3.4.17",
     "kokoro-js": "^1.2.1",
     "linkedom": "^0.18.5",
     "next": "^15.1.0",
+    "onnxruntime-web": "1.18.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
@@ -29,6 +34,7 @@
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "esbuild": "^0.25.12",
     "jsdom": "^25.0.1",
     "postcss": "^8.4.49",
     "prettier": "^3.9.10",
