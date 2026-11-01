@@ -1,12 +1,47 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import {
   extractDomain,
   parseTitleAndBadges,
   normalizeAlgoliaCommentTree,
+  fetchStoryWithComments,
 } from '../hn-api';
 import { formatCommentHtml } from '../html-sanitizer';
 
+afterEach(() => vi.unstubAllGlobals());
+
 describe('HN API Utilities & Sanitizer', () => {
+  it('uses the HN reported total rather than the smaller indexed comment tree', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => ({
+        ok: true,
+        json: async () =>
+          url.includes('firebaseio.com')
+            ? {
+                id: 987654,
+                title: 'Count test',
+                descendants: 512,
+                type: 'story',
+              }
+            : {
+                id: 987654,
+                title: 'Count test',
+                type: 'story',
+                children: [
+                  {
+                    id: 987655,
+                    author: 'user',
+                    text: '<p>A visible comment</p>',
+                    children: [],
+                  },
+                ],
+              },
+      }))
+    );
+    const story = await fetchStoryWithComments(987654);
+    expect(story.commentsCount).toBe(512);
+    expect(story.comments).toHaveLength(1);
+  });
   it('extracts clean domain names without www.', () => {
     expect(extractDomain('https://www.github.com/zed-industries/zed')).toBe(
       'github.com'

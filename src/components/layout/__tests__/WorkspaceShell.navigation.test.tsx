@@ -55,26 +55,45 @@ vi.mock('@/components/feed/StoryFeedPane', () => ({
   }: {
     onSelectStory: (story: object) => void;
   }) => (
-    <article
-      role="button"
-      tabIndex={0}
-      onClick={() =>
-        onSelectStory({
-          id: 123,
-          title: 'Test',
-          cleanTitle: 'Test',
-          points: 1,
-          user: 'a',
-          time: 0,
-          commentsCount: 0,
-          badges: [],
-          type: 'story',
-        })
-      }
-    >
-      <span>Open story</span>
-      <button onClick={(event) => event.stopPropagation()}>Bookmark</button>
-    </article>
+    <>
+      <button
+        onClick={() =>
+          onSelectStory({
+            id: 456,
+            title: 'Second',
+            cleanTitle: 'Second',
+            points: 1,
+            user: 'a',
+            time: 0,
+            commentsCount: 0,
+            badges: [],
+            type: 'story',
+          })
+        }
+      >
+        Open second story
+      </button>
+      <article
+        role="button"
+        tabIndex={0}
+        onClick={() =>
+          onSelectStory({
+            id: 123,
+            title: 'Test',
+            cleanTitle: 'Test',
+            points: 1,
+            user: 'a',
+            time: 0,
+            commentsCount: 0,
+            badges: [],
+            type: 'story',
+          })
+        }
+      >
+        <span>Open story</span>
+        <button onClick={(event) => event.stopPropagation()}>Bookmark</button>
+      </article>
+    </>
   ),
 }));
 vi.mock('@/components/detail/StoryDetailPane', () => ({
@@ -108,7 +127,10 @@ describe('workspace navigation history', () => {
     window.localStorage.clear();
     navigate('/');
   });
-  afterEach(() => vi.clearAllMocks());
+  afterEach(() => {
+    vi.clearAllMocks();
+    vi.restoreAllMocks();
+  });
 
   it('restores feed and story from URL when traversing history', async () => {
     render(<WorkspaceShell />);
@@ -123,6 +145,43 @@ describe('workspace navigation history', () => {
     await waitFor(() =>
       expect(screen.getByTestId('feed').textContent).toBe('top')
     );
+  });
+
+  it('returns directly to the feed after opening multiple stories', async () => {
+    const go = vi.spyOn(window.history, 'go').mockImplementation(() => {});
+    const back = vi.spyOn(window.history, 'back').mockImplementation(() => {});
+    render(<WorkspaceShell />);
+    fireEvent.click(screen.getByText('Open story'));
+    fireEvent.click(screen.getByText('Open second story'));
+    expect(window.location.search).toBe('?story=456');
+    fireEvent.click(screen.getByText('Back to feed'));
+    expect(go).toHaveBeenCalledWith(-2);
+    expect(back).not.toHaveBeenCalled();
+    navigate('/', { hnNavigationDepth: 0 });
+    await waitFor(() => expect(screen.queryByText('Detail 456')).toBeNull());
+    go.mockRestore();
+    back.mockRestore();
+  });
+
+  it('returns a direct-linked story to its feed without leaving the app', () => {
+    navigate('/?feed=ask&story=456');
+    render(<WorkspaceShell />);
+    fireEvent.click(screen.getByText('Back to feed'));
+    expect(window.location.search).toBe('?feed=ask');
+    expect(screen.queryByText('Detail 456')).toBeNull();
+  });
+
+  it('tracks the feed origin when a feed was changed before opening stories', () => {
+    const go = vi.spyOn(window.history, 'go').mockImplementation(() => {});
+    render(<WorkspaceShell />);
+    fireEvent.click(screen.getByText('Ask'));
+    fireEvent.click(screen.getByText('Open story'));
+    fireEvent.click(screen.getByText('Open second story'));
+    expect(window.history.state.hnFeedDepth).toBe(1);
+    fireEvent.click(screen.getByText('Back to feed'));
+    expect(go).toHaveBeenCalledWith(-2);
+    navigate('/?feed=ask', { hnNavigationDepth: 1 });
+    expect(screen.getByTestId('feed').textContent).toBe('ask');
   });
 
   it('swipes feeds across the feed area without intercepting vertical or edge gestures', () => {

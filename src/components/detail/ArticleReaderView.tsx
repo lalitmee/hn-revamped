@@ -940,9 +940,9 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
             style={{ color: 'var(--text-muted)' }}
             className="text-sm max-w-md"
           >
-            This resource (
-            {article?.fallbackType?.toUpperCase() || 'External Site'}) is best
-            viewed directly in its original tab.
+            {article?.fallbackType === 'blocked' || !article?.fallbackType
+              ? 'Reader View could not retrieve readable content from this page. The publisher may restrict access, require JavaScript, or be temporarily unavailable. You can still open the original article.'
+              : `This ${article.fallbackType === 'pdf' ? 'PDF document' : article.fallbackType === 'github' ? 'GitHub repository' : 'resource'} is best viewed on its original website.`}
           </p>
         </div>
         <a

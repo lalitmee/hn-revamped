@@ -49,6 +49,23 @@ describe('Article Reader View Extractor', () => {
     expect(article.readingTimeMinutes).toBeGreaterThanOrEqual(1);
   });
 
+  it('removes semantic site navigation while preserving article headers', () => {
+    const navigation =
+      'Publisher navigation, browse all products and topics. '.repeat(30);
+    const body =
+      'The actual research describes compiler instrumentation and fuzzing techniques in detail. '.repeat(
+        20
+      );
+    const article = extractArticleFromHtml(
+      `<html><head><title>Compiler research</title></head><body><header><p>${navigation}</p></header><div role="navigation"><p>${navigation}</p></div><article><header><h1>Compiler research</h1><p>By Research Author</p></header><p>${body}</p></article></body></html>`,
+      'https://example.com/research'
+    );
+    expect(article.contentHtml).not.toContain('Publisher navigation');
+    expect(article.textContent).not.toContain('Publisher navigation');
+    expect(article.contentHtml).toContain('actual research');
+    expect(article.contentHtml).toContain('Research Author');
+  });
+
   it('prepares code-aware TTS speech segments and skips <pre> code blocks', () => {
     const html = `
       <h2>Memory Layout</h2>

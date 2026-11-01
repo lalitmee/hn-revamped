@@ -77,6 +77,21 @@ export function extractArticleFromHtml(
 ): ReaderArticle {
   const { document } = parseHTML(rawHtml);
 
+  // Remove explicit site chrome before scoring: large publisher headers can
+  // otherwise outrank the article. Preserve headers nested in article/main.
+  document
+    .querySelectorAll(
+      'nav, [role="navigation"], [role="banner"], [role="contentinfo"], body > header, body > footer'
+    )
+    .forEach((element) => {
+      if (
+        !element.closest('article, main, [role="main"]') ||
+        element.matches('nav, [role="navigation"]')
+      ) {
+        element.remove();
+      }
+    });
+
   // Resolve relative links and images
   const baseElements = document.querySelectorAll('a[href], img[src]');
   baseElements.forEach((el: Element) => {

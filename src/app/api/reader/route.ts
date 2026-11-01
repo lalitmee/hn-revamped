@@ -65,8 +65,6 @@ export async function GET(request: NextRequest) {
         Accept: 'text/html,application/xhtml+xml',
       },
     });
-    clearTimeout(timeout);
-
     if (!res.ok) {
       return NextResponse.json(
         {
@@ -83,9 +81,10 @@ export async function GET(request: NextRequest) {
 
     const html = await res.text();
     const article = extractArticleFromHtml(html, targetUrl);
-    return NextResponse.json(article, { headers: CACHE_HEADERS });
+    return NextResponse.json(article, {
+      headers: article.fallbackType ? ERROR_CACHE_HEADERS : CACHE_HEADERS,
+    });
   } catch {
-    clearTimeout(timeout);
     return NextResponse.json(
       {
         url: targetUrl,
@@ -97,5 +96,8 @@ export async function GET(request: NextRequest) {
       },
       { headers: ERROR_CACHE_HEADERS }
     );
+  } finally {
+    // Keep the deadline active while reading the response body as well.
+    clearTimeout(timeout);
   }
 }

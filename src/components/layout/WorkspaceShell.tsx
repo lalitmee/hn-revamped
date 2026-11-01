@@ -247,6 +247,7 @@ export const WorkspaceShell: React.FC = () => {
       replace = false
     ) => {
       const url = new URL(window.location.href);
+      const wasViewingStory = url.searchParams.has('story');
       if (next.story !== undefined) {
         if (next.story) url.searchParams.set('story', String(next.story));
         else url.searchParams.delete('story');
@@ -273,6 +274,13 @@ export const WorkspaceShell: React.FC = () => {
       const state = {
         ...window.history.state,
         hnNavigationDepth: depth,
+        hnFeedDepth: next.story
+          ? wasViewingStory
+            ? (window.history.state?.hnFeedDepth ?? null)
+            : navigationDepthRef.current
+          : next.story === null
+            ? null
+            : (window.history.state?.hnFeedDepth ?? null),
         hnOverlay: null,
       };
       if (replace) window.history.replaceState(state, '', target);
@@ -306,6 +314,13 @@ export const WorkspaceShell: React.FC = () => {
       const cached = getCachedStoryWithComments(story.id);
       if (cached) {
         setSelectedStory(cached);
+        setStories((current) =>
+          current.map((item) =>
+            item.id === cached.id
+              ? { ...item, commentsCount: cached.commentsCount }
+              : item
+          )
+        );
         setLoadingDetail(false);
         const updatedHistory = markStoryAsRead(cached.id, cached.commentsCount);
         setReadHistory(updatedHistory);
@@ -327,6 +342,13 @@ export const WorkspaceShell: React.FC = () => {
           if (latestStoryReqRef.current !== reqId) return;
           startTransition(() => {
             setSelectedStory(fullStory);
+            setStories((current) =>
+              current.map((item) =>
+                item.id === fullStory.id
+                  ? { ...item, commentsCount: fullStory.commentsCount }
+                  : item
+              )
+            );
             setLoadingDetail(false);
           });
           const updatedHistory = markStoryAsRead(
@@ -348,12 +370,21 @@ export const WorkspaceShell: React.FC = () => {
   );
 
   const returnToFeed = useCallback(() => {
-    if (navigationDepthRef.current > 0) {
-      window.history.back();
+    ++latestStoryReqRef.current;
+    setSelectedStory(null);
+    setLoadingDetail(false);
+    setActiveTab('comments');
+    const feedDepth = window.history.state?.hnFeedDepth;
+    if (
+      Number.isInteger(feedDepth) &&
+      feedDepth >= 0 &&
+      feedDepth < navigationDepthRef.current
+    ) {
+      // This is an Up action, not browser Back: skip intermediate stories.
+      window.history.go(feedDepth - navigationDepthRef.current);
     } else {
-      ++latestStoryReqRef.current;
-      setSelectedStory(null);
-      syncNavigation({ story: null }, true);
+      // A direct link has no known feed entry in this tab's history.
+      syncNavigation({ story: null, view: null }, true);
     }
   }, [syncNavigation]);
 

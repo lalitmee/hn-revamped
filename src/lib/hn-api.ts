@@ -244,6 +244,9 @@ export async function fetchStoryWithComments(
             type: rootData.type === 'job' ? 'job' : 'story',
             comments,
           };
+          const reportedRoot = await fetchStoryItem(resolvedRoot.id);
+          if (reportedRoot)
+            resolvedRoot.commentsCount = reportedRoot.commentsCount;
           storyCommentsCache.set(storyId, {
             storyWithComments: resolvedRoot,
             fetchedAt: Date.now(),
@@ -284,6 +287,11 @@ export async function fetchStoryWithComments(
       type: data.type === 'job' ? 'job' : 'story',
       comments,
     };
+    // Algolia can lag HN and omits deleted/empty leaves during normalization.
+    // Use the same reported total as feed cards; the tree is only loaded content.
+    const reportedStory =
+      data.type === 'comment' ? null : await fetchStoryItem(resolved.id);
+    if (reportedStory) resolved.commentsCount = reportedStory.commentsCount;
     storyCommentsCache.set(storyId, {
       storyWithComments: resolved,
       fetchedAt: Date.now(),

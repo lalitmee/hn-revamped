@@ -95,6 +95,29 @@ it('shows loading immediately instead of the original-article fallback', () => {
   expect(html).not.toContain('Open Original Article');
 });
 
+it('explains reader extraction failures without presenting BLOCKED as a resource type', () => {
+  sessionStorage.setItem(
+    `hn_reader_${URL}`,
+    JSON.stringify({
+      url: URL,
+      title: 'Test',
+      contentHtml: '',
+      textContent: '',
+      readingTimeMinutes: 1,
+      fallbackType: 'blocked',
+    })
+  );
+  const { unmount } = render(<ArticleReaderView url={URL} storyTitle="Test" />);
+  expect(
+    screen.getByText(/Reader View could not retrieve readable content/)
+  ).toBeInTheDocument();
+  expect(screen.queryByText(/\(BLOCKED\)/)).toBeNull();
+  expect(
+    screen.getByRole('link', { name: /Open Original Article/ })
+  ).toHaveAttribute('href', URL);
+  unmount();
+});
+
 it.each([
   ['Piper: Lessac', '/tts-workers/piper.js', 'en_US-lessac-medium'],
   ['Kokoro: Heart', '/tts-workers/kokoro.js', 'af_heart'],
