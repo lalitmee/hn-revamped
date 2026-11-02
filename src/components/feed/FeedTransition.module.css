@@ -1,0 +1,105 @@
+.viewport {
+  min-height: 100%;
+  overflow-x: clip;
+  --exit-x: -48px;
+  --enter-x: 48px;
+}
+
+.viewport[data-direction='right'] {
+  --exit-x: 48px;
+  --enter-x: -48px;
+}
+
+.exit {
+  animation: exit 140ms ease-in both;
+  pointer-events: none;
+}
+
+.enter {
+  animation: enter 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.destination {
+  min-height: 60dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  animation: reveal 120ms ease-out both;
+}
+
+.icon {
+  color: var(--accent);
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  padding: 16px;
+  font-size: 32px;
+}
+
+.label {
+  color: var(--text-primary);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.caption {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.loader {
+  color: var(--accent);
+  font-size: 18px;
+  animation: spin 900ms linear infinite;
+}
+
+@keyframes exit {
+  to {
+    opacity: 0;
+    transform: translateX(var(--exit-x));
+  }
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateX(var(--enter-x));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .viewport,
+  .viewport[data-direction='right'] {
+    --exit-x: 0px;
+    --enter-x: 0px;
+  }
+  .exit,
+  .enter,
+  .destination {
+    animation-duration: 80ms;
+  }
+  .loader {
+    animation: none;
+  }
+}

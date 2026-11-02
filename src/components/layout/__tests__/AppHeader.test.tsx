@@ -21,6 +21,11 @@ const props = {
 };
 
 describe('mobile feed picker', () => {
+  it('keeps switch feedback out of the header', () => {
+    render(<AppHeader {...props} />);
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
   it('selects a feed and closes the sheet', () => {
     const onSelectFeed = vi.fn();
     const { container } = render(

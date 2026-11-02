@@ -48,6 +48,31 @@ describe('StoryPillRow Component', () => {
       }
     }
   );
+  it.each([true, false])(
+    'distinguishes mobile density without removing actions (compact=%s)',
+    (compact) => {
+      const { container } = render(
+        <StoryPillRow
+          story={mockStory}
+          index={1}
+          isSelected={false}
+          compact={compact}
+          isRead={false}
+          newCommentsDelta={0}
+          isBookmarked={false}
+          onSelect={vi.fn()}
+          onToggleBookmark={vi.fn()}
+        />
+      );
+      const mobile = container.querySelector('.sm\\:hidden')!;
+      const title = mobile.querySelector('h3')!;
+      expect(title).toHaveClass(compact ? 'text-[15px]' : 'text-[17px]');
+      expect(title.classList.contains('line-clamp-2')).toBe(compact);
+      expect(mobile.querySelector('.flex-wrap') !== null).toBe(!compact);
+      expect(mobile.querySelector('button')).toHaveClass('w-8', 'h-8');
+    }
+  );
+
   it('renders compact variant with title, points, comments and metadata on one line', () => {
     render(
       <StoryPillRow

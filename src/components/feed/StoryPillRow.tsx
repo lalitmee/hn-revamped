@@ -128,7 +128,7 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
       className={`group relative z-10 overflow-hidden flex items-center border cursor-pointer hover:brightness-105 active:scale-[0.995] focus:outline-none ${
         compact
           ? 'gap-3 rounded-xl px-2 py-1.5 sm:px-3 sm:py-2'
-          : 'gap-4 rounded-xl sm:rounded-2xl p-2 sm:p-4'
+          : 'gap-4 rounded-2xl p-3.5 sm:p-4'
       }`}
     >
       {/* Fallback Left Selection Indicator Bar (when floating indicator is not yet measured) */}
@@ -143,7 +143,9 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
         }}
         className={`absolute left-0 w-1 rounded-r-full ${compact ? 'top-2 bottom-2' : 'top-3 bottom-3'}`}
       />
-      <div className="sm:hidden w-full min-w-0 flex flex-col gap-1">
+      <div
+        className={`sm:hidden w-full min-w-0 flex flex-col ${compact ? 'gap-1' : 'gap-2.5'}`}
+      >
         <div className="flex items-start gap-1.5 min-w-0">
           {isRead && !isSelected && (
             <span
@@ -156,7 +158,7 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
           )}
           <h3
             style={{ color: 'var(--text-primary)' }}
-            className="min-w-0 flex-1 text-[15px] font-semibold leading-snug break-words line-clamp-2"
+            className={`min-w-0 flex-1 font-semibold leading-snug break-words ${compact ? 'text-[15px] line-clamp-2' : 'text-[17px]'}`}
           >
             {story.cleanTitle}
             {story.badges.map((badge) => (
@@ -173,7 +175,7 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
             type="button"
             aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark story'}
             onClick={(e) => onToggleBookmark(story, e)}
-            className="w-6 h-6 shrink-0 inline-flex items-center justify-center rounded-md hover:bg-[var(--bg-surface-2)]"
+            className="w-8 h-8 shrink-0 inline-flex items-center justify-center rounded-md hover:bg-[var(--bg-surface-2)]"
           >
             <span
               className={`material-symbols-rounded text-[16px] ${isBookmarked ? 'filled' : ''}`}
@@ -187,7 +189,7 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
         </div>
         <div className="flex items-center gap-1.5 min-w-0">
           <div
-            className="flex flex-1 min-w-0 flex-nowrap items-center gap-x-1.5 overflow-hidden text-[11px] leading-tight"
+            className={`flex flex-1 min-w-0 items-center leading-tight ${compact ? 'flex-nowrap gap-x-1.5 overflow-hidden text-[11px]' : 'flex-wrap gap-x-2 gap-y-1.5 text-xs'}`}
             style={{ color: 'var(--text-muted)' }}
           >
             <span className="font-mono shrink-0">#{index}</span>
@@ -233,7 +235,9 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
               >
                 schedule
               </span>
-              {formatRelativeTime(story.time)}
+              {compact
+                ? formatRelativeTimeConcise(story.time)
+                : formatRelativeTime(story.time)}
             </span>
           </div>
           <div className="flex items-center gap-1 shrink-0">

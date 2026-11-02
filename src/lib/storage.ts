@@ -33,11 +33,17 @@ export function recordSwipe(context: SwipeHintContext): void {
 
 export function loadPreferences(): UserPreferences {
   if (typeof window === 'undefined') return DEFAULT_PREFERENCES;
+  const defaults: UserPreferences = {
+    ...DEFAULT_PREFERENCES,
+    cardDensity: window.matchMedia?.('(max-width: 639px)').matches
+      ? 'compact'
+      : DEFAULT_PREFERENCES.cardDensity,
+  };
   try {
     const raw = window.localStorage.getItem(PREFS_KEY);
-    if (!raw) return DEFAULT_PREFERENCES;
+    if (!raw) return defaults;
     const parsed = JSON.parse(raw);
-    const merged: UserPreferences = { ...DEFAULT_PREFERENCES, ...parsed };
+    const merged: UserPreferences = { ...defaults, ...parsed };
     if (merged.customAccent == null) {
       merged.customAccent = DEFAULT_PREFERENCES.customAccent;
       window.localStorage.setItem(PREFS_KEY, JSON.stringify(merged));
@@ -56,7 +62,7 @@ export function loadPreferences(): UserPreferences {
     }
     return merged;
   } catch {
-    return DEFAULT_PREFERENCES;
+    return defaults;
   }
 }
 

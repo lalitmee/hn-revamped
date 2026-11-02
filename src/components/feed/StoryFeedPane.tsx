@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { HNStory, ReadHistoryEntry } from '@/types/hn';
+import { FeedType, HNStory, ReadHistoryEntry } from '@/types/hn';
 import { getNewCommentsDelta } from '@/lib/storage';
 import { StoryPillRow } from './StoryPillRow';
+import { FeedTransition } from './FeedTransition';
 
 function StoryShimmer({ compact, index }: { compact: boolean; index: number }) {
   const placeholder = (className: string) => (
@@ -52,6 +53,7 @@ function StoryShimmer({ compact, index }: { compact: boolean; index: number }) {
 }
 
 interface StoryFeedPaneProps {
+  activeFeed?: FeedType;
   stories: HNStory[];
   loading: boolean;
   selectedStoryId: number | null;
@@ -64,7 +66,13 @@ interface StoryFeedPaneProps {
   compact?: boolean;
 }
 
-export const StoryFeedPane: React.FC<StoryFeedPaneProps> = ({
+export const StoryFeedPane: React.FC<StoryFeedPaneProps> = (props) => (
+  <FeedTransition feed={props.activeFeed ?? 'top'} loading={props.loading}>
+    <FeedContents {...props} />
+  </FeedTransition>
+);
+
+const FeedContents: React.FC<StoryFeedPaneProps> = ({
   stories,
   loading,
   selectedStoryId,

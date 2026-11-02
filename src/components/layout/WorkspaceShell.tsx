@@ -870,6 +870,7 @@ export const WorkspaceShell: React.FC = () => {
               <StoryFeedPane
                 stories={visibleStories}
                 loading={loadingFeed}
+                activeFeed={activeFeed}
                 selectedStoryId={selectedStory?.id ?? null}
                 readHistory={readHistory}
                 bookmarkedIds={bookmarkedIds}
@@ -1059,6 +1060,7 @@ export const WorkspaceShell: React.FC = () => {
               <StoryFeedPane
                 stories={visibleStories}
                 loading={loadingFeed}
+                activeFeed={activeFeed}
                 selectedStoryId={null}
                 readHistory={readHistory}
                 bookmarkedIds={bookmarkedIds}
