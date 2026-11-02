@@ -33,32 +33,82 @@ describe('Local Storage & Filtering Service', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it('defaults mobile to compact and desktop to comfortable without changing System theme', () => {
-    const matchMedia = vi.fn().mockReturnValue({ matches: true });
-    vi.stubGlobal('matchMedia', matchMedia);
-    expect(loadPreferences()).toMatchObject({
-      cardDensity: 'compact',
-      themeMode: 'system',
-    });
-    expect(matchMedia).toHaveBeenCalledWith('(max-width: 639px)');
-    matchMedia.mockReturnValue({ matches: false });
-    expect(loadPreferences().cardDensity).toBe('comfortable');
+  it('defaults to comfortable feeds and compact discussions on every viewport', () => {
+    for (const matches of [true, false]) {
+      vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches }));
+      expect(loadPreferences()).toMatchObject({
+        feedDensity: 'comfortable',
+        discussionDensity: 'compact',
+        themeMode: 'system',
+      });
+    }
   });
 
-  it('preserves a saved mobile density and applies defaults to older preferences', () => {
-    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: true }));
-    savePreferences({ ...DEFAULT_PREFERENCES, cardDensity: 'comfortable' });
-    expect(loadPreferences().cardDensity).toBe('comfortable');
+  it.each(['compact', 'comfortable'] as const)(
+    'migrates legacy %s density to both settings',
+    (cardDensity) => {
+      window.localStorage.setItem(
+        'hn_revamped_prefs_v1',
+        JSON.stringify({ cardDensity })
+      );
+      expect(loadPreferences()).toMatchObject({
+        feedDensity: cardDensity,
+        discussionDensity: cardDensity,
+      });
+      const saved = JSON.parse(
+        window.localStorage.getItem('hn_revamped_prefs_v1')!
+      );
+      expect(saved).toMatchObject({
+        feedDensity: cardDensity,
+        discussionDensity: cardDensity,
+      });
+      expect(saved).not.toHaveProperty('cardDensity');
+      expect(loadPreferences()).toMatchObject({
+        feedDensity: cardDensity,
+        discussionDensity: cardDensity,
+      });
+    }
+  );
+
+  it('preserves independent settings over legacy values', () => {
+    savePreferences({
+      ...DEFAULT_PREFERENCES,
+      cardDensity: 'compact',
+      feedDensity: 'comfortable',
+      discussionDensity: 'compact',
+    });
+    expect(loadPreferences()).toMatchObject({
+      feedDensity: 'comfortable',
+      discussionDensity: 'compact',
+    });
+  });
+
+  it('fills a missing density from the legacy value without changing an explicit density', () => {
     window.localStorage.setItem(
       'hn_revamped_prefs_v1',
-      JSON.stringify({ fontSize: 18 })
+      JSON.stringify({ cardDensity: 'comfortable', feedDensity: 'compact' })
     );
     expect(loadPreferences()).toMatchObject({
-      cardDensity: 'compact',
+      feedDensity: 'compact',
+      discussionDensity: 'comfortable',
+    });
+  });
+
+  it('defaults older or malformed preferences safely', () => {
+    window.localStorage.setItem(
+      'hn_revamped_prefs_v1',
+      JSON.stringify({ fontSize: 18, feedDensity: 'invalid' })
+    );
+    expect(loadPreferences()).toMatchObject({
+      feedDensity: 'comfortable',
+      discussionDensity: 'compact',
       fontSize: 18,
     });
     window.localStorage.setItem('hn_revamped_prefs_v1', 'invalid');
-    expect(loadPreferences().cardDensity).toBe('compact');
+    expect(loadPreferences()).toMatchObject({
+      feedDensity: 'comfortable',
+      discussionDensity: 'compact',
+    });
   });
 
   it('persists and loads user preferences', () => {

@@ -53,10 +53,12 @@ vi.mock('../AppHeader', () => ({
 vi.mock('@/components/feed/StoryFeedPane', () => ({
   StoryFeedPane: ({
     onSelectStory,
+    compact,
   }: {
+    compact: boolean;
     onSelectStory: (story: object) => void;
   }) => (
-    <>
+    <div data-testid="feed-density" data-compact={compact}>
       <button
         onClick={() =>
           onSelectStory({
@@ -94,12 +96,20 @@ vi.mock('@/components/feed/StoryFeedPane', () => ({
         <span>Open story</span>
         <button onClick={(event) => event.stopPropagation()}>Bookmark</button>
       </article>
-    </>
+    </div>
   ),
 }));
 vi.mock('@/components/detail/StoryDetailPane', () => ({
-  StoryDetailPane: ({ story }: { story: { id: number } | null }) => (
-    <div>Detail {story?.id}</div>
+  StoryDetailPane: ({
+    story,
+    compact,
+  }: {
+    story: { id: number } | null;
+    compact: boolean;
+  }) => (
+    <div data-testid="discussion-density" data-compact={compact}>
+      Detail {story?.id}
+    </div>
   ),
 }));
 vi.mock('@/components/modals/CommandPaletteModal', () => ({
@@ -132,6 +142,49 @@ describe('workspace navigation history', () => {
     vi.clearAllMocks();
     vi.restoreAllMocks();
   });
+
+  it.each([
+    {
+      layoutMode: 'split',
+      feedDensity: 'compact',
+      discussionDensity: 'comfortable',
+    },
+    {
+      layoutMode: 'zen',
+      feedDensity: 'compact',
+      discussionDensity: 'comfortable',
+    },
+    {
+      layoutMode: 'split',
+      feedDensity: 'comfortable',
+      discussionDensity: 'compact',
+    },
+    {
+      layoutMode: 'zen',
+      feedDensity: 'comfortable',
+      discussionDensity: 'compact',
+    },
+  ])(
+    'routes independent densities in $layoutMode ($feedDensity / $discussionDensity)',
+    async ({ layoutMode, feedDensity, discussionDensity }) => {
+      window.localStorage.setItem(
+        'hn_revamped_prefs_v1',
+        JSON.stringify({ layoutMode, feedDensity, discussionDensity })
+      );
+      render(<WorkspaceShell />);
+      expect(
+        screen.getByTestId('feed-density').getAttribute('data-compact')
+      ).toBe(String(feedDensity === 'compact'));
+      fireEvent.click(screen.getByText('Open story'));
+      await waitFor(() => {
+        for (const detail of screen.getAllByTestId('discussion-density')) {
+          expect(detail.getAttribute('data-compact')).toBe(
+            String(discussionDensity === 'compact')
+          );
+        }
+      });
+    }
+  );
 
   it('restores feed and story from URL when traversing history', async () => {
     render(<WorkspaceShell />);

@@ -356,8 +356,8 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
     preferences.fontSize !== DEFAULT_PREFERENCES.fontSize ||
     Math.abs(preferences.lineHeight - DEFAULT_PREFERENCES.lineHeight) > 0.001 ||
     preferences.lineWidth !== DEFAULT_PREFERENCES.lineWidth ||
-    (preferences.cardDensity ?? 'comfortable') !==
-      (DEFAULT_PREFERENCES.cardDensity ?? 'comfortable');
+    preferences.feedDensity !== DEFAULT_PREFERENCES.feedDensity ||
+    preferences.discussionDensity !== DEFAULT_PREFERENCES.discussionDensity;
 
   const isFiltersModified =
     preferences.hideReadStories !== DEFAULT_PREFERENCES.hideReadStories ||
@@ -385,7 +385,8 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
       fontSize: DEFAULT_PREFERENCES.fontSize,
       lineHeight: DEFAULT_PREFERENCES.lineHeight,
       lineWidth: DEFAULT_PREFERENCES.lineWidth,
-      cardDensity: DEFAULT_PREFERENCES.cardDensity,
+      feedDensity: DEFAULT_PREFERENCES.feedDensity,
+      discussionDensity: DEFAULT_PREFERENCES.discussionDensity,
     });
   };
 
@@ -1353,62 +1354,85 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                       </button>
                     </div>
 
-                    <div
-                      style={rowDivider}
-                      className="flex flex-wrap items-center justify-between gap-3 py-5 border-b"
-                    >
-                      <div>
-                        <div className="text-sm font-medium">Card density</div>
-                        <div
-                          style={{ color: 'var(--text-muted)' }}
-                          className="text-xs mt-0.5"
-                        >
-                          Compact feed rows and discussion cards
+                    {(
+                      [
+                        {
+                          key: 'feedDensity',
+                          label: 'Feed density',
+                          description: 'Spacing for story cards in your feed',
+                        },
+                        {
+                          key: 'discussionDensity',
+                          label: 'Discussion density',
+                          description:
+                            'Spacing for the discussion header, story text, and comments',
+                        },
+                      ] as const
+                    ).map(({ key, label, description }) => (
+                      <div
+                        key={key}
+                        role="group"
+                        aria-label={label}
+                        style={rowDivider}
+                        className="flex flex-wrap items-center justify-between gap-3 py-5 border-b"
+                      >
+                        <div>
+                          <div className="text-sm font-medium">{label}</div>
+                          <div
+                            style={{ color: 'var(--text-muted)' }}
+                            className="text-xs mt-0.5"
+                          >
+                            {description}
+                          </div>
+                        </div>
+                        <div className="hidden sm:block">
+                          <GlassSegmentedControl<CardDensity>
+                            size="sm"
+                            value={
+                              preferences[key] ?? DEFAULT_PREFERENCES[key]!
+                            }
+                            onChange={(density) =>
+                              onUpdate({ ...preferences, [key]: density })
+                            }
+                            items={[
+                              {
+                                id: 'comfortable',
+                                label: 'Comfortable',
+                                icon: 'view_agenda',
+                              },
+                              {
+                                id: 'compact',
+                                label: 'Compact',
+                                icon: 'view_headline',
+                              },
+                            ]}
+                          />
+                        </div>
+                        <div className="sm:hidden">
+                          <GlassSegmentedControl<CardDensity>
+                            size="sm"
+                            value={
+                              preferences[key] ?? DEFAULT_PREFERENCES[key]!
+                            }
+                            onChange={(density) =>
+                              onUpdate({ ...preferences, [key]: density })
+                            }
+                            items={[
+                              {
+                                id: 'comfortable',
+                                icon: 'view_agenda',
+                                title: `Comfortable ${label.toLowerCase()}`,
+                              },
+                              {
+                                id: 'compact',
+                                icon: 'view_headline',
+                                title: `Compact ${label.toLowerCase()}`,
+                              },
+                            ]}
+                          />
                         </div>
                       </div>
-                      <div className="hidden sm:block">
-                        <GlassSegmentedControl<CardDensity>
-                          size="sm"
-                          value={preferences.cardDensity ?? 'comfortable'}
-                          onChange={(density) =>
-                            onUpdate({ ...preferences, cardDensity: density })
-                          }
-                          items={[
-                            {
-                              id: 'comfortable',
-                              label: 'Comfortable',
-                              icon: 'view_agenda',
-                            },
-                            {
-                              id: 'compact',
-                              label: 'Compact',
-                              icon: 'view_headline',
-                            },
-                          ]}
-                        />
-                      </div>
-                      <div className="sm:hidden">
-                        <GlassSegmentedControl<CardDensity>
-                          size="sm"
-                          value={preferences.cardDensity ?? 'comfortable'}
-                          onChange={(density) =>
-                            onUpdate({ ...preferences, cardDensity: density })
-                          }
-                          items={[
-                            {
-                              id: 'comfortable',
-                              icon: 'view_agenda',
-                              title: 'Comfortable card density',
-                            },
-                            {
-                              id: 'compact',
-                              icon: 'view_headline',
-                              title: 'Compact card density',
-                            },
-                          ]}
-                        />
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 )}
 
@@ -1472,7 +1496,7 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                   story={PREVIEW_SELECTED_STORY}
                   index={1}
                   isSelected={true}
-                  compact={preferences.cardDensity === 'compact'}
+                  compact={preferences.feedDensity === 'compact'}
                   isRead={false}
                   newCommentsDelta={0}
                   isBookmarked={true}
@@ -1483,7 +1507,7 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                   story={PREVIEW_SECONDARY_STORY}
                   index={2}
                   isSelected={false}
-                  compact={preferences.cardDensity === 'compact'}
+                  compact={preferences.feedDensity === 'compact'}
                   isRead={true}
                   newCommentsDelta={14}
                   isBookmarked={false}
@@ -1523,7 +1547,7 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                     maxAllowedDepth={2}
                     storyAuthor="systems_craft"
                     collapseMode="expanded"
-                    compact={preferences.cardDensity === 'compact'}
+                    compact={preferences.discussionDensity === 'compact'}
                   />
                 </div>
               </div>

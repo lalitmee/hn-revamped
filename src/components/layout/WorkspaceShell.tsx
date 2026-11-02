@@ -62,7 +62,7 @@ export const WorkspaceShell: React.FC = () => {
   const [prefsHydrated, setPrefsHydrated] = useState(false);
 
   // Compact cards fit more rows on screen, so fetch a larger first batch.
-  const desiredPageSize = preferences.cardDensity === 'compact' ? 15 : 10;
+  const desiredPageSize = preferences.feedDensity === 'compact' ? 15 : 10;
   const desiredPageSizeRef = useRef(desiredPageSize);
   desiredPageSizeRef.current = desiredPageSize;
   // Page size is pinned per feed load so "load more" offsets stay consistent
@@ -880,7 +880,7 @@ export const WorkspaceShell: React.FC = () => {
                   setBookmarks(toggleBookmarkStory(story).bookmarks);
                 }}
                 onLoadMore={handleLoadMore}
-                compact={preferences.cardDensity === 'compact'}
+                compact={preferences.feedDensity === 'compact'}
                 hasMore={activeFeed !== 'saved' && timeTravel === 'live'}
               />
             </section>
@@ -893,7 +893,7 @@ export const WorkspaceShell: React.FC = () => {
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
                 collapseMode={preferences.defaultCollapseMode ?? 'root-only'}
-                compact={preferences.cardDensity === 'compact'}
+                compact={preferences.discussionDensity === 'compact'}
                 onCollapseModeChange={(mode) =>
                   handleUpdatePreferences({
                     ...preferences,
@@ -938,7 +938,7 @@ export const WorkspaceShell: React.FC = () => {
                   activeTab={activeTab}
                   onTabChange={setActiveTab}
                   collapseMode={preferences.defaultCollapseMode ?? 'root-only'}
-                  compact={preferences.cardDensity === 'compact'}
+                  compact={preferences.discussionDensity === 'compact'}
                   onCollapseModeChange={(mode) =>
                     handleUpdatePreferences({
                       ...preferences,
@@ -1016,7 +1016,7 @@ export const WorkspaceShell: React.FC = () => {
                   activeTab={activeTab}
                   onTabChange={setActiveTab}
                   collapseMode={preferences.defaultCollapseMode ?? 'root-only'}
-                  compact={preferences.cardDensity === 'compact'}
+                  compact={preferences.discussionDensity === 'compact'}
                   onCollapseModeChange={(mode) =>
                     handleUpdatePreferences({
                       ...preferences,
@@ -1070,7 +1070,7 @@ export const WorkspaceShell: React.FC = () => {
                   setBookmarks(toggleBookmarkStory(story).bookmarks);
                 }}
                 onLoadMore={handleLoadMore}
-                compact={preferences.cardDensity === 'compact'}
+                compact={preferences.feedDensity === 'compact'}
                 hasMore={activeFeed !== 'saved' && timeTravel === 'live'}
               />
             )}

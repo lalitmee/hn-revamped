@@ -122,6 +122,9 @@ export interface UserPreferences {
   lineHeight: number;
   lineWidth: LineWidthOption;
   layoutMode: LayoutMode;
+  feedDensity?: CardDensity;
+  discussionDensity?: CardDensity;
+  /** Legacy shared density; migrated when loading stored preferences. */
   cardDensity?: CardDensity;
   defaultCollapseMode?: ThreadCollapseMode;
   hideReadStories: boolean;

@@ -47,7 +47,8 @@ describe('Multi-Source Theme Engine', () => {
 
   it('exports sensible default user preferences', () => {
     expect(DEFAULT_PREFERENCES.layoutMode).toBe('split');
-    expect(DEFAULT_PREFERENCES.cardDensity).toBe('comfortable');
+    expect(DEFAULT_PREFERENCES.feedDensity).toBe('comfortable');
+    expect(DEFAULT_PREFERENCES.discussionDensity).toBe('compact');
     expect(DEFAULT_PREFERENCES.fontSize).toBe(14);
     expect(DEFAULT_PREFERENCES.lineHeight).toBe(1.55);
     expect(DEFAULT_PREFERENCES.lineWidth).toBe('65ch');

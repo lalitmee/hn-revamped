@@ -6,6 +6,80 @@ import { AppearanceModal } from '../AppearanceModal';
 import { DEFAULT_PREFERENCES, THEMES } from '@/lib/themes';
 
 describe('mobile appearance controls', () => {
+  it('updates feed and discussion density independently without changing text size', () => {
+    const onUpdate = vi.fn();
+    render(
+      <AppearanceModal
+        isOpen
+        preferences={{ ...DEFAULT_PREFERENCES }}
+        onUpdate={onUpdate}
+        onClose={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByRole('tab', { name: 'Text' }));
+    const feed = screen.getByRole('group', { name: 'Feed density' });
+    const discussion = screen.getByRole('group', {
+      name: 'Discussion density',
+    });
+    fireEvent.click(
+      within(feed).getByRole('button', { name: 'Compact feed density' })
+    );
+    expect(onUpdate).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        feedDensity: 'compact',
+        discussionDensity: 'compact',
+        fontSize: DEFAULT_PREFERENCES.fontSize,
+      })
+    );
+    fireEvent.click(
+      within(discussion).getByRole('button', {
+        name: 'Comfortable discussion density',
+      })
+    );
+    expect(onUpdate).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        feedDensity: 'comfortable',
+        discussionDensity: 'comfortable',
+        fontSize: DEFAULT_PREFERENCES.fontSize,
+      })
+    );
+    fireEvent.click(
+      within(discussion).getByRole('button', { name: 'Comfortable' })
+    );
+    expect(onUpdate).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        feedDensity: 'comfortable',
+        discussionDensity: 'comfortable',
+      })
+    );
+  });
+
+  it('resets both densities to their independent defaults', () => {
+    const onUpdate = vi.fn();
+    render(
+      <AppearanceModal
+        isOpen
+        preferences={{
+          ...DEFAULT_PREFERENCES,
+          feedDensity: 'compact',
+          discussionDensity: 'comfortable',
+        }}
+        onUpdate={onUpdate}
+        onClose={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByRole('tab', { name: 'Text' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Reset text settings' })
+    );
+    expect(onUpdate).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        feedDensity: 'comfortable',
+        discussionDensity: 'compact',
+      })
+    );
+  });
+
   it('exposes labeled tabs and selects the requested settings panel', () => {
     render(
       <AppearanceModal
@@ -324,7 +398,7 @@ describe('mobile appearance controls', () => {
       expect.objectContaining({ lineWidth: '55ch' })
     );
     expect(
-      screen.getByRole('button', { name: 'Comfortable card density' })
+      screen.getByRole('button', { name: 'Comfortable feed density' })
     ).toBeInTheDocument();
   });
 

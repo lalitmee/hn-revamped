@@ -33,17 +33,31 @@ export function recordSwipe(context: SwipeHintContext): void {
 
 export function loadPreferences(): UserPreferences {
   if (typeof window === 'undefined') return DEFAULT_PREFERENCES;
-  const defaults: UserPreferences = {
-    ...DEFAULT_PREFERENCES,
-    cardDensity: window.matchMedia?.('(max-width: 639px)').matches
-      ? 'compact'
-      : DEFAULT_PREFERENCES.cardDensity,
-  };
+  const defaults: UserPreferences = { ...DEFAULT_PREFERENCES };
   try {
     const raw = window.localStorage.getItem(PREFS_KEY);
     if (!raw) return defaults;
     const parsed = JSON.parse(raw);
     const merged: UserPreferences = { ...defaults, ...parsed };
+    const isDensity = (value: unknown) =>
+      value === 'compact' || value === 'comfortable';
+    const legacyDensity = isDensity(parsed.cardDensity)
+      ? parsed.cardDensity
+      : undefined;
+    merged.feedDensity = isDensity(parsed.feedDensity)
+      ? parsed.feedDensity
+      : (legacyDensity ?? defaults.feedDensity);
+    merged.discussionDensity = isDensity(parsed.discussionDensity)
+      ? parsed.discussionDensity
+      : (legacyDensity ?? defaults.discussionDensity);
+    delete merged.cardDensity;
+    if (
+      parsed.feedDensity !== merged.feedDensity ||
+      parsed.discussionDensity !== merged.discussionDensity ||
+      'cardDensity' in parsed
+    ) {
+      window.localStorage.setItem(PREFS_KEY, JSON.stringify(merged));
+    }
     if (merged.customAccent == null) {
       merged.customAccent = DEFAULT_PREFERENCES.customAccent;
       window.localStorage.setItem(PREFS_KEY, JSON.stringify(merged));
