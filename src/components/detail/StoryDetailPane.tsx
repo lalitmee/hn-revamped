@@ -498,7 +498,12 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
       >
         <header className={compact ? 'mb-2.5' : 'mb-4'}>
           <h1
-            style={{ color: 'var(--text-primary)' }}
+            style={{
+              color: 'var(--text-primary)',
+              fontSize: compact
+                ? 'calc(var(--reader-font-size) + 3px)'
+                : 'calc(var(--reader-font-size) + 5px)',
+            }}
             className={`font-bold leading-snug tracking-tight ${
               compact ? 'text-base md:text-lg' : 'text-lg md:text-xl'
             }`}

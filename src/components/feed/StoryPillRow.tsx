@@ -144,7 +144,12 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
       >
         <div className="flex items-start gap-1.5 min-w-0">
           <h3
-            style={{ color: 'var(--text-primary)' }}
+            style={{
+              color: 'var(--text-primary)',
+              fontSize: compact
+                ? 'calc(var(--reader-font-size) + 1px)'
+                : 'calc(var(--reader-font-size) + 3px)',
+            }}
             className={`min-w-0 flex-1 font-semibold leading-snug break-words ${compact ? 'text-[15px] line-clamp-2' : 'text-[17px]'}`}
           >
             {story.cleanTitle}
@@ -279,7 +284,10 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
             {/* Compact Center Zone: Title + single metadata line */}
             <div className="flex-1 min-w-0">
               <h3
-                style={{ color: 'var(--text-primary)' }}
+                style={{
+                  color: 'var(--text-primary)',
+                  fontSize: 'calc(var(--reader-font-size) + 0.5px)',
+                }}
                 className="text-[14.5px] font-semibold leading-snug tracking-tight line-clamp-2"
               >
                 {story.cleanTitle}
@@ -407,7 +415,10 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
               </div>
 
               <h3
-                style={{ color: 'var(--text-primary)' }}
+                style={{
+                  color: 'var(--text-primary)',
+                  fontSize: 'calc(var(--reader-font-size) + 3px)',
+                }}
                 className="text-[17px] font-semibold leading-snug tracking-tight"
               >
                 {story.cleanTitle}

@@ -775,6 +775,10 @@ button.liquid-glass-primary:hover:not(:disabled) {
   color: var(--text-primary);
 }
 
+.hn-prose.hn-prose-compact {
+  font-size: calc(var(--reader-font-size) - 0.5px);
+}
+
 .hn-prose p {
   margin-bottom: 0.6em;
 }

@@ -42,6 +42,7 @@ export function SearchStoryCard({
         <div className="min-w-0 flex-1">
           <div
             data-card-title=""
+            style={{ fontSize: 'var(--reader-font-size)' }}
             className="text-sm font-semibold leading-snug line-clamp-2"
           >
             {story.cleanTitle}
