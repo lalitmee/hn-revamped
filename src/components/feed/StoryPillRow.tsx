@@ -147,15 +147,6 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
         className={`sm:hidden w-full min-w-0 flex flex-col ${compact ? 'gap-1' : 'gap-2.5'}`}
       >
         <div className="flex items-start gap-1.5 min-w-0">
-          {isRead && !isSelected && (
-            <span
-              aria-hidden="true"
-              style={{ color: 'var(--text-muted)' }}
-              className="material-symbols-rounded text-[15px] mt-0.5 shrink-0"
-            >
-              check
-            </span>
-          )}
           <h3
             style={{ color: 'var(--text-primary)' }}
             className={`min-w-0 flex-1 font-semibold leading-snug break-words ${compact ? 'text-[15px] line-clamp-2' : 'text-[17px]'}`}

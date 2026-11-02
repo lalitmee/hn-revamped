@@ -73,6 +73,35 @@ describe('StoryPillRow Component', () => {
     }
   );
 
+  it.each([false, true])(
+    'keeps read mobile titles aligned while retaining muted styling and the desktop check (compact=%s)',
+    (compact) => {
+      const { container } = render(
+        <StoryPillRow
+          story={mockStory}
+          index={1}
+          isSelected={false}
+          compact={compact}
+          isRead={true}
+          newCommentsDelta={0}
+          isBookmarked={false}
+          onSelect={vi.fn()}
+          onToggleBookmark={vi.fn()}
+        />
+      );
+      const mobile = container.querySelector('.sm\\:hidden')!;
+      const title = mobile.querySelector('h3')!;
+      expect(title.parentElement?.firstElementChild).toBe(title);
+      expect(mobile).not.toHaveTextContent('check');
+      expect(container.querySelector('article')).toHaveStyle({
+        opacity: '0.68',
+      });
+      expect(
+        screen.getByText('check').closest('.sm\\:contents')
+      ).not.toBeNull();
+    }
+  );
+
   it('renders compact variant with title, points, comments and metadata on one line', () => {
     render(
       <StoryPillRow

@@ -7,13 +7,7 @@ import { GlassModal } from '@/components/ui/GlassModal';
 import { MobileBottomSheet } from '@/components/ui/MobileBottomSheet';
 import { GlassSegmentedControl } from '@/components/ui/GlassSegmentedControl';
 import { SafeViewTransition } from '@/components/ui/ViewTransitionWrapper';
-import { formatRelativeTimeConcise } from '@/components/feed/StoryPillRow';
-
-const publishedDateFormatter = new Intl.DateTimeFormat(undefined, {
-  year: 'numeric',
-  month: 'short',
-  day: 'numeric',
-});
+import { SearchStoryCard } from './SearchStoryCard';
 
 interface CommandPaletteModalProps {
   isOpen: boolean;
@@ -217,60 +211,26 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
               </div>
 
               {Array.from({ length: 4 }).map((_, i) => (
-                <div
-                  key={`search-skeleton-${i}`}
-                  style={{ animationDelay: `${i * 45}ms` }}
-                  className="liquid-glass liquid-shimmer animate-story-in w-full p-3.5 rounded-2xl flex items-center justify-between gap-4"
-                >
-                  <div className="flex-1 min-w-0 space-y-2.5">
-                    <div
-                      style={{
-                        backgroundColor:
-                          'color-mix(in srgb, var(--text-primary) 12%, transparent)',
-                      }}
-                      className={`h-4 rounded-full ${i % 2 === 0 ? 'w-4/5' : 'w-3/5'}`}
-                    />
-                    <div className="flex items-center gap-2.5">
-                      <div
-                        style={{
-                          backgroundColor:
-                            'color-mix(in srgb, var(--accent) 25%, transparent)',
-                        }}
-                        className="h-3 w-10 rounded-full"
-                      />
-                      <div
-                        style={{
-                          backgroundColor:
-                            'color-mix(in srgb, var(--text-muted) 18%, transparent)',
-                        }}
-                        className="h-3 w-16 rounded-full"
-                      />
-                      <div
-                        style={{
-                          backgroundColor:
-                            'color-mix(in srgb, var(--link-unvisited) 18%, transparent)',
-                        }}
-                        className="h-3 w-24 rounded-full"
-                      />
-                    </div>
-                  </div>
-                  <div className="shrink-0 flex flex-col items-end gap-1.5 pl-2">
-                    <div
-                      style={{
-                        backgroundColor:
-                          'color-mix(in srgb, var(--text-primary) 10%, transparent)',
-                      }}
-                      className="h-6 w-12 rounded-xl"
-                    />
-                    <div
-                      style={{
-                        backgroundColor:
-                          'color-mix(in srgb, var(--text-muted) 16%, transparent)',
-                      }}
-                      className="h-3 w-14 rounded-full"
-                    />
-                  </div>
-                </div>
+                <SearchStoryCard
+                  key={i}
+                  index={i}
+                  skeleton
+                  story={{
+                    id: i,
+                    title: 'An interesting story from the community',
+                    cleanTitle:
+                      i % 2 === 0
+                        ? 'An interesting story from the community'
+                        : 'A new perspective on building things for the web and beyond',
+                    points: 128,
+                    domain: 'example.com',
+                    user: 'reader',
+                    time: Math.floor(Date.now() / 1000) - 3600,
+                    commentsCount: 24,
+                    badges: [],
+                    type: 'story',
+                  }}
+                />
               ))}
             </div>
           )}
@@ -317,85 +277,15 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           {!loading &&
             Boolean(query.trim()) &&
             results.map((story, idx) => (
-              <button
+              <SearchStoryCard
                 key={story.id}
-                type="button"
-                onClick={() => {
+                story={story}
+                index={idx}
+                onSelect={() => {
                   onSelectStory(story);
                   onClose();
                 }}
-                style={{ animationDelay: `${Math.min(idx * 35, 280)}ms` }}
-                className="liquid-glass animate-story-in w-full text-left p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl flex flex-row items-start justify-between gap-2 sm:gap-4 cursor-pointer"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-semibold leading-snug line-clamp-2">
-                    {story.cleanTitle}
-                  </div>
-                  <div
-                    style={{ color: 'var(--text-muted)' }}
-                    className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] sm:text-xs mt-1.5"
-                  >
-                    <span
-                      style={{ color: 'var(--accent)' }}
-                      className="shrink-0 font-semibold"
-                    >
-                      ▲ {story.points}
-                    </span>
-                    {story.domain && (
-                      <span
-                        className="inline-flex items-center gap-1 min-w-0 max-w-[140px] sm:max-w-[200px]"
-                        style={{ color: 'var(--link-unvisited)' }}
-                        title={story.domain}
-                      >
-                        <span
-                          aria-hidden="true"
-                          className="material-symbols-rounded text-[13px] shrink-0"
-                        >
-                          language
-                        </span>
-                        <span className="truncate">{story.domain}</span>
-                      </span>
-                    )}
-                    <span
-                      className="inline-flex items-center gap-1 min-w-0 max-w-[120px]"
-                      title={story.user}
-                    >
-                      <span
-                        aria-hidden="true"
-                        className="material-symbols-rounded text-[13px] shrink-0"
-                      >
-                        person
-                      </span>
-                      <span className="truncate">{story.user}</span>
-                    </span>
-                    <time
-                      dateTime={new Date(story.time * 1000).toISOString()}
-                      title={`Published ${publishedDateFormatter.format(new Date(story.time * 1000))} (${new Date(story.time * 1000).toLocaleString()})`}
-                      className="inline-flex items-center gap-1 shrink-0"
-                    >
-                      <span
-                        aria-hidden="true"
-                        className="material-symbols-rounded text-[13px]"
-                      >
-                        schedule
-                      </span>
-                      {formatRelativeTimeConcise(story.time)}
-                    </time>
-                  </div>
-                </div>
-                <span
-                  className="shrink-0 inline-flex items-center gap-1 text-xs font-semibold"
-                  aria-label={`${story.commentsCount} comments`}
-                >
-                  <span
-                    aria-hidden="true"
-                    className="material-symbols-rounded text-[14px]"
-                  >
-                    forum
-                  </span>
-                  {story.commentsCount}
-                </span>
-              </button>
+              />
             ))}
         </div>
       </SafeViewTransition>

@@ -20,7 +20,9 @@ export function FeedTransition({
   feed,
   loading,
   children,
+  loadingBackground,
 }: {
+  loadingBackground?: React.ReactNode;
   feed: FeedType;
   loading: boolean;
   children: React.ReactNode;
@@ -41,9 +43,13 @@ export function FeedTransition({
       const forward = (to - from + FEEDS.length) % FEEDS.length;
       setDirection(forward <= FEEDS.length / 2 ? 'left' : 'right');
       previousFeed.current = feed;
-      setOutgoing(lastContent.current);
       setSettled(false);
-      setPhase('exit');
+      if (phase === 'idle') {
+        setOutgoing(lastContent.current);
+        setPhase('exit');
+      } else if (phase !== 'exit') {
+        setPhase('middle');
+      }
     } else if (phase === 'idle') {
       lastContent.current = children;
     }
@@ -82,30 +88,27 @@ export function FeedTransition({
       data-direction={direction}
     >
       {phase === 'middle' ? (
-        <div
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
-          className={styles.destination}
-        >
-          <span
-            aria-hidden="true"
-            className={`material-symbols-rounded ${styles.icon}`}
+        <div className={styles.middle}>
+          <div aria-hidden="true" inert className={styles.background}>
+            {loadingBackground}
+          </div>
+          <div
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            className={styles.destination}
           >
-            {destination.icon}
-          </span>
-          <span className={styles.label}>{destination.label}</span>
-          <span className={styles.caption}>
-            {loading ? 'Loading stories…' : 'Opening feed'}
-          </span>
-          {loading && (
             <span
               aria-hidden="true"
-              className={`material-symbols-rounded ${styles.loader}`}
+              className={`material-symbols-rounded ${styles.icon}`}
             >
-              progress_activity
+              {destination.icon}
             </span>
-          )}
+            <span className={styles.label}>{destination.label}</span>
+            <span className={styles.caption}>
+              <span>{loading ? 'Loading stories…' : 'Opening feed'}</span>
+            </span>
+          </div>
         </div>
       ) : (
         <div

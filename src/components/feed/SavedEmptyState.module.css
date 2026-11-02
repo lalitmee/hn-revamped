@@ -1,0 +1,182 @@
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 64px 24px 48px;
+  text-align: center;
+}
+
+.heroIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  border-radius: 20px;
+  background: var(--bg-surface-2);
+  color: var(--accent);
+  font-size: 32px;
+  margin-bottom: 24px;
+}
+
+.heading {
+  color: var(--text-primary);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.copy {
+  max-width: 340px;
+  margin-top: 12px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.demo {
+  width: 100%;
+  max-width: 520px;
+  margin: 56px 0 0;
+  pointer-events: none;
+}
+
+.card {
+  text-align: left;
+}
+
+.card button {
+  position: relative;
+  animation: bookmark-background 2.8s step-end both;
+}
+
+.card button > span {
+  animation: bookmark-fill 2.8s step-end both;
+}
+
+.card button::after {
+  content: 'touch_app';
+  font-family: 'Material Symbols Rounded';
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  color: var(--text-primary);
+  font-size: 28px;
+  line-height: 1;
+  opacity: 0;
+  animation: tap 2.8s ease-in-out both;
+}
+
+.card button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  opacity: 0;
+  animation: ripple 2.8s ease-out both;
+}
+
+@keyframes bookmark-fill {
+  0%,
+  54% {
+    font-variation-settings: 'FILL' 0;
+    color: var(--text-muted);
+  }
+  55%,
+  100% {
+    font-variation-settings: 'FILL' 1;
+    color: var(--accent);
+  }
+}
+
+@keyframes bookmark-background {
+  0%,
+  54% {
+    background-color: transparent;
+  }
+}
+
+.caption {
+  margin-top: 16px;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.confirmation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 12px;
+  color: var(--accent);
+  font-size: 12px;
+  animation: save 2.8s step-end both;
+}
+
+.confirmation span {
+  font-size: 16px;
+}
+
+@keyframes save {
+  0%,
+  54% {
+    opacity: 0;
+  }
+  55%,
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes tap {
+  0%,
+  15% {
+    opacity: 0;
+    transform: translate(16px, 20px);
+  }
+  35%,
+  50% {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+  55% {
+    opacity: 1;
+    transform: translate(-2px, -4px) scale(0.9);
+  }
+  75%,
+  100% {
+    opacity: 0;
+    transform: translate(8px, 12px);
+  }
+}
+
+@keyframes ripple {
+  0%,
+  50% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  55% {
+    opacity: 0.6;
+    transform: scale(0.8);
+  }
+  80%,
+  100% {
+    opacity: 0;
+    transform: scale(1.8);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card button,
+  .card button > span,
+  .confirmation {
+    animation: none;
+  }
+  .card button::after,
+  .card button::before {
+    animation: none;
+    opacity: 0;
+  }
+}

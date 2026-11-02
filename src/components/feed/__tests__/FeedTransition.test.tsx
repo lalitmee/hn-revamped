@@ -43,19 +43,30 @@ describe('feed transitions', () => {
       </FeedTransition>
     );
     rerender(
-      <FeedTransition feed="new" loading>
+      <FeedTransition
+        feed="new"
+        loading
+        loadingBackground={<div data-testid="shimmer-background">Shimmers</div>}
+      >
         Loading
       </FeedTransition>
     );
     tick(140);
     tick(160);
     expect(screen.getByRole('status')).toHaveTextContent('Loading stories');
+    expect(
+      screen.getByTestId('shimmer-background').parentElement
+    ).toHaveAttribute('aria-hidden', 'true');
+    expect(
+      screen.getByTestId('shimmer-background').parentElement
+    ).toHaveAttribute('inert');
+    expect(screen.queryByText('progress_activity')).not.toBeInTheDocument();
     rerender(
       <FeedTransition feed="best" loading>
         Loading
       </FeedTransition>
     );
-    tick(140);
+    expect(container.firstChild).toHaveAttribute('data-phase', 'middle');
     expect(screen.getByRole('status')).toHaveTextContent('Best');
     tick(160);
     expect(container.firstChild).toHaveAttribute('data-phase', 'middle');

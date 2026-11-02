@@ -1,0 +1,103 @@
+.skeleton {
+  pointer-events: none;
+  --skeleton-tone: color-mix(
+    in srgb,
+    var(--accent) var(--shimmer-accent-share, 50%),
+    var(--text-primary)
+  );
+  --skeleton-fill: color-mix(
+    in srgb,
+    var(--skeleton-tone) var(--shimmer-strength, 14%),
+    transparent
+  );
+}
+
+.skeleton :is(article, [data-skeleton-card]) {
+  cursor: default;
+}
+
+.skeleton :is(article, [data-skeleton-card])::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 20%,
+    color-mix(in srgb, var(--skeleton-tone) 9%, transparent) 50%,
+    transparent 80%
+  );
+  transform: translateX(-100%);
+  animation: sweep 1.5s ease-in-out infinite;
+  animation-delay: var(--shimmer-delay, 0ms);
+}
+
+.skeleton :is(article, [data-skeleton-card]) * {
+  color: transparent !important;
+  text-shadow: none;
+}
+
+.skeleton h3,
+.skeleton [data-card-title] {
+  background: var(--skeleton-fill);
+  /* Round every line, including wrapped titles, without changing layout. */
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='22' viewBox='0 0 400 22' preserveAspectRatio='none'%3E%3Crect y='4' width='400' height='11' rx='5.5' fill='white'/%3E%3C/svg%3E");
+  mask-size: 85% 1.375em;
+  mask-repeat: repeat-y;
+  mask-position: left top;
+}
+
+/* Paint each metadata group, not its nested icon/text leaves. Preserve the
+   original dimensions and wrapping, but avoid tiny disconnected squares. */
+.skeleton article div:has(+ h3) > span,
+.skeleton h3 + div > span,
+.skeleton [class*='leading-tight'] > span,
+.skeleton [data-card-title] + div > * {
+  position: relative;
+}
+
+.skeleton article div:has(+ h3) > span::after,
+.skeleton h3 + div > span::after,
+.skeleton [class*='leading-tight'] > span::after,
+.skeleton [data-card-title] + div > *::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 0.65em;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background: var(--skeleton-fill);
+}
+
+.skeleton h3 + div > span > *,
+.skeleton [class*='leading-tight'] > span > *,
+.skeleton [data-card-title] + div > * > * {
+  visibility: hidden;
+}
+
+.skeleton button:not([data-skeleton-card]),
+.skeleton [aria-label$=' comments'],
+.skeleton div:has(> span[class~='tabular-nums']) {
+  background: var(--skeleton-fill) !important;
+}
+
+.skeleton button:not([data-skeleton-card]) > *,
+.skeleton [aria-label$=' comments'] > *,
+.skeleton div:has(> span[class~='tabular-nums']) > * {
+  visibility: hidden;
+}
+
+@keyframes sweep {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton,
+  .skeleton :is(article, [data-skeleton-card])::after {
+    animation: none;
+  }
+}
