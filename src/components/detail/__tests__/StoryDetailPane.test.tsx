@@ -33,7 +33,7 @@ it('shows Discussion when switching from Reader View to a story without a URL', 
   );
   expect(
     container.querySelector('.custom-scrollbar.overflow-y-auto')
-  ).toHaveClass('pt-0');
+  ).toHaveClass('pt-3.5');
   expect(screen.getAllByRole('button', { name: 'Reader View' })).toHaveLength(
     2
   );
@@ -53,4 +53,30 @@ it('shows Discussion when switching from Reader View to a story without a URL', 
   expect(
     screen.queryByText(/text-only Hacker News discussion/)
   ).not.toBeInTheDocument();
+});
+
+it('links the story title and domain to the external URL and supports refreshing discussion', () => {
+  const onRefreshStory = vi.fn();
+  render(
+    <StoryDetailPane
+      story={{ ...story, domain: 'example.com' }}
+      loading={false}
+      activeTab="comments"
+      onTabChange={vi.fn()}
+      isBookmarked={false}
+      onToggleBookmark={vi.fn()}
+      onInternalHnLinkClick={vi.fn()}
+      onRefreshStory={onRefreshStory}
+    />
+  );
+
+  const titleLink = screen.getByRole('link', { name: 'External story' });
+  expect(titleLink).toHaveAttribute('href', 'https://example.com/article');
+
+  const domainLink = screen.getByRole('link', { name: 'example.com' });
+  expect(domainLink).toHaveAttribute('href', 'https://example.com/article');
+
+  const refreshBtn = screen.getByRole('button', { name: 'Refresh discussion' });
+  refreshBtn.click();
+  expect(onRefreshStory).toHaveBeenCalledOnce();
 });

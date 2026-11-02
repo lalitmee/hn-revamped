@@ -30,6 +30,7 @@ interface StoryDetailPaneProps {
   isBookmarked: boolean;
   onToggleBookmark: () => void;
   onInternalHnLinkClick: (storyId: number) => void;
+  onRefreshStory?: () => void;
 }
 
 export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
@@ -43,6 +44,7 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
   isBookmarked,
   onToggleBookmark,
   onInternalHnLinkClick,
+  onRefreshStory,
 }) => {
   const [internalCollapseMode, setInternalCollapseMode] =
     useState<ThreadCollapseMode>(collapseMode ?? 'root-only');
@@ -55,6 +57,7 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
   const threadTriggerRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const mobileSearchInputRef = useRef<HTMLInputElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Focus search input when filter is expanded in top bar
   useEffect(() => {
@@ -67,11 +70,19 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
     }
   }, [isSearchOpen]);
 
-  // Reset search and story text expansion when switching stories
+  // Reset search, story text expansion, and scroll position when switching stories
   useEffect(() => {
     setSearchQuery('');
     setIsSearchOpen(false);
     setIsStoryTextExpanded(false);
+    if (
+      scrollContainerRef.current &&
+      typeof scrollContainerRef.current.scrollTo === 'function'
+    ) {
+      scrollContainerRef.current.scrollTo({ top: 0 });
+    } else if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
   }, [story?.id]);
 
   const isInitialPlaceholder = Boolean(
@@ -364,6 +375,26 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
             </>
           )}
 
+          {onRefreshStory && (
+            <button
+              type="button"
+              aria-label="Refresh discussion"
+              title="Refresh discussion"
+              disabled={loading}
+              onClick={onRefreshStory}
+              style={{ color: 'var(--text-secondary)' }}
+              className="liquid-glass w-8 h-8 rounded-full inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors duration-200 disabled:opacity-50"
+            >
+              <span
+                className={`material-symbols-rounded text-[17px] ${
+                  loading ? 'animate-spin' : ''
+                }`}
+              >
+                refresh
+              </span>
+            </button>
+          )}
+
           <button
             type="button"
             aria-label={isBookmarked ? 'Saved' : 'Save'}
@@ -460,8 +491,9 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
 
       {/* Independently Scrollable Story Content & Comments/Reader Body */}
       <div
+        ref={scrollContainerRef}
         className={`custom-scrollbar px-3 sm:px-5 md:px-6 pb-6 flex-1 min-h-0 overflow-y-auto overscroll-contain ${
-          visibleTab === 'reader' ? 'pt-0' : compact ? 'pt-2' : 'pt-3.5'
+          compact ? 'pt-2' : 'pt-3.5'
         }`}
       >
         <header className={compact ? 'mb-2.5' : 'mb-4'}>
@@ -471,7 +503,18 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
               compact ? 'text-base md:text-lg' : 'text-lg md:text-xl'
             }`}
           >
-            {story.cleanTitle}
+            {story.url ? (
+              <a
+                href={story.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:underline decoration-[color-mix(in_srgb,var(--text-primary)_40%,transparent)] underline-offset-4"
+              >
+                {story.cleanTitle}
+              </a>
+            ) : (
+              story.cleanTitle
+            )}
           </h1>
 
           <div
@@ -487,15 +530,18 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
             <span>by {story.user}</span>
             <span>•</span>
             <span>{formatRelativeTime(story.time)}</span>
-            {story.domain && (
+            {story.domain && story.url && (
               <>
                 <span>•</span>
-                <span
+                <a
+                  href={story.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   style={{ color: 'var(--link-unvisited)' }}
-                  className="font-medium"
+                  className="font-medium hover:underline underline-offset-2"
                 >
                   {story.domain}
-                </span>
+                </a>
               </>
             )}
           </div>

@@ -25,6 +25,7 @@ vi.mock('@/lib/hn-api', () => ({
     comments: [],
   })),
   getCachedStoryWithComments: vi.fn(() => null),
+  invalidateStoryCache: vi.fn(),
 }));
 vi.mock('../AppHeader', () => ({
   AppHeader: ({

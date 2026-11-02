@@ -29,6 +29,7 @@ import {
   fetchStoryWithComments,
   fetchTimeTravelStories,
   getCachedStoryWithComments,
+  invalidateStoryCache,
 } from '@/lib/hn-api';
 import {
   filterStories,
@@ -465,8 +466,6 @@ export const WorkspaceShell: React.FC = () => {
   // Switch Feed Category: Clear current stories & reset selection immediately
   const handleSelectFeed = useCallback(
     (nextFeed: FeedType) => {
-      if (nextFeed === activeFeed && timeTravel === 'live' && !selectedStory)
-        return;
       ++latestStoryReqRef.current;
       if (overlayRef.current) {
         window.history.replaceState(
@@ -474,6 +473,28 @@ export const WorkspaceShell: React.FC = () => {
           ''
         );
         overlayRef.current = null;
+      }
+      if (nextFeed === activeFeed && timeTravel === 'live' && !selectedStory) {
+        invalidateStoryCache();
+        setStories([]);
+        setLoadingFeed(true);
+        fetchFeedStories(nextFeed, 1, loadedPageSizeRef.current)
+          .then((items) => {
+            const seen = new Set<number>();
+            const unique = items.filter((s) => {
+              if (seen.has(s.id)) return false;
+              seen.add(s.id);
+              return true;
+            });
+            setStories(unique);
+            setPage(1);
+            setLoadingFeed(false);
+          })
+          .catch(() => {
+            setStories([]);
+            setLoadingFeed(false);
+          });
+        return;
       }
       syncNavigation({ story: null, feed: nextFeed, time: 'live', view: null });
       setIsAppearanceOpen(false);
@@ -486,6 +507,12 @@ export const WorkspaceShell: React.FC = () => {
     },
     [activeFeed, timeTravel, selectedStory, syncNavigation]
   );
+
+  const handleRefreshSelectedStory = useCallback(() => {
+    if (!selectedStory) return;
+    invalidateStoryCache(selectedStory.id);
+    handleSelectStory(selectedStory, { skipUrlSync: true });
+  }, [selectedStory, handleSelectStory]);
 
   // Switch Time Travel Range: Clear current stories & reset selection immediately
   const handleSelectTimeTravel = useCallback(
@@ -739,7 +766,10 @@ export const WorkspaceShell: React.FC = () => {
         e.preventDefault();
         const res = toggleBookmarkStory(selectedStory);
         setBookmarks(res.bookmarks);
-      } else if (e.key === 'o' && selectedStory?.url) {
+      } else if (
+        (e.key === 'o' || (e.key === 'Enter' && e.target === document.body)) &&
+        selectedStory?.url
+      ) {
         e.preventDefault();
         window.open(selectedStory.url, '_blank', 'noopener,noreferrer');
       } else if (e.key === 'j' || e.key === 'k') {
@@ -749,7 +779,9 @@ export const WorkspaceShell: React.FC = () => {
         const nextIdx =
           e.key === 'j'
             ? Math.min(visibleStories.length - 1, idx + 1)
-            : Math.max(0, idx - 1);
+            : idx <= 0
+              ? 0
+              : idx - 1;
         handleSelectStory(visibleStories[nextIdx]);
       }
     };
@@ -874,6 +906,7 @@ export const WorkspaceShell: React.FC = () => {
                   if (!selectedStory) return;
                   setBookmarks(toggleBookmarkStory(selectedStory).bookmarks);
                 }}
+                onRefreshStory={handleRefreshSelectedStory}
                 onInternalHnLinkClick={(id) =>
                   handleSelectStory(
                     {
@@ -915,6 +948,7 @@ export const WorkspaceShell: React.FC = () => {
                   onToggleBookmark={() =>
                     setBookmarks(toggleBookmarkStory(selectedStory).bookmarks)
                   }
+                  onRefreshStory={handleRefreshSelectedStory}
                   onInternalHnLinkClick={(id) =>
                     handleSelectStory(
                       {
@@ -992,6 +1026,7 @@ export const WorkspaceShell: React.FC = () => {
                   onToggleBookmark={() =>
                     setBookmarks(toggleBookmarkStory(selectedStory).bookmarks)
                   }
+                  onRefreshStory={handleRefreshSelectedStory}
                   onInternalHnLinkClick={(id) =>
                     handleSelectStory({
                       id,

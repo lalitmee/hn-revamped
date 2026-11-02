@@ -121,6 +121,15 @@ const storyCommentsCache = new Map<
   { storyWithComments: HNStoryWithComments; fetchedAt: number }
 >();
 
+export function invalidateStoryCache(storyId?: number): void {
+  if (storyId !== undefined) {
+    storyCommentsCache.delete(storyId);
+    storyItemCache.delete(storyId);
+  } else {
+    feedIdsCache.clear();
+  }
+}
+
 export function getCachedStoryWithComments(
   storyId: number
 ): HNStoryWithComments | null {

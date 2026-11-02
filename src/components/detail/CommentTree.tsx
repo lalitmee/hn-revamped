@@ -44,15 +44,18 @@ interface CommentTreeProps {
 }
 
 function filterCommentNodes(nodes: HNComment[], query: string): HNComment[] {
-  if (!query.trim()) return nodes;
-  const q = query.toLowerCase();
+  const trimmed = query.trim().toLowerCase();
+  if (!trimmed) return nodes;
+  const isAuthorSearch = trimmed.startsWith('@') && trimmed.length > 1;
+  const authorQuery = isAuthorSearch ? trimmed.slice(1) : trimmed;
   const filtered: HNComment[] = [];
 
   for (const node of nodes) {
     const childMatches = filterCommentNodes(node.children, query);
-    const selfMatches =
-      node.user.toLowerCase().includes(q) ||
-      node.text.toLowerCase().includes(q);
+    const selfMatches = isAuthorSearch
+      ? node.user.toLowerCase().includes(authorQuery)
+      : node.user.toLowerCase().includes(trimmed) ||
+        node.text.toLowerCase().includes(trimmed);
     if (selfMatches || childMatches.length > 0) {
       filtered.push({
         ...node,

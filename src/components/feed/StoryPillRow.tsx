@@ -145,6 +145,15 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
       />
       <div className="sm:hidden w-full min-w-0 flex flex-col gap-1">
         <div className="flex items-start gap-1.5 min-w-0">
+          {isRead && !isSelected && (
+            <span
+              aria-hidden="true"
+              style={{ color: 'var(--text-muted)' }}
+              className="material-symbols-rounded text-[15px] mt-0.5 shrink-0"
+            >
+              check
+            </span>
+          )}
           <h3
             style={{ color: 'var(--text-primary)' }}
             className="min-w-0 flex-1 text-[15px] font-semibold leading-snug break-words line-clamp-2"
@@ -181,29 +190,33 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
             className="flex flex-1 min-w-0 flex-nowrap items-center gap-x-1.5 overflow-hidden text-[11px] leading-tight"
             style={{ color: 'var(--text-muted)' }}
           >
+            <span className="font-mono shrink-0">#{index}</span>
             <span
               className="font-bold shrink-0"
-              style={{ color: 'var(--accent)' }}
+              style={{
+                color:
+                  isRead && !isSelected ? 'var(--text-muted)' : 'var(--accent)',
+              }}
             >
               ▲ {story.points}
             </span>
-            <span
-              title={story.domain}
-              className="inline-flex items-center gap-0.5 min-w-0 max-w-[100px]"
-              style={{
-                color: story.domain ? 'var(--link-unvisited)' : undefined,
-              }}
-            >
-              {story.domain && (
+            {story.domain && (
+              <span
+                title={story.domain}
+                className="inline-flex items-center gap-0.5 min-w-0 max-w-[100px]"
+                style={{
+                  color: 'var(--link-unvisited)',
+                }}
+              >
                 <span
                   aria-hidden="true"
                   className="material-symbols-rounded text-[13px] shrink-0"
                 >
                   language
                 </span>
-              )}
-              <span className="truncate">{story.domain ?? `#${index}`}</span>
-            </span>
+                <span className="truncate">{story.domain}</span>
+              </span>
+            )}
             <span className="inline-flex items-center gap-0.5 min-w-0 max-w-[70px]">
               <span
                 aria-hidden="true"

@@ -128,6 +128,15 @@ describe('CommentTree & Progressive Depth-Gated Rendering', () => {
     fireEvent.click(clearBtn);
 
     expect(screen.getByText('tptacek')).toBeInTheDocument();
+
+    // Filter specifically by @author prefix
+    fireEvent.change(input, { target: { value: '@tptacek' } });
+    expect(screen.getByText('tptacek')).toBeInTheDocument();
+
+    fireEvent.change(input, { target: { value: '@nonexistent' } });
+    expect(
+      screen.getByText('No comments match your filter.')
+    ).toBeInTheDocument();
   });
 
   it('calculates adaptive root, depth, and sibling budgets based on total comment count', () => {

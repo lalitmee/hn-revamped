@@ -66,7 +66,7 @@ describe('StoryPillRow Component', () => {
     expect(screen.getAllByText(mockStory.cleanTitle)).toHaveLength(2);
     expect(screen.getAllByText('428')[0]).toBeInTheDocument();
     expect(screen.getAllByText('214')[0]).toBeInTheDocument();
-    expect(screen.getByText('#3')).toBeInTheDocument();
+    expect(screen.getAllByText('#3')).toHaveLength(2);
     expect(screen.getAllByText('zed.dev')[0]).toBeInTheDocument();
   });
 
