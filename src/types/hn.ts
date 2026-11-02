@@ -9,7 +9,16 @@ export type DetailTab = 'comments' | 'reader';
 export type ThreadCollapseMode = 'expanded' | 'root-only' | 'collapse-all';
 
 export type FontFamilyId =
-  'sans' | 'bookerly' | 'serif' | 'hyperlegible' | 'monolisa' | 'mono';
+  | 'sans'
+  | 'inter'
+  | 'dm-sans'
+  | 'source-sans'
+  | 'hyperlegible'
+  | 'bookerly'
+  | 'literata'
+  | 'serif'
+  | 'lora'
+  | 'merriweather';
 
 export type LineWidthOption = '55ch' | '65ch' | '75ch' | 'full';
 

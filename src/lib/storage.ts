@@ -1,5 +1,5 @@
 import { HNStory, ReadHistoryEntry, UserPreferences } from '@/types/hn';
-import { DEFAULT_PREFERENCES } from './themes';
+import { DEFAULT_PREFERENCES, FONT_FAMILIES } from './themes';
 
 const PREFS_KEY = 'hn_revamped_prefs_v1';
 const TYPOGRAPHY_MIGRATED_KEY = 'hn_revamped_typo_v2';
@@ -60,6 +60,10 @@ export function loadPreferences(): UserPreferences {
     }
     if (merged.customAccent == null) {
       merged.customAccent = DEFAULT_PREFERENCES.customAccent;
+      window.localStorage.setItem(PREFS_KEY, JSON.stringify(merged));
+    }
+    if (!(merged.fontFamily in FONT_FAMILIES)) {
+      merged.fontFamily = DEFAULT_PREFERENCES.fontFamily;
       window.localStorage.setItem(PREFS_KEY, JSON.stringify(merged));
     }
 

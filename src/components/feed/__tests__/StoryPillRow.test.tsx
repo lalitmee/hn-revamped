@@ -68,8 +68,8 @@ describe('StoryPillRow Component', () => {
       const title = mobile.querySelector('h3')!;
       expect(title).toHaveClass(compact ? 'text-[15px]' : 'text-[17px]');
       expect(title.classList.contains('line-clamp-2')).toBe(compact);
-      expect(mobile.querySelector('.flex-wrap') !== null).toBe(!compact);
-      expect(mobile.querySelector('button')).toHaveClass('w-8', 'h-8');
+      expect(mobile.querySelector('.flex-nowrap')).not.toBeNull();
+      expect(mobile.querySelector('button')).toHaveClass('w-6', 'h-6');
     }
   );
 

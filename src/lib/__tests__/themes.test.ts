@@ -8,11 +8,19 @@ import {
 } from '../themes';
 
 describe('Multi-Source Theme Engine', () => {
-  it('includes Bookerly and MonoLisa alongside standard font families', () => {
+  it('defines all 10 curated reading and presentation font families', () => {
+    expect(Object.keys(FONT_FAMILIES)).toHaveLength(10);
+    expect(FONT_FAMILIES.sans.label).toBe('Editorial Sans');
+    expect(FONT_FAMILIES.inter.label).toBe('Inter');
+    expect(FONT_FAMILIES['dm-sans'].label).toBe('DM Sans');
+    expect(FONT_FAMILIES['source-sans'].label).toBe('Source Sans 3');
+    expect(FONT_FAMILIES.hyperlegible.label).toBe('Hyperlegible');
     expect(FONT_FAMILIES.bookerly.label).toBe('Kindle Bookerly');
     expect(FONT_FAMILIES.bookerly.cssValue).toContain('Bookerly');
-    expect(FONT_FAMILIES.monolisa.label).toBe('MonoLisa Code');
-    expect(FONT_FAMILIES.monolisa.cssValue).toContain('MonoLisa');
+    expect(FONT_FAMILIES.literata.label).toBe('Literata');
+    expect(FONT_FAMILIES.serif.label).toBe('Literary Serif');
+    expect(FONT_FAMILIES.lora.label).toBe('Lora');
+    expect(FONT_FAMILIES.merriweather.label).toBe('Merriweather');
   });
   it('defines all 11 reader and code themes with complete semantic tokens', () => {
     const themeIds = Object.keys(THEMES);

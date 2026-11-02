@@ -1308,9 +1308,9 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
 
                     <div
                       style={rowDivider}
-                      className="flex flex-wrap items-center justify-between gap-3 py-5 border-b"
+                      className="flex items-center justify-between gap-2 sm:gap-3 py-5 border-b"
                     >
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <div className="text-sm font-medium">Reading width</div>
                         <div
                           style={{ color: 'var(--text-muted)' }}
@@ -1336,7 +1336,7 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                         aria-expanded={isLineWidthSheetOpen}
                         aria-label={`Choose reading width. Current: ${activeLineWidth.label}`}
                         onClick={() => setIsLineWidthSheetOpen(true)}
-                        className="liquid-glass sm:hidden min-h-11 px-3.5 rounded-xl inline-flex items-center gap-2 text-sm font-medium"
+                        className="liquid-glass sm:hidden shrink-0 self-center min-h-11 px-3.5 rounded-xl inline-flex items-center gap-2 text-sm font-medium"
                       >
                         <span
                           className="material-symbols-rounded text-[17px]"
@@ -1374,9 +1374,9 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                         role="group"
                         aria-label={label}
                         style={rowDivider}
-                        className="flex flex-wrap items-center justify-between gap-3 py-5 border-b"
+                        className="flex items-center justify-between gap-2 sm:gap-3 py-5 border-b"
                       >
-                        <div>
+                        <div className="min-w-0 flex-1">
                           <div className="text-sm font-medium">{label}</div>
                           <div
                             style={{ color: 'var(--text-muted)' }}
@@ -1408,7 +1408,7 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({
                             ]}
                           />
                         </div>
-                        <div className="sm:hidden">
+                        <div className="sm:hidden shrink-0 self-center">
                           <GlassSegmentedControl<CardDensity>
                             size="sm"
                             value={

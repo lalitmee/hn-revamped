@@ -166,10 +166,10 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
             type="button"
             aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark story'}
             onClick={(e) => onToggleBookmark(story, e)}
-            className="w-8 h-8 shrink-0 inline-flex items-center justify-center rounded-md hover:bg-[var(--bg-surface-2)]"
+            className="w-6 h-6 shrink-0 inline-flex items-center justify-center rounded-md hover:bg-[var(--bg-surface-2)]"
           >
             <span
-              className={`material-symbols-rounded text-[16px] ${isBookmarked ? 'filled' : ''}`}
+              className={`material-symbols-rounded text-[19px] leading-none ${isBookmarked ? 'filled' : ''}`}
               style={{
                 color: isBookmarked ? 'var(--accent)' : 'var(--text-muted)',
               }}
@@ -180,7 +180,7 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
         </div>
         <div className="flex items-center gap-1.5 min-w-0">
           <div
-            className={`flex flex-1 min-w-0 items-center leading-tight ${compact ? 'flex-nowrap gap-x-1.5 overflow-hidden text-[11px]' : 'flex-wrap gap-x-2 gap-y-1.5 text-xs'}`}
+            className={`flex flex-1 min-w-0 flex-nowrap items-center overflow-hidden leading-tight ${compact ? 'gap-x-1.5 text-[11px]' : 'gap-x-2 text-xs'}`}
             style={{ color: 'var(--text-muted)' }}
           >
             <span className="font-mono shrink-0">#{index}</span>
@@ -196,7 +196,7 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
             {story.domain && (
               <span
                 title={story.domain}
-                className="inline-flex items-center gap-0.5 min-w-0 max-w-[100px]"
+                className="inline-flex items-center gap-0.5 shrink min-w-[40px] max-w-[110px]"
                 style={{
                   color: 'var(--link-unvisited)',
                 }}
@@ -210,7 +210,7 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
                 <span className="truncate">{story.domain}</span>
               </span>
             )}
-            <span className="inline-flex items-center gap-0.5 min-w-0 max-w-[70px]">
+            <span className="inline-flex items-center gap-0.5 shrink min-w-[36px] max-w-[80px]">
               <span
                 aria-hidden="true"
                 className="material-symbols-rounded text-[13px] shrink-0"
@@ -226,9 +226,7 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
               >
                 schedule
               </span>
-              {compact
-                ? formatRelativeTimeConcise(story.time)
-                : formatRelativeTime(story.time)}
+              {formatRelativeTimeConcise(story.time)}
             </span>
           </div>
           <div className="flex items-center gap-1 shrink-0">

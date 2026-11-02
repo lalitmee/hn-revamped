@@ -237,25 +237,41 @@ export const FONT_FAMILIES: Record<
     cssValue:
       "'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif",
   },
-  bookerly: {
-    label: 'Kindle Bookerly',
-    cssValue: "'Bookerly', 'Newsreader', 'Charter', 'Georgia', serif",
+  inter: {
+    label: 'Inter',
+    cssValue: "'Inter', system-ui, -apple-system, sans-serif",
   },
-  serif: {
-    label: 'Literary Serif',
-    cssValue: "'Newsreader', 'Charter', 'Georgia', serif",
+  'dm-sans': {
+    label: 'DM Sans',
+    cssValue: "'DM Sans', 'Inter', system-ui, sans-serif",
+  },
+  'source-sans': {
+    label: 'Source Sans 3',
+    cssValue: "'Source Sans 3', system-ui, -apple-system, sans-serif",
   },
   hyperlegible: {
     label: 'Hyperlegible',
     cssValue: "'Atkinson Hyperlegible', system-ui, sans-serif",
   },
-  monolisa: {
-    label: 'MonoLisa Code',
-    cssValue: "'MonoLisa', 'JetBrains Mono', 'Fira Code', monospace",
+  bookerly: {
+    label: 'Kindle Bookerly',
+    cssValue: "'Bookerly', 'Literata', 'Newsreader', 'Georgia', serif",
   },
-  mono: {
-    label: 'Developer Mono',
-    cssValue: "'JetBrains Mono', 'Fira Code', monospace",
+  literata: {
+    label: 'Literata',
+    cssValue: "'Literata', 'Bookerly', 'Georgia', serif",
+  },
+  serif: {
+    label: 'Literary Serif',
+    cssValue: "'Newsreader', 'Charter', 'Georgia', serif",
+  },
+  lora: {
+    label: 'Lora',
+    cssValue: "'Lora', 'Georgia', serif",
+  },
+  merriweather: {
+    label: 'Merriweather',
+    cssValue: "'Merriweather', 'Georgia', serif",
   },
 };
 

@@ -54,6 +54,45 @@ describe('mobile appearance controls', () => {
     );
   });
 
+  it('keeps mobile density toggles beside flexible two-line descriptions', () => {
+    render(
+      <AppearanceModal
+        isOpen
+        preferences={{ ...DEFAULT_PREFERENCES }}
+        onUpdate={vi.fn()}
+        onClose={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByRole('tab', { name: 'Text' }));
+
+    for (const label of ['Feed density', 'Discussion density']) {
+      const group = screen.getByRole('group', { name: label });
+      expect(group).toHaveClass('items-center');
+      expect(group).not.toHaveClass('flex-wrap');
+      expect(group.firstElementChild).toHaveClass('min-w-0', 'flex-1');
+      expect(group.querySelector('.sm\\:hidden')).toHaveClass(
+        'shrink-0',
+        'self-center'
+      );
+    }
+    expect(
+      screen.getByText(
+        'Spacing for the discussion header, story text, and comments'
+      )
+    ).toBeInTheDocument();
+    const widthDescription = screen.getByText(
+      'Column width for comments and reader mode'
+    );
+    const widthRow = widthDescription.closest('.flex.items-center')!;
+    expect(widthRow).not.toHaveClass('flex-wrap');
+    expect(widthDescription.parentElement).toHaveClass('min-w-0', 'flex-1');
+    expect(
+      screen.getByRole('button', {
+        name: 'Choose reading width. Current: Optimal',
+      })
+    ).toHaveClass('shrink-0', 'self-center');
+  });
+
   it('resets both densities to their independent defaults', () => {
     const onUpdate = vi.fn();
     render(
