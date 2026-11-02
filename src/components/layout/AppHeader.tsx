@@ -193,7 +193,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               const touch = event.changedTouches[0];
               const dx = touch.clientX - start.x;
               const dy = touch.clientY - start.y;
-              if (Math.abs(dy) < 35 || Math.abs(dy) <= Math.abs(dx)) return;
+              if (Math.abs(dy) < 24 || Math.abs(dy) <= Math.abs(dx)) return;
               suppressFeedClickRef.current = true;
               const index = FEED_TABS.findIndex((tab) => tab.id === activeFeed);
               const direction = dy < 0 ? 'up' : 'down';
@@ -227,7 +227,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               }
               feedTriggerRef.current?.click();
             }}
-            className={`liquid-glass fixed bottom-[calc(env(safe-area-inset-bottom)+2rem)] right-8 z-40 lg:hidden w-14 h-14 rounded-full border shadow-[0_6px_20px_rgba(0,0,0,0.3),0_2px_6px_rgba(0,0,0,0.18)] flex items-center justify-center select-none transition-colors motion-reduce:transition-none ${
+            className={`liquid-glass fixed bottom-[calc(env(safe-area-inset-bottom)+3.25rem)] right-6 z-40 lg:hidden w-14 h-14 rounded-full border shadow-[0_6px_20px_rgba(0,0,0,0.3),0_2px_6px_rgba(0,0,0,0.18)] flex items-center justify-center select-none transition-colors motion-reduce:transition-none ${
               swipeAnimation?.direction === 'up'
                 ? 'swipe-button-nudge-up'
                 : swipeAnimation?.direction === 'down'
