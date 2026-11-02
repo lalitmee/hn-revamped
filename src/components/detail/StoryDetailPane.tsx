@@ -169,7 +169,7 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
             'color-mix(in srgb, var(--bg-canvas) 92%, transparent)',
           borderColor: 'var(--border-subtle)',
         }}
-        className="shrink-0 sticky top-0 z-20 backdrop-blur-xl px-2 sm:px-5 md:px-6 py-2 border-b flex flex-wrap items-center justify-between gap-1.5 max-sm:h-[53px] max-sm:flex-nowrap"
+        className="shrink-0 sticky top-0 z-20 backdrop-blur-xl px-2.5 sm:px-5 md:px-6 py-2 border-b flex flex-wrap items-center justify-between gap-1.5 max-sm:h-[53px] max-sm:flex-nowrap"
       >
         {visibleTab === 'comments' && isSearchOpen && (
           <div className="sm:hidden w-full liquid-glass rounded-full px-3 h-9 flex items-center gap-2">
@@ -254,7 +254,7 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
         </div>
 
         <div
-          className={`${visibleTab === 'comments' && isSearchOpen ? 'max-sm:hidden' : ''} flex items-center gap-0.5 sm:gap-2`}
+          className={`${visibleTab === 'comments' && isSearchOpen ? 'max-sm:hidden' : ''} flex items-center gap-1 sm:gap-2`}
         >
           {visibleTab === 'comments' && (
             <>
@@ -312,7 +312,7 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
                   }}
                   className="liquid-glass w-8 h-8 rounded-full inline-flex items-center justify-center cursor-pointer hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors duration-200"
                 >
-                  <span className="material-symbols-rounded text-[17px]">
+                  <span className="material-symbols-rounded text-[18px] sm:text-[17px]">
                     filter_list
                   </span>
                 </button>
@@ -329,7 +329,7 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
               >
                 <span
                   aria-hidden="true"
-                  className="material-symbols-rounded text-[17px]"
+                  className="material-symbols-rounded text-[18px]"
                 >
                   tune
                 </span>
@@ -386,7 +386,7 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
               className="liquid-glass w-8 h-8 rounded-full inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors duration-200 disabled:opacity-50"
             >
               <span
-                className={`material-symbols-rounded text-[17px] ${
+                className={`material-symbols-rounded text-[18px] sm:text-[17px] ${
                   loading ? 'animate-spin' : ''
                 }`}
               >
@@ -410,7 +410,7 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
             }`}
           >
             <span
-              className={`material-symbols-rounded text-[17px] ${
+              className={`material-symbols-rounded text-[18px] sm:text-[17px] ${
                 isBookmarked ? 'filled' : ''
               }`}
             >
@@ -428,7 +428,7 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
               style={{ color: 'var(--link-unvisited)' }}
               className="liquid-glass w-8 h-8 rounded-full inline-flex items-center justify-center shrink-0 hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] cursor-pointer transition-colors duration-200"
             >
-              <span className="material-symbols-rounded text-[17px]">
+              <span className="material-symbols-rounded text-[18px] sm:text-[17px]">
                 open_in_new
               </span>
             </a>
