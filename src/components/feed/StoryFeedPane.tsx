@@ -1,6 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useMemo,
+} from 'react';
 import { FeedType, HNStory, ReadHistoryEntry } from '@/types/hn';
 import { getNewCommentsDelta } from '@/lib/storage';
 import { StoryPillRow } from './StoryPillRow';
@@ -109,7 +115,7 @@ const FeedContents: React.FC<StoryFeedPaneProps> = ({
   }, [deduplicatedStories.length]);
 
   // Measure the active story card so the shared selection indicator can glide between posts
-  useEffect(() => {
+  useLayoutEffect(() => {
     const updateIndicator = () => {
       const container = containerRef.current;
       if (!container || !selectedStoryId) {
@@ -226,13 +232,14 @@ const FeedContents: React.FC<StoryFeedPaneProps> = ({
             transform: `translate3d(${indicatorRect.left}px, ${indicatorRect.top}px, 0)`,
             width: `${indicatorRect.width}px`,
             height: `${indicatorRect.height}px`,
-            backgroundColor: 'var(--bg-surface-active)',
+            backgroundColor:
+              'color-mix(in srgb, var(--accent) 7%, transparent)',
             borderColor:
               'color-mix(in srgb, var(--accent) 55%, var(--border-subtle))',
             transition:
               'transform 320ms cubic-bezier(0.22, 1, 0.36, 1), height 260ms cubic-bezier(0.22, 1, 0.36, 1), width 200ms ease, opacity 200ms ease',
           }}
-          className={`pointer-events-none absolute top-0 left-0 z-0 overflow-hidden border will-change-transform ${compact ? 'rounded-xl' : 'rounded-2xl'}`}
+          className={`pointer-events-none absolute top-0 left-0 z-20 overflow-hidden border will-change-transform ${compact ? 'rounded-xl' : 'rounded-2xl'}`}
         >
           <span
             style={{ backgroundColor: 'var(--accent)' }}

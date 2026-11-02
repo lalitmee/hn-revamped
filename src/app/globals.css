@@ -380,6 +380,116 @@ body::-webkit-scrollbar-thumb:hover,
   }
 }
 
+@keyframes swipeButtonNudgeUp {
+  0% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-8px);
+  }
+  65% {
+    transform: translateY(2px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes swipeButtonNudgeDown {
+  0% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(8px);
+  }
+  65% {
+    transform: translateY(-2px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes swipeIconExitUp {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-130%);
+    opacity: 0;
+  }
+}
+
+@keyframes swipeIconEnterFromBottom {
+  0% {
+    transform: translateY(130%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes swipeIconExitDown {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(130%);
+    opacity: 0;
+  }
+}
+
+@keyframes swipeIconEnterFromTop {
+  0% {
+    transform: translateY(-130%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.swipe-button-nudge-up {
+  animation: swipeButtonNudgeUp 240ms cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.swipe-button-nudge-down {
+  animation: swipeButtonNudgeDown 240ms cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.swipe-icon-exit-up {
+  animation: swipeIconExitUp 220ms cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+}
+
+.swipe-icon-enter-up {
+  animation: swipeIconEnterFromBottom 220ms cubic-bezier(0.2, 0.9, 0.3, 1)
+    forwards;
+}
+
+.swipe-icon-exit-down {
+  animation: swipeIconExitDown 220ms cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+}
+
+.swipe-icon-enter-down {
+  animation: swipeIconEnterFromTop 220ms cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .swipe-button-nudge-up,
+  .swipe-button-nudge-down,
+  .swipe-icon-exit-up,
+  .swipe-icon-enter-up,
+  .swipe-icon-exit-down,
+  .swipe-icon-enter-down {
+    animation: none !important;
+  }
+}
+
 @media (max-width: 639px) and (prefers-reduced-motion: no-preference) {
   .appearance-tab-panel {
     view-transition-name: appearance-tab-panel;

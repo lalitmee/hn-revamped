@@ -99,7 +99,7 @@ export function SearchStoryCard({
           </div>
         </div>
         <span
-          className="shrink-0 inline-flex items-center gap-1 text-xs font-semibold"
+          className="shrink-0 rounded-lg px-1.5 py-0.5 inline-flex items-center gap-1 text-xs font-semibold"
           aria-label={`${story.commentsCount} comments`}
         >
           <span

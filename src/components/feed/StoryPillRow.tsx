@@ -113,17 +113,13 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
       style={{
         backgroundColor: showInlineSelection
           ? 'var(--bg-surface-active)'
-          : isSelected
-            ? 'transparent'
-            : 'var(--bg-surface-1)',
+          : 'var(--bg-surface-1)',
         borderColor: showInlineSelection
           ? 'color-mix(in srgb, var(--accent) 55%, var(--border-subtle))'
-          : isSelected
-            ? 'transparent'
-            : 'var(--border-subtle)',
+          : 'var(--border-subtle)',
         opacity: isRead && !isSelected ? 0.68 : 1,
         transition:
-          'background-color 240ms cubic-bezier(0.22, 1, 0.36, 1), border-color 240ms cubic-bezier(0.22, 1, 0.36, 1), transform 200ms cubic-bezier(0.22, 1, 0.36, 1)',
+          'background-color 240ms cubic-bezier(0.22, 1, 0.36, 1), border-color 240ms cubic-bezier(0.22, 1, 0.36, 1), opacity 240ms cubic-bezier(0.22, 1, 0.36, 1), transform 200ms cubic-bezier(0.22, 1, 0.36, 1)',
       }}
       className={`group relative z-10 overflow-hidden flex items-center border cursor-pointer hover:brightness-105 active:scale-[0.995] focus:outline-none ${
         compact
@@ -231,10 +227,16 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
           </div>
           <div className="flex items-center gap-1 shrink-0">
             <span
-              className="h-7 px-1.5 inline-flex items-center gap-1 text-[11px]"
+              className={`h-7 px-1.5 rounded-lg inline-flex items-center gap-1 font-medium ${
+                compact ? 'text-[11.5px]' : 'text-[12.5px]'
+              }`}
               aria-label={`${story.commentsCount} comments`}
             >
-              <span className="material-symbols-rounded text-[14px]">
+              <span
+                className={`material-symbols-rounded ${
+                  compact ? 'text-[14px]' : 'text-[15px]'
+                }`}
+              >
                 forum
               </span>
               {story.commentsCount}
@@ -247,9 +249,10 @@ export const StoryPillRow: React.FC<StoryPillRowProps> = ({
         {/* Left Zone: Score & Heat Pill */}
         <div
           style={{
-            backgroundColor: isHot
-              ? 'color-mix(in srgb, var(--accent) 18%, transparent)'
-              : 'var(--bg-surface-2)',
+            backgroundColor:
+              isHot && (!isRead || isSelected)
+                ? 'color-mix(in srgb, var(--accent) 18%, transparent)'
+                : 'var(--bg-surface-2)',
             color:
               isRead && !isSelected ? 'var(--text-muted)' : 'var(--accent)',
           }}

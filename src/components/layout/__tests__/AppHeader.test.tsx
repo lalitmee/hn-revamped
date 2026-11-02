@@ -31,7 +31,9 @@ describe('mobile feed picker', () => {
     const { container } = render(
       <AppHeader {...props} onSelectFeed={onSelectFeed} />
     );
-    fireEvent.click(container.querySelector('button[aria-haspopup="dialog"]')!);
+    const trigger = container.querySelector('button[aria-haspopup="dialog"]')!;
+    expect(trigger).toHaveClass('text-sm', 'px-3');
+    fireEvent.click(trigger);
     const sheet = screen.getByRole('dialog', { name: 'Choose a story feed' });
     expect(sheet).toBeInTheDocument();
     expect(
@@ -195,5 +197,43 @@ describe('mobile feed picker', () => {
       'aria-label',
       'HN Revamped'
     );
+  });
+
+  it('animates in the swipe direction and tracks touch moves', () => {
+    const onSelectFeed = vi.fn();
+    render(<AppHeader {...props} onSelectFeed={onSelectFeed} />);
+    const trigger = screen.getByRole('button', {
+      name: /Swipe up or down to switch feeds/,
+    });
+
+    // Touch move tracks vertical drag
+    fireEvent.touchStart(trigger, {
+      touches: [{ clientX: 20, clientY: 90 }],
+    });
+    fireEvent.touchMove(trigger, {
+      touches: [{ clientX: 20, clientY: 60 }],
+    });
+    expect(trigger).toHaveStyle({ transform: 'translateY(-10.5px)' });
+
+    // Swipe up
+    fireEvent.touchEnd(trigger, {
+      changedTouches: [{ clientX: 22, clientY: 40 }],
+    });
+    expect(onSelectFeed).toHaveBeenCalledWith('new');
+    expect(trigger).toHaveClass('swipe-button-nudge-up');
+    expect(trigger.querySelector('.swipe-icon-exit-up')).toBeInTheDocument();
+    expect(trigger.querySelector('.swipe-icon-enter-up')).toBeInTheDocument();
+
+    // Swipe down
+    fireEvent.touchStart(trigger, {
+      touches: [{ clientX: 20, clientY: 40 }],
+    });
+    fireEvent.touchEnd(trigger, {
+      changedTouches: [{ clientX: 20, clientY: 90 }],
+    });
+    expect(onSelectFeed).toHaveBeenLastCalledWith('saved');
+    expect(trigger).toHaveClass('swipe-button-nudge-down');
+    expect(trigger.querySelector('.swipe-icon-exit-down')).toBeInTheDocument();
+    expect(trigger.querySelector('.swipe-icon-enter-down')).toBeInTheDocument();
   });
 });

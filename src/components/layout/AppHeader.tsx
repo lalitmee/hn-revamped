@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { FeedType, LayoutMode } from '@/types/hn';
 import {
@@ -64,9 +64,22 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   const [logoBackAnimation, setLogoBackAnimation] = useState<
     'enter' | 'exit' | null
   >(null);
+  const [swipeAnimation, setSwipeAnimation] = useState<{
+    direction: 'up' | 'down';
+    fromIcon: string;
+    toIcon: string;
+  } | null>(null);
+  const [dragOffsetY, setDragOffsetY] = useState(0);
+  const animationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeFeedTab = FEED_TABS.find((tab) => tab.id === activeFeed)!;
 
   useLayoutEffect(() => setPortalReady(true), []);
+
+  useEffect(() => {
+    return () => {
+      if (animationTimerRef.current) clearTimeout(animationTimerRef.current);
+    };
+  }, []);
 
   useLayoutEffect(() => {
     if (previousBackActionRef.current === backActionVisible) return;
@@ -115,11 +128,11 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           aria-haspopup="dialog"
           aria-expanded={isFeedSheetOpen}
           onClick={() => setIsFeedSheetOpen(true)}
-          className="liquid-glass lg:hidden h-10 rounded-full px-2.5 inline-flex items-center gap-1 text-xs font-semibold shrink-0"
+          className="liquid-glass lg:hidden h-10 rounded-full px-3 inline-flex items-center gap-1.5 text-sm font-semibold shrink-0"
         >
           <span
             aria-hidden="true"
-            className="material-symbols-rounded text-[19px]"
+            className="material-symbols-rounded text-[20px]"
             style={{ color: 'var(--accent)' }}
           >
             {activeFeedTab.icon}
@@ -127,7 +140,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           <span>{activeFeedTab.label}</span>
           <span
             aria-hidden="true"
-            className="material-symbols-rounded text-[16px]"
+            className="material-symbols-rounded text-[17px]"
           >
             expand_more
           </span>
@@ -148,6 +161,10 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 'color-mix(in srgb, var(--accent) 9%, var(--bg-surface-1))',
               borderColor:
                 'color-mix(in srgb, var(--accent) 30%, var(--border-subtle))',
+              transform: dragOffsetY
+                ? `translateY(${dragOffsetY}px)`
+                : undefined,
+              transition: dragOffsetY ? 'none' : undefined,
             }}
             onTouchStart={(event) => {
               if (event.touches.length !== 1) return;
@@ -158,9 +175,20 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               };
               suppressFeedClickRef.current = false;
             }}
+            onTouchMove={(event) => {
+              if (event.touches.length !== 1 || !feedTouchStartRef.current)
+                return;
+              const touch = event.touches[0];
+              const dy = touch.clientY - feedTouchStartRef.current.y;
+              const dx = touch.clientX - feedTouchStartRef.current.x;
+              if (Math.abs(dy) > Math.abs(dx)) {
+                setDragOffsetY(Math.max(-14, Math.min(14, dy * 0.35)));
+              }
+            }}
             onTouchEnd={(event) => {
               const start = feedTouchStartRef.current;
               feedTouchStartRef.current = null;
+              setDragOffsetY(0);
               if (!start || event.changedTouches.length !== 1) return;
               const touch = event.changedTouches[0];
               const dx = touch.clientX - start.x;
@@ -168,13 +196,29 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               if (Math.abs(dy) < 35 || Math.abs(dy) <= Math.abs(dx)) return;
               suppressFeedClickRef.current = true;
               const index = FEED_TABS.findIndex((tab) => tab.id === activeFeed);
+              const direction = dy < 0 ? 'up' : 'down';
               const nextIndex =
-                (index + (dy < 0 ? 1 : -1) + FEED_TABS.length) %
+                (index + (direction === 'up' ? 1 : -1) + FEED_TABS.length) %
                 FEED_TABS.length;
-              onSelectFeed(FEED_TABS[nextIndex].id);
+              const nextFeed = FEED_TABS[nextIndex];
+
+              if (animationTimerRef.current) {
+                clearTimeout(animationTimerRef.current);
+              }
+              setSwipeAnimation({
+                direction,
+                fromIcon: activeFeedTab.icon,
+                toIcon: nextFeed.icon,
+              });
+              animationTimerRef.current = setTimeout(() => {
+                setSwipeAnimation(null);
+              }, 240);
+
+              onSelectFeed(nextFeed.id);
             }}
             onTouchCancel={() => {
               feedTouchStartRef.current = null;
+              setDragOffsetY(0);
             }}
             onClick={() => {
               if (suppressFeedClickRef.current) {
@@ -183,15 +227,52 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               }
               feedTriggerRef.current?.click();
             }}
-            className="liquid-glass fixed bottom-[calc(env(safe-area-inset-bottom)+3rem)] right-6 z-40 lg:hidden w-14 h-14 rounded-full border shadow-[0_6px_20px_rgba(0,0,0,0.3),0_2px_6px_rgba(0,0,0,0.18)] flex items-center justify-center select-none transition-colors motion-reduce:transition-none"
+            className={`liquid-glass fixed bottom-[calc(env(safe-area-inset-bottom)+2rem)] right-8 z-40 lg:hidden w-14 h-14 rounded-full border shadow-[0_6px_20px_rgba(0,0,0,0.3),0_2px_6px_rgba(0,0,0,0.18)] flex items-center justify-center select-none transition-colors motion-reduce:transition-none ${
+              swipeAnimation?.direction === 'up'
+                ? 'swipe-button-nudge-up'
+                : swipeAnimation?.direction === 'down'
+                  ? 'swipe-button-nudge-down'
+                  : ''
+            }`}
           >
-            <span
-              aria-hidden="true"
-              className="material-symbols-rounded text-[28px]"
-              style={{ color: 'var(--accent)' }}
-            >
-              {activeFeedTab.icon}
-            </span>
+            <div className="relative w-8 h-8 flex items-center justify-center overflow-hidden pointer-events-none">
+              {swipeAnimation ? (
+                <>
+                  <span
+                    key={`from-${swipeAnimation.fromIcon}`}
+                    aria-hidden="true"
+                    className={`material-symbols-rounded text-[28px] absolute inset-0 flex items-center justify-center ${
+                      swipeAnimation.direction === 'up'
+                        ? 'swipe-icon-exit-up'
+                        : 'swipe-icon-exit-down'
+                    }`}
+                    style={{ color: 'var(--accent)' }}
+                  >
+                    {swipeAnimation.fromIcon}
+                  </span>
+                  <span
+                    key={`to-${swipeAnimation.toIcon}`}
+                    aria-hidden="true"
+                    className={`material-symbols-rounded text-[28px] absolute inset-0 flex items-center justify-center ${
+                      swipeAnimation.direction === 'up'
+                        ? 'swipe-icon-enter-up'
+                        : 'swipe-icon-enter-down'
+                    }`}
+                    style={{ color: 'var(--accent)' }}
+                  >
+                    {swipeAnimation.toIcon}
+                  </span>
+                </>
+              ) : (
+                <span
+                  aria-hidden="true"
+                  className="material-symbols-rounded text-[28px]"
+                  style={{ color: 'var(--accent)' }}
+                >
+                  {activeFeedTab.icon}
+                </span>
+              )}
+            </div>
           </button>,
           document.body
         )}

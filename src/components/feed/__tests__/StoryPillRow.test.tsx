@@ -70,6 +70,15 @@ describe('StoryPillRow Component', () => {
       expect(title.classList.contains('line-clamp-2')).toBe(compact);
       expect(mobile.querySelector('.flex-nowrap')).not.toBeNull();
       expect(mobile.querySelector('button')).toHaveClass('w-6', 'h-6');
+      const comments = mobile.querySelector('[aria-label$=" comments"]')!;
+      expect(comments).toHaveClass(
+        'rounded-lg',
+        'font-medium',
+        compact ? 'text-[11.5px]' : 'text-[12.5px]'
+      );
+      expect(comments.querySelector('.material-symbols-rounded')).toHaveClass(
+        compact ? 'text-[14px]' : 'text-[15px]'
+      );
     }
   );
 
@@ -96,9 +105,11 @@ describe('StoryPillRow Component', () => {
       expect(container.querySelector('article')).toHaveStyle({
         opacity: '0.68',
       });
-      expect(
-        screen.getByText('check').closest('.sm\\:contents')
-      ).not.toBeNull();
+      const checkIcon = screen.getByText('check');
+      expect(checkIcon.closest('.sm\\:contents')).not.toBeNull();
+      expect(checkIcon.parentElement).toHaveStyle({
+        backgroundColor: 'var(--bg-surface-2)',
+      });
     }
   );
 
