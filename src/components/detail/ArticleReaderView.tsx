@@ -483,6 +483,7 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
       audioSourceRef.current = null;
     }
     setPlaybackState('idle');
+    setTtsNotice(null);
     setActiveSegmentIdx(0);
     activeSegmentRef.current = 0;
   }, []);

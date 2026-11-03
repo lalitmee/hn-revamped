@@ -306,6 +306,29 @@ it('restores a system voice even when native voices arrive asynchronously', () =
   unmount();
 });
 
+it('clears the speech preparation status when playback is stopped', () => {
+  const { unmount } = render(<ArticleReaderView url={URL} storyTitle="Test" />);
+  openPreferences();
+  fireEvent.click(screen.getByRole('button', { name: 'Kokoro: Heart' }));
+  fireEvent.click(
+    screen.getByRole('switch', { name: /Preload my preferred voice/ })
+  );
+  expect(workers).toHaveLength(1);
+  act(() => {
+    workers[0].onmessage?.({ data: { type: 'ready', id: 0 } } as MessageEvent);
+  });
+  fireEvent.keyDown(document, { key: 'Escape' });
+
+  fireEvent.click(screen.getByRole('button', { name: 'Listen to article' }));
+  expect(screen.getByRole('status')).toHaveTextContent(
+    'Preparing paragraph 1 of 2…'
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: 'Stop audio reader' }));
+  expect(screen.queryByRole('status')).toBeNull();
+  unmount();
+});
+
 it('keeps playback first and retains controls for the stop animation', () => {
   vi.useFakeTimers();
   const { unmount } = render(<ArticleReaderView url={URL} storyTitle="Test" />);
