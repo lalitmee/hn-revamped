@@ -186,6 +186,25 @@ describe('workspace navigation history', () => {
     }
   );
 
+  it('constrains the shell for an open story in Zen mode, but not for the feed', async () => {
+    window.localStorage.setItem(
+      'hn_revamped_prefs_v1',
+      JSON.stringify({ layoutMode: 'zen' })
+    );
+    const { container } = render(<WorkspaceShell />);
+    const shell = container.firstElementChild as HTMLElement;
+
+    await waitFor(() => expect(shell.className).toContain('lg:h-auto'));
+    expect(shell.className).toContain('lg:overflow-visible');
+
+    fireEvent.click(screen.getByText('Open story'));
+    await waitFor(() => expect(screen.getByText('Detail 123')).toBeTruthy());
+
+    expect(shell.className).toContain('h-dvh overflow-hidden flex flex-col');
+    expect(shell.className).not.toContain('lg:h-auto');
+    expect(shell.className).not.toContain('lg:overflow-visible');
+  });
+
   it('restores feed and story from URL when traversing history', async () => {
     render(<WorkspaceShell />);
     fireEvent.click(screen.getByText('Ask'));
