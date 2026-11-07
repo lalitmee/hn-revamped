@@ -630,6 +630,7 @@ export const StoryDetailPane: React.FC<StoryDetailPaneProps> = ({
               <ArticleReaderView
                 url={story.url}
                 storyTitle={story.cleanTitle}
+                compact={compact}
               />
             ) : loading && story.comments.length === 0 ? (
               <div

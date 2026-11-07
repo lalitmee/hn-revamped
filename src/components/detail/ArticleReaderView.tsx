@@ -26,6 +26,7 @@ import {
 interface ArticleReaderViewProps {
   url?: string;
   storyTitle: string;
+  compact?: boolean;
 }
 
 const SPEED_OPTIONS = [1, 1.25, 1.5, 1.75, 2] as const;
@@ -124,6 +125,7 @@ export function prepareReaderSpeechSegments(
 export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
   url,
   storyTitle,
+  compact = false,
 }) => {
   const [article, setArticle] = useState<ReaderArticle | null>(null);
   const [loading, setLoading] = useState(Boolean(url));
@@ -599,7 +601,7 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
       window.removeEventListener('scroll', updateStickyState);
       window.removeEventListener('resize', updateStickyState);
     };
-  }, [segments.length, ttsSupported]);
+  }, [compact, segments.length, ttsSupported]);
 
   // Highlight and smoothly scroll the currently spoken paragraph into view
   useEffect(() => {
@@ -985,8 +987,9 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
       style={{
         backgroundColor: 'var(--bg-surface-1)',
         borderColor: 'var(--border-subtle)',
+        overflow: 'clip',
       }}
-      className="px-4 md:px-5 pb-5 rounded-2xl border mt-0 mb-1"
+      className="px-4 md:px-5 pb-5 rounded-2xl border mt-0 mb-1 overflow-clip"
     >
       {ttsSupported && segments.length > 0 && (
         <div
@@ -995,11 +998,14 @@ export const ArticleReaderView: React.FC<ArticleReaderViewProps> = ({
             color: 'var(--text-muted)',
             backgroundColor: 'var(--bg-surface-1)',
             borderColor: 'var(--border-subtle)',
+            top: compact ? '-8px' : '-14px',
+            borderTopLeftRadius: isReaderToolbarSticky ? 0 : 'calc(1rem - 1px)',
+            borderTopRightRadius: isReaderToolbarSticky
+              ? 0
+              : 'calc(1rem - 1px)',
           }}
-          className={`sticky top-0 z-10 pt-2.5 pb-2 mb-3.5 border-b flex flex-col gap-2.5 text-xs ${
-            isReaderToolbarSticky
-              ? '-mx-4 md:-mx-5 px-4 md:px-5'
-              : 'px-2 rounded-xl'
+          className={`sticky top-0 z-10 pt-2.5 pb-2 mb-3.5 border-b flex flex-col gap-2.5 text-xs -mx-4 md:-mx-5 px-4 md:px-5 transition-shadow duration-200 ${
+            isReaderToolbarSticky ? 'shadow-sm' : ''
           }`}
         >
           {/* Sticky reader controls and status; article text scrolls underneath. */}
